@@ -3,7 +3,7 @@ import { DEFAULT_LOCALE, isLocale, type Locale } from "@/i18n/config";
 /** Cookie used for UI + content language preference. */
 export const LOCALE_COOKIE_NAME = "agenda_locale";
 
-/** Request header set by `proxy.ts` from the crawlable `lang` query. */
+/** Request header set by `proxy.ts` from the `/ar` prefix (or unmarked English). */
 export const LOCALE_HEADER_NAME = "x-agenda-lang";
 
 export const LOCALE_COOKIE_MAX_AGE = 60 * 60 * 24 * 365; // 1 year

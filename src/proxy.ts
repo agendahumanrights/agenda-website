@@ -8,16 +8,15 @@ import {
   LOCALE_HEADER_NAME,
 } from "@/i18n/locale-cookie";
 import {
-  isLocaleQueryValue,
   LANG_QUERY_PARAM,
   URL_DEFAULT_LOCALE,
 } from "@/lib/seo/locale-url";
 
 /**
  * Next.js 16 Proxy:
- * - Redirect legacy `/ar/...` and `/en/...` to unprefixed paths (+ `?lang=`).
- * - Canonicalize `?lang=en` → unmarked English URL.
- * - Forward `lang` query as `x-agenda-lang` and sync the language cookie.
+ * - Serve Arabic under `/ar/...` via rewrite to the unprefixed App Router tree.
+ * - Redirect `/en/...` to unmarked English URLs.
+ * - Redirect legacy `?lang=ar` → `/ar/...` and `?lang=en` → unmarked.
  * - Forward pathname for admin protected-layout redirect `next` param.
  * - Leave API and static assets alone.
  */
@@ -43,6 +42,10 @@ function withLocaleCookie(response: NextResponse, locale: string) {
   return response;
 }
 
+function isAdminPath(pathname: string): boolean {
+  return pathname === "/admin" || pathname.startsWith("/admin/");
+}
+
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -53,20 +56,41 @@ export function proxy(request: NextRequest) {
   const { locale: prefixLocale, pathname: unprefixed } =
     stripLocalePrefix(pathname);
 
-  // Legacy `/ar` / `/en` prefixes → unprefixed + query lang for Arabic.
-  if (prefixLocale) {
+  // `/en/...` → unmarked English (English has no path prefix).
+  if (prefixLocale === "en") {
     const url = request.nextUrl.clone();
     url.pathname = unprefixed;
-    if (prefixLocale === URL_DEFAULT_LOCALE) {
-      url.searchParams.delete(LANG_QUERY_PARAM);
-    } else {
-      url.searchParams.set(LANG_QUERY_PARAM, prefixLocale);
-    }
+    url.searchParams.delete(LANG_QUERY_PARAM);
     const response = NextResponse.redirect(url);
-    return withLocaleCookie(response, prefixLocale);
+    return withLocaleCookie(response, "en");
+  }
+
+  // `/ar/...` → rewrite to unprefixed routes; locale from path.
+  if (prefixLocale === "ar") {
+    const url = request.nextUrl.clone();
+    url.pathname = unprefixed;
+    url.searchParams.delete(LANG_QUERY_PARAM);
+
+    const requestHeaders = new Headers(request.headers);
+    requestHeaders.set(LOCALE_HEADER_NAME, "ar");
+    requestHeaders.set("x-agenda-pathname", unprefixed);
+
+    const response = NextResponse.rewrite(url, {
+      request: { headers: requestHeaders },
+    });
+    return withLocaleCookie(response, "ar");
   }
 
   const langParam = request.nextUrl.searchParams.get(LANG_QUERY_PARAM);
+
+  // Legacy `?lang=ar` → `/ar/...`
+  if (langParam === "ar") {
+    const url = request.nextUrl.clone();
+    url.pathname = unprefixed === "/" ? "/ar" : `/ar${unprefixed}`;
+    url.searchParams.delete(LANG_QUERY_PARAM);
+    const response = NextResponse.redirect(url);
+    return withLocaleCookie(response, "ar");
+  }
 
   // `?lang=en` → clean English URL (unmarked).
   if (langParam === URL_DEFAULT_LOCALE) {
@@ -79,12 +103,10 @@ export function proxy(request: NextRequest) {
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set("x-agenda-pathname", pathname);
 
-  if (isLocaleQueryValue(langParam)) {
-    requestHeaders.set(LOCALE_HEADER_NAME, langParam);
-    const response = NextResponse.next({
-      request: { headers: requestHeaders },
-    });
-    return withLocaleCookie(response, langParam);
+  // Public unmarked URLs are English (header wins over cookie).
+  // Do not overwrite the cookie here so admin UI can keep a separate preference.
+  if (!isAdminPath(pathname)) {
+    requestHeaders.set(LOCALE_HEADER_NAME, URL_DEFAULT_LOCALE);
   }
 
   return NextResponse.next({

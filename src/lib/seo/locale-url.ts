@@ -1,29 +1,69 @@
 import type { Locale } from "@/i18n/config";
 import { absoluteUrl } from "@/lib/seo/site-url";
 
-/** Crawlable language query param (English = unmarked URL). */
+/**
+ * Legacy crawlable language query (pre path-prefix). Still accepted by the
+ * proxy, which redirects `?lang=ar` → `/ar/...` and strips `?lang=en`.
+ */
 export const LANG_QUERY_PARAM = "lang";
 
 /**
- * Locale for unmarked public URLs (no `lang` query).
- * Arabic uses `?lang=ar`. Matches Search Console / hreflang URL strategy.
+ * Locale for unmarked public URLs (no `/ar` prefix).
+ * Arabic uses the `/ar` path prefix. Matches Search Console / hreflang strategy.
  */
 export const URL_DEFAULT_LOCALE: Locale = "en";
 
-export function isLocaleQueryValue(value: string | null | undefined): value is Locale {
+export function isLocaleQueryValue(
+  value: string | null | undefined,
+): value is Locale {
   return value === "ar" || value === "en";
 }
 
 /**
+ * Strip a leading `/ar` or `/en` segment from a pathname.
+ */
+export function stripLocalePrefix(pathname: string): {
+  locale: "ar" | "en" | null;
+  pathname: string;
+} {
+  const parts = pathname.split("/").filter(Boolean);
+  if (parts.length === 0) {
+    return { locale: null, pathname: "/" };
+  }
+  const maybe = parts[0];
+  if (maybe === "ar" || maybe === "en") {
+    const rest = parts.slice(1).join("/");
+    return { locale: maybe, pathname: rest ? `/${rest}` : "/" };
+  }
+  return {
+    locale: null,
+    pathname: pathname.startsWith("/") ? pathname : `/${pathname}`,
+  };
+}
+
+function normalizePathname(pathname: string): string {
+  if (!pathname || pathname === "") return "/";
+  return pathname.startsWith("/") ? pathname : `/${pathname}`;
+}
+
+/**
  * Build a site-relative href for a locale.
- * English omits `lang`; Arabic sets `lang=ar`. Other query params are preserved.
+ * English is unmarked; Arabic uses `/ar` prefix. Other query params are preserved.
+ * Legacy `lang` query values are never emitted.
  */
 export function localizedHref(
   pathname: string,
   locale: Locale,
   searchParams?: URLSearchParams | Record<string, string | undefined | null>,
 ): string {
-  const path = !pathname || pathname === "" ? "/" : pathname.startsWith("/") ? pathname : `/${pathname}`;
+  const { pathname: bare } = stripLocalePrefix(normalizePathname(pathname));
+  const path =
+    locale === URL_DEFAULT_LOCALE
+      ? bare
+      : bare === "/"
+        ? `/${locale}`
+        : `/${locale}${bare}`;
+
   const params = new URLSearchParams();
 
   if (searchParams) {
@@ -36,10 +76,6 @@ export function localizedHref(
       if (value == null || value === "") continue;
       params.set(key, value);
     }
-  }
-
-  if (locale !== URL_DEFAULT_LOCALE) {
-    params.set(LANG_QUERY_PARAM, locale);
   }
 
   const qs = params.toString();
@@ -84,9 +120,12 @@ export function hreflangLanguages(
   return languages;
 }
 
-/** Strip filter/sort/search params for catalogue canonicals. */
+/**
+ * Catalogue listing canonicals are language-path only (no filter params).
+ * Kept for API compatibility; returns an empty bag because locale lives in the path.
+ */
 export function catalogueCanonicalParams(
-  locale: Locale,
+  _locale: Locale,
 ): Record<string, string | undefined> {
-  return locale === URL_DEFAULT_LOCALE ? {} : { [LANG_QUERY_PARAM]: locale };
+  return {};
 }

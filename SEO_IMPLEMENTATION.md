@@ -13,7 +13,7 @@ SEO is generated automatically from existing publication/event fields. **No admi
 | `src/app/sitemap.ts` | Dynamic XML sitemap from published DB content |
 | `src/app/robots.ts` | Crawl rules + sitemap pointer; blocks indexing on non-prod |
 | `src/app/opengraph-image.tsx` | Branded 1200×630 fallback social image |
-| `src/proxy.ts` | `?lang=` → request header + cookie; legacy `/ar`/`/en` redirects |
+| `src/proxy.ts` | `/ar/...` rewrite → locale header + cookie; `/en` and `?lang=` redirects |
 | Public `generateMetadata()` | Per-route titles, descriptions, canonical, hreflang, OG/Twitter |
 | `JsonLd` component | Safe JSON-LD in server-rendered HTML |
 
@@ -27,7 +27,7 @@ SEO is generated automatically from existing publication/event fields. **No admi
 - `src/components/seo/JsonLd.tsx`
 - `src/server/services/seo-sitemap.ts`
 - `src/app/sitemap.ts`, `robots.ts`, `opengraph-image.tsx`, `twitter-image.tsx`
-- `src/app/icon.png`, `src/app/apple-icon.png` (from official logo)
+- `src/app/favicon.ico`, `icon0.svg`, `icon1.png`, `apple-icon.png`; PWA icons in `public/web-app-manifest-*.png`; `src/app/manifest.ts`
 - `public/images/brand/agenda-logo.png`
 - `tests/seo/excerpt.test.ts`
 - `SEO_IMPLEMENTATION.md` (this file)
@@ -59,25 +59,26 @@ Markdown is stripped (headings, links, code, HTML) before descriptions. Copy is 
 
 ## 4. Arabic / English URL strategy
 
-Paths stay **unprefixed** (no `/ar` or `/en`).
+English stays **unmarked**. Arabic uses the **`/ar` path prefix**.
 
 | Language | URL shape |
 | --- | --- |
 | English | `https://humanrightsagenda.org/publications/example` |
-| Arabic | `https://humanrightsagenda.org/publications/example?lang=ar` |
+| Arabic | `https://humanrightsagenda.org/ar/publications/example` |
 
 Resolution order:
 
-1. `lang` query (via `x-agenda-lang` from proxy)
-2. `agenda_locale` cookie
+1. Proxy `x-agenda-lang` from `/ar` prefix (public unmarked URLs are forced English)
+2. `agenda_locale` cookie (admin UI when header absent)
 3. English unmarked default (`URL_DEFAULT_LOCALE`)
 
 Behavior:
 
-- `?lang=en` redirects to the unmarked URL
-- Legacy `/ar/...` → unprefixed + `?lang=ar`; `/en/...` → unmarked
-- Language switcher updates the query + cookie and navigates
-- Internal public links pass locale so Arabic keeps `lang=ar`
+- `/ar/...` is rewritten internally to the unprefixed App Router tree
+- `/en/...` redirects to the unmarked URL
+- Legacy `?lang=ar` redirects to `/ar/...`; `?lang=en` strips the query
+- Language switcher updates the path prefix + cookie and navigates
+- Internal public links pass locale so Arabic keeps the `/ar` prefix
 - HTML `lang` / `dir` match the resolved locale
 - Reciprocal `hreflang` includes `en`, `ar` (when translated), and `x-default` (English)
 
@@ -133,7 +134,8 @@ Event rich-result eligibility is **not** claimed: location/offers/precise times 
 | Asset | Location |
 | --- | --- |
 | Brand logo | `public/images/brand/agenda-logo.png` (from `Agenda-logo.png`) |
-| App icon / Apple touch | `src/app/icon.png`, `src/app/apple-icon.png` |
+| Favicon / app icons | `src/app/favicon.ico`, `icon0.svg`, `icon1.png`, `apple-icon.png` |
+| PWA / maskable icons | `public/web-app-manifest-192x192.png`, `public/web-app-manifest-512x512.png` via `src/app/manifest.ts` |
 | Default OG/Twitter | `src/app/opengraph-image.tsx` / `twitter-image.tsx` (1200×630) |
 
 Organization schema logo uses the brand PNG.
@@ -192,7 +194,7 @@ Unverified: live Lighthouse/CWV numbers were not measured in this change.
 
 ## 15. Remaining limitations
 
-- First visit without cookie/lang defaults to **English** for unmarked URLs (SEO URL contract). Arabic remains via `?lang=ar` or the switcher.
+- First visit without `/ar` defaults to **English** for unmarked URLs (SEO URL contract). Arabic is `/ar/...` or the switcher.
 - Event schema omits location/attendance — insufficient for full Event rich results.
 - `dateModified` is not emitted on article cards unless a reliable public `updatedAt` is added to detail DTOs later.
 - Founder bios are About page anchors, not separate indexable profile URLs.
@@ -206,7 +208,7 @@ Unverified: live Lighthouse/CWV numbers were not measured in this change.
 2. Ensure `SEO_NOINDEX` is unset/false in production.
 3. Confirm HTTPS and preferred host (www vs apex) redirect at the host/CDN.
 4. Deploy and open `/robots.txt` and `/sitemap.xml`.
-5. Spot-check view-source on `/`, `/?lang=ar`, a publication EN/AR URL for title, canonical, hreflang, OG, JSON-LD.
+5. Spot-check view-source on `/`, `/ar`, a publication EN/AR URL for title, canonical, hreflang, OG, JSON-LD.
 6. Verify `lang`/`dir` on `<html>` for both languages.
 7. Confirm drafts return 404 publicly and do not appear in the sitemap.
 

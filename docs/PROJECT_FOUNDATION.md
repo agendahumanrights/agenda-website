@@ -7,7 +7,7 @@
 - **Database assumption:** PostgreSQL via **Prisma ORM 7** (requirements PDF does not name a database; this is the project default).
 - **HTTP API:** Next.js Route Handlers under `src/app/api/**`. No separate Express server.
 - **Request flow:** Route Handler → Zod validation + authorization → service → Prisma. Server Components call services directly (no self-HTTP).
-- **Locale (cookie-based):** Language is **not** in the URL. Cookie `agenda_locale` stores `ar` | `en` (default **Arabic** when missing/invalid). Server Components read it via `getRequestLocale()` so the first HTML paint matches the selection. Legacy `/ar/...` and `/en/...` URLs redirect to unprefixed paths and set the cookie.
+- **Locale:** English unmarked URLs; Arabic under `/ar` (proxy rewrite). Cookie `agenda_locale` stores `ar` | `en` for the switcher/admin (default **Arabic** when cookie missing/invalid). Server Components read locale via `getRequestLocale()` (`x-agenda-lang` header, then cookie). Legacy `?lang=ar` redirects to `/ar/...`; `/en/...` redirects to unmarked.
 - **i18n:** Lightweight dictionary files in `src/messages/{ar,en}.json` (UI chrome only). Content translations live in the database.
 - **Admin security (Phase 2):** Opaque HttpOnly session cookie + `AdminSession` rows (token hash only). Passwords use Argon2id. Login/logout at `/api/admin/auth/*` with Origin CSRF checks and DB-backed throttling. Protected pages redirect to `/admin/login`; APIs return 401 without a session. Content mutations remain **501**.
 - **Storage:** Vendor-agnostic `StorageProvider` interface only — no upload vendor chosen.
@@ -16,7 +16,7 @@
 
 - Each `Publication` and `Event` has one **canonical** `slug` (language-independent, unique).
 - Public URLs: `/publications/{slug}`, `/events/{slug}` — the same record in both languages.
-- Titles, subtitles, and descriptions remain on translation tables; the active language comes from the cookie.
+- Titles, subtitles, and descriptions remain on translation tables; the active language comes from the URL locale (and cookie in admin).
 - Lookups resolve by slug, then load the translation for the active locale (missing translation → not-found / empty).
 
 ### Rules: Prisma vs service
@@ -170,7 +170,7 @@ npm run dev
 | Area | Status |
 | --- | --- |
 | Unprefixed routes + cookie locale | Functional |
-| Legacy `/ar` `/en` redirects | Functional |
+| `/ar` prefix rewrite + `/en` / `?lang=` redirects | Functional |
 | Bilingual shell, RTL/LTR | Functional |
 | Public placeholder pages | Functional without DB |
 | Featured/list services (read) | Functional when DB configured; empty otherwise |

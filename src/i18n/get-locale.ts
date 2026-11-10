@@ -15,8 +15,8 @@ export { LOCALE_HEADER_NAME };
 
 /**
  * Resolves the active locale for the request:
- * 1. `lang` query (via proxy header) — crawlable SEO source of truth
- * 2. `agenda_locale` cookie — returning visitors / switcher
+ * 1. Proxy `x-agenda-lang` header — from `/ar` prefix (or forced English on unmarked public URLs)
+ * 2. `agenda_locale` cookie — admin UI / switcher when header absent
  * 3. English (unmarked URL default) when neither is present
  *
  * Calling cookies()/headers() keeps responses request-specific.

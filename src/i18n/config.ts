@@ -16,9 +16,9 @@ export type { Locale };
  *   translation for the active locale (or show not-found / empty state).
  *
  * Public language selection:
- * - Crawlable `?lang=ar` (English URLs are unmarked) via proxy header
- * - `agenda_locale` cookie for returning visitors / switcher
- * - Unmarked URL fallback is English (`URL_DEFAULT_LOCALE`) when neither is set
- * Legacy `/ar` and `/en` prefixes redirect to unprefixed paths (+ `lang` for Arabic).
+ * - Crawlable `/ar/...` prefix (English URLs are unmarked) via proxy rewrite + header
+ * - `agenda_locale` cookie for admin UI / switcher
+ * - Unmarked public URLs resolve as English (`URL_DEFAULT_LOCALE`)
+ * Legacy `?lang=ar` redirects to `/ar/...`; `/en/...` redirects to unmarked.
  */
 export const UI_FALLBACK_LOCALE: Locale = "en";

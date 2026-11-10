@@ -4,7 +4,6 @@ import { Geist, Geist_Mono, Noto_Sans_Arabic, Source_Serif_4 } from "next/font/g
 import { getDictionary } from "@/i18n/get-dictionary";
 import { getRequestLocale } from "@/i18n/get-locale";
 import { localeDirection } from "@/i18n/config";
-import { ORGANIZATION_LOGO_PATH } from "@/lib/seo/metadata";
 import { getSiteUrl, isNonProductionIndexing } from "@/lib/seo/site-url";
 
 import "./globals.css";
@@ -57,10 +56,8 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     description: dict.meta.siteDescription,
     applicationName: dict.meta.siteName,
-    icons: {
-      icon: [{ url: ORGANIZATION_LOGO_PATH, type: "image/png" }],
-      apple: [{ url: "/apple-icon.png" }],
-    },
+    // Icons come from App Router file conventions: favicon.ico, icon0.svg,
+    // icon1.png, apple-icon.png, plus web-app-manifest PNGs via manifest.ts.
     robots: noIndex
       ? { index: false, follow: false }
       : {

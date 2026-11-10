@@ -42,18 +42,23 @@ describe("buildMetaDescription", () => {
 });
 
 describe("localizedHref", () => {
-  it("omits lang for English and sets lang=ar for Arabic", () => {
+  it("omits prefix for English and uses /ar for Arabic", () => {
     expect(localizedHref("/publications", URL_DEFAULT_LOCALE)).toBe(
       "/publications",
     );
-    expect(localizedHref("/publications", "ar")).toBe(
-      `/publications?${LANG_QUERY_PARAM}=ar`,
-    );
+    expect(localizedHref("/publications", "ar")).toBe("/ar/publications");
+    expect(localizedHref("/", "ar")).toBe("/ar");
   });
 
-  it("preserves other query params with Arabic lang", () => {
+  it("preserves other query params under the Arabic prefix", () => {
     expect(
       localizedHref("/publications", "ar", { q: "rights", page: "2" }),
-    ).toBe(`/publications?q=rights&page=2&${LANG_QUERY_PARAM}=ar`);
+    ).toBe("/ar/publications?q=rights&page=2");
+  });
+
+  it("strips a legacy lang query instead of emitting it", () => {
+    expect(
+      localizedHref("/about", "ar", { [LANG_QUERY_PARAM]: "ar", q: "x" }),
+    ).toBe("/ar/about?q=x");
   });
 });

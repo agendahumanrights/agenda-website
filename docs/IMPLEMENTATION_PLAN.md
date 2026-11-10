@@ -2,7 +2,7 @@
 
 Phase 1 (this foundation) is complete when the scaffold builds, Prisma validates/generates, and public shells render without a database. **Do not treat unfinished features as done.**
 
-Localization uses **cookie-based language** (`agenda_locale`) with **unprefixed URLs** (`/`, `/publications`, …). Legacy `/ar` and `/en` prefixes redirect and set the cookie.
+Localization uses **English unmarked URLs** and **Arabic `/ar` prefixes**, plus cookie `agenda_locale` for the switcher/admin. Legacy `?lang=ar` redirects to `/ar/...`; `/en` redirects to unmarked.
 
 ## Recommended next step
 

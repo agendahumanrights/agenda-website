@@ -16,9 +16,10 @@ Architecture notes: [`docs/PROJECT_FOUNDATION.md`](./docs/PROJECT_FOUNDATION.md)
 
 ## Localization
 
-- URLs are **language-agnostic**: `/`, `/publications`, `/events`, `/about`, `/admin`.
-- Language cookie: `agenda_locale` (`ar` | `en`). Default: **Arabic**.
-- Legacy `/ar/...` and `/en/...` redirect to unprefixed paths and set the cookie.
+- English URLs are unmarked: `/`, `/publications`, `/events`, `/about`.
+- Arabic URLs use the `/ar` prefix: `/ar`, `/ar/publications`, …
+- Language cookie: `agenda_locale` (`ar` | `en`) — used by the switcher and admin UI.
+- Legacy `?lang=ar` redirects to `/ar/...`; `/en/...` redirects to unmarked English.
 
 ## Admin authentication (Phase 2)
 

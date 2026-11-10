@@ -5,7 +5,8 @@ import { useTransition } from "react";
 
 import { setLocaleAction } from "@/i18n/actions";
 import { LOCALES, type Locale } from "@/i18n/config";
-import { LANG_QUERY_PARAM, URL_DEFAULT_LOCALE } from "@/lib/seo/locale-url";
+import { stripLocalePrefix } from "@/i18n/pathnames";
+import { localizedHref } from "@/lib/seo/locale-url";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -16,8 +17,8 @@ type Props = {
 };
 
 /**
- * Switches language via crawlable `lang` query + cookie, then navigates.
- * English uses unmarked URLs; Arabic uses `?lang=ar`.
+ * Switches language via crawlable path prefix + cookie, then navigates.
+ * English uses unmarked URLs; Arabic uses `/ar/...`.
  */
 export function LanguageSwitcher({
   locale,
@@ -34,14 +35,12 @@ export function LanguageSwitcher({
     if (next === locale || pending) return;
     startTransition(async () => {
       await setLocaleAction(next);
-      const params = new URLSearchParams(searchParams?.toString() ?? "");
-      if (next === URL_DEFAULT_LOCALE) {
-        params.delete(LANG_QUERY_PARAM);
-      } else {
-        params.set(LANG_QUERY_PARAM, next);
-      }
-      const qs = params.toString();
-      const href = qs ? `${pathname}?${qs}` : pathname;
+      const { pathname: bare } = stripLocalePrefix(pathname);
+      const href = localizedHref(
+        bare,
+        next,
+        new URLSearchParams(searchParams?.toString() ?? ""),
+      );
       router.replace(href);
       router.refresh();
     });

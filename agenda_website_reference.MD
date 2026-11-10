@@ -4,7 +4,7 @@
 > **Source of truth:** application code. Requirements and older docs describe intended or planned behavior; this file describes verified implementation.  
 > **Do not treat scaffolding as completed features.**
 
-**Last updated:** 2026-11-11 (Supabase Postgres connection)  
+**Last updated:** 2026-11-11 (Arabic `/ar` path prefix)  
 **Inspection basis:** Checked-in source under the repository root. DB migrate/admin bootstrap depend on local `.env` (gitignored).
 
 ---
@@ -41,7 +41,7 @@
 
 | Surface | Current status (verified) |
 | --- | --- |
-| **Public website** | Unprefixed App Router pages render a bilingual shell (cookie locale). Pages call read services; without `DATABASE_URL` they show empty/placeholder states. |
+| **Public website** | App Router pages render a bilingual shell (`/ar` or unmarked English). Pages call read services; without `DATABASE_URL` they show empty/placeholder states. |
 | **Admin dashboard** | Auth + Publications + Events + **Founders** CRUD + homepage featured pubs/events (max 3). |
 
 ### Current development stage
@@ -50,7 +50,7 @@
 
 | Area | Status |
 | --- | --- |
-| Cookie + crawlable `?lang=ar` (English unmarked) + legacy `/ar`/`/en` redirects | **Implemented** |
+| Cookie + crawlable `/ar` prefix (English unmarked) + legacy `?lang=` / `/en` redirects | **Implemented** |
 | Public page shells + RTL/LTR `lang`/`dir` | **Implemented** |
 | Technical SEO (metadata, sitemap, robots, JSON-LD, OG/icons) | **Implemented** — see `SEO_IMPLEMENTATION.md` |
 | Prisma schema + generated client output path | **Implemented** (schema checked in) |
@@ -90,7 +90,7 @@ Browser
   │
   ▼
 Next.js 16 App Router (src/app)
-  ├─ proxy.ts          → legacy /ar|/en → unprefixed + ?lang=; sync cookie/header
+  ├─ proxy.ts          → /ar rewrite + locale header; /en & ?lang= redirects; sync cookie
   ├─ Server Components → getRequestLocale → dictionaries / services
   ├─ Server Action     → setLocaleAction (language switcher)
   └─ Route Handlers    → src/app/api/** → Zod parse → services → Prisma
@@ -145,9 +145,9 @@ agenda/
 │   ├── schema.prisma
 │   └── migrations/ (init, youtube_url, publication_categories)
 ├── public/
-│   ├── favicon via src/app/favicon.ico
 │   ├── file.svg, globe.svg, next.svg, vercel.svg, window.svg
-│   └── images/agenda-logo.png (transparent cropped brand lockup)
+│   ├── web-app-manifest-192x192.png, web-app-manifest-512x512.png (PWA icons)
+│   └── images/brand/agenda-logo.png (transparent cropped brand lockup)
 ├── README.md
 ├── tsconfig.json
 └── src/
@@ -193,7 +193,7 @@ agenda/
 
 ### `src/proxy.ts`
 
-Next.js 16 **Proxy** (replaces deprecated `middleware`). Redirects legacy `/ar/...` and `/en/...` to unprefixed paths and sets `agenda_locale`. Passes through `/api`, `/_next`, `/images`, and paths containing `.`. Exports `config.matcher`.
+Next.js 16 **Proxy** (replaces deprecated `middleware`). Rewrites `/ar/...` to the unprefixed App Router tree and sets `x-agenda-lang` + `agenda_locale`. Redirects `/en/...` and legacy `?lang=` to the canonical English/Arabic URL shapes. Passes through `/api`, `/_next`, `/images`, and paths containing `.`. Exports `config.matcher`.
 
 ### `src/app` — entry points and global UI
 
@@ -206,7 +206,8 @@ Next.js 16 **Proxy** (replaces deprecated `middleware`). Redirects legacy `/ar/.
 | `loading.tsx` | Renders `LoadingState` |
 | `error.tsx` | Client error boundary (English hard-coded messages) |
 | `not-found.tsx` | Bilingual 404 + link home |
-| `favicon.ico` | Site icon |
+| `favicon.ico` / `icon0.svg` / `icon1.png` / `apple-icon.png` | Browser / home-screen icons (file conventions) |
+| `manifest.ts` | Web app manifest → maskable PNGs in `public/` |
 
 **Route groups:** `(public)` and admin `(auth)` / `(protected)` do **not** appear in URLs.
 
@@ -259,7 +260,7 @@ Organized by domain: `about/`, `admin/`, `events/`, `home/`, `layout/`, `publica
 | --- | --- |
 | `i18n/config.ts` | Re-exports locale helpers; documents UI vs content fallback |
 | `i18n/locale-cookie.ts` | Cookie name/max-age/parse + `LOCALE_HEADER_NAME` |
-| `i18n/get-locale.ts` | Server: `lang` header → cookie → English unmarked default |
+| `i18n/get-locale.ts` | Server: `x-agenda-lang` header → cookie → English unmarked default |
 | `lib/seo/*` | Site URL, locale hrefs, excerpts, metadata, JSON-LD builders |
 | `i18n/get-dictionary.ts` | Load `messages/{locale}.json` |
 | `i18n/dictionaries.ts` | `Dictionary` type from `en.json` |
@@ -290,18 +291,20 @@ Organized by domain: `about/`, `admin/`, `events/`, `home/`, `layout/`, `publica
 
 - App Router under `src/app`.
 - Route groups `(public)`, `(auth)`, `(protected)` are **omitted** from the path.
-- **No** `[locale]` segment. Language via `?lang=ar` (English unmarked) + cookie.
+- **No** `[locale]` App Router segment. Arabic via `/ar` proxy rewrite; English unmarked; cookie for admin/UI.
 - Dynamic segments: `[slug]` (public detail), `[id]` (admin edit — unreachable).
-- Legacy prefixed URLs handled by `src/proxy.ts` (redirect, not a page).
+- Arabic `/ar/...` handled by `src/proxy.ts` (rewrite to unprefixed pages). `/en` and legacy `?lang=` redirect.
 
-### Redirects
+### Redirects / rewrites
 
-| From | To | Side effect |
+| From | To | Behavior |
 | --- | --- | --- |
-| `/ar`, `/ar/...` | `/`, `/...` | Sets `agenda_locale=ar` |
-| `/en`, `/en/...` | `/`, `/...` | Sets `agenda_locale=en` |
+| `/ar`, `/ar/...` | same URL in browser; internal `/`, `/...` | Rewrite + `x-agenda-lang=ar` + cookie |
+| `/en`, `/en/...` | `/`, `/...` | Redirect + cookie `en` |
+| `?lang=ar` | `/ar` + path | Redirect + cookie `ar` |
+| `?lang=en` | unmarked path | Redirect + cookie `en` |
 
-Query string preserved. `/api` and static-like paths not redirected.
+Other query params preserved. `/api` and static-like paths not rewritten.
 
 ### Public routes
 
@@ -906,8 +909,8 @@ Same editorial pattern without author/PDF. Visitor-facing date is `eventDate`. P
 
 ### Preference vs implementation
 
-**Preference:** public URLs without `/ar` or `/en` prefixes.  
-**Implementation:** **Matches.** Paths are language-agnostic (`sitePath`). Legacy prefixes redirect and set cookie.
+**Preference (updated):** English unmarked; Arabic under `/ar`.  
+**Implementation:** **Matches.** `sitePath` / `localizedHref` emit `/ar/...` for Arabic; proxy rewrites to the unprefixed App Router tree.
 
 ### Translation sources
 
@@ -921,15 +924,15 @@ Same editorial pattern without author/PDF. Visitor-facing date is `eventDate`. P
 
 | Concern | Behavior |
 | --- | --- |
-| Detection | `?lang=` (proxy `x-agenda-lang`) → cookie `agenda_locale` → unmarked default **`en`** (`URL_DEFAULT_LOCALE`). Cookie parse helper still falls back to `DEFAULT_LOCALE` (`ar`) when invalid. |
-| Switching | `LanguageSwitcher` → cookie + navigate with/without `?lang=ar` → `router.refresh()` |
-| Persistence | Cookie max-age 1 year; `httpOnly: false`; `sameSite: lax`; `path: /`; Arabic also encoded in crawlable URLs |
+| Detection | `/ar` prefix (proxy `x-agenda-lang`) → cookie `agenda_locale` (admin) → unmarked default **`en`** (`URL_DEFAULT_LOCALE`). Public unmarked URLs force English via proxy header. Cookie parse helper still falls back to `DEFAULT_LOCALE` (`ar`) when invalid. |
+| Switching | `LanguageSwitcher` → cookie + navigate `/` ↔ `/ar/...` → `router.refresh()` |
+| Persistence | Cookie max-age 1 year; `httpOnly: false`; `sameSite: lax`; `path: /`; Arabic also encoded in crawlable `/ar` URLs |
 | UI dictionary fallback | Missing locale module → English; documented key-level fallback policy in `i18n/config.ts` |
 | Content fallback | **No** silent cross-locale DB fallback; missing translation → empty list item filter / 404 detail |
 
 ### Server/client sync
 
-Server Components read cookie for first paint (`lang`/`dir` + dictionaries). Client switcher refreshes RSC tree after cookie write. No `localStorage` locale source.
+Server Components read proxy locale header (and cookie when needed) for first paint (`lang`/`dir` + dictionaries). Client switcher refreshes RSC tree after cookie write + path change. No `localStorage` locale source.
 
 ### RTL/LTR and dates
 
@@ -1085,6 +1088,21 @@ Open `http://localhost:3000`.
 - CLI: `media:test-r2`, `media:migrate-r2` (dry-run default; never deletes local files). Docs: `CLOUDFLARE_R2_STORAGE.md`. `.env.example` + `next.config.ts` remotePatterns updated.
 - No Prisma schema/migration changes. Validation: `tsc` pass; vitest 88 passed / 1 skipped; `next build` pass; `media:test-r2` put/head/delete ok; `media:migrate-r2` dry-run found 9 local assets. ESLint still reports pre-existing unrelated errors. Live admin upload browser QA not claimed here.
 
+### 2026-11-11 — Arabic URLs use `/ar` path prefix
+
+- Replaced crawlable `?lang=ar` with `/ar/...` (English remains unmarked).
+- `localizedHref` / `sitePath` emit `/ar` prefixes; proxy rewrites `/ar` to the unprefixed App Router tree and sets `x-agenda-lang`.
+- Legacy `?lang=ar` redirects to `/ar/...`; `/en/...` and `?lang=en` redirect to unmarked English.
+- Language switcher navigates between unmarked and `/ar` paths. Public unmarked URLs force English via proxy header; admin still uses cookie when header absent.
+- Updated SEO docs, tests (`localizedHref`), and this reference.
+
+### 2026-11-11 — Favicon and app icons refresh
+
+- Replaced logo-derived `src/app/icon.png` / oversized apple icon with packaged assets: `favicon.ico`, `icon0.svg`, `icon1.png`, `apple-icon.png`.
+- Added PWA maskable icons under `public/web-app-manifest-{192,512}x512.png` and `src/app/manifest.ts` (Agenda name, brand `theme_color` `#05498c`).
+- Stopped overriding `metadata.icons` with `ORGANIZATION_LOGO_PATH` in root layout so App Router icon files apply.
+- Removed staging folders `favicon-for-app/` and `favicon-for-public/` after install. Updated `SEO_IMPLEMENTATION.md`.
+
 ### 2026-11-11 — Connect PostgreSQL to Supabase
 
 - Pointed Prisma CLI at Supabase via `DIRECT_URL` in `prisma.config.ts` (session pooler `:5432`); runtime Client keeps using `DATABASE_URL` (transaction pooler `:6543?pgbouncer=true`) through `@prisma/adapter-pg`.
@@ -1095,7 +1113,7 @@ Open `http://localhost:3000`.
 ### 2026-11-10 — Public SEO foundation
 
 - Automatic `generateMetadata` for home, publications/events listings + details, and About; descriptions from subtitle/Markdown excerpt; OG/Twitter + branded `/opengraph-image`.
-- Crawlable bilingual URLs: English unmarked, Arabic `?lang=ar`; proxy syncs header/cookie; switcher updates query; hreflang + self-canonicals; catalogue filters `noindex`.
+- Crawlable bilingual URLs: English unmarked, Arabic `/ar` (later superseded query `?lang=ar`); proxy syncs header/cookie; hreflang + self-canonicals; catalogue filters `noindex`.
 - Dynamic `sitemap.ts` (published content only) and `robots.ts` (blocks admin; noindexes non-prod/localhost/`SEO_NOINDEX`).
 - JSON-LD: Organization/WebSite, BreadcrumbList, Article/BlogPosting, conservative Event; logo/icons from official Agenda logo; docs in `SEO_IMPLEMENTATION.md`.
 - Validation: SEO unit tests added; full `npm test` / `tsc` as recorded in the implementing session. Live Search Console / Rich Results not run here.
