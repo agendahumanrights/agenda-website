@@ -1,0 +1,302 @@
+// Agenda — Prisma schema (Phase 1 foundation)
+//
+// Slug strategy (cookie-based i18n, no locale URL prefixes):
+// - Each Publication and Event has one stable canonical `slug` (language-independent).
+// - Public URLs: /publications/{slug} and /events/{slug} — same record in both languages.
+// - Titles/subtitles/descriptions remain on *Translation tables; language comes from the cookie.
+// - Lookups resolve by slug, then load the translation for the active locale.
+//
+// About Us content (vision/mission/founder bios) is NOT managed via Admin (requirements §2.5).
+// Founder records still live here so blog publications can reference authors.
+//
+// Migration note: If an earlier draft schema with per-translation slugs was applied,
+// create a forward migration that adds Publication.slug / Event.slug, backfills from a
+// preferred locale, drops translation.slug, and adds unique indexes. Do not run
+// destructive resets against production data without a backup.
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum Locale {
+  ar
+  en
+}
+
+enum PublicationStatus {
+  DRAFT
+  PUBLISHED
+}
+
+/// Admin-managed bilingual publication categories (replaces former enum).
+model PublicationCategory {
+  id             String   @id @default(cuid())
+  /// Stable filter/URL key. Seeded legacy values: REPORT, BLOG, PAPER, BRIEFING.
+  slug           String   @unique
+  nameEn         String
+  nameAr         String
+  /// When true, publications require a founder author (seeded for BLOG).
+  requiresAuthor Boolean  @default(false)
+  sortOrder      Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  publications Publication[]
+
+  @@unique([nameEn])
+  @@unique([nameAr])
+  @@index([sortOrder])
+}
+
+enum EventStatus {
+  DRAFT
+  PUBLISHED
+}
+
+enum MediaKind {
+  IMAGE
+  PDF
+  OTHER
+}
+
+/// Separate from public founder/author profiles. Used only for admin authentication.
+model AdminUser {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  name         String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  sessions AdminSession[]
+}
+
+/// Opaque session: cookie holds the raw token; only SHA-256 hash is stored.
+model AdminSession {
+  id          String    @id @default(cuid())
+  adminUserId String
+  tokenHash   String    @unique
+  expiresAt   DateTime
+  createdAt   DateTime  @default(now())
+  revokedAt   DateTime?
+
+  adminUser AdminUser @relation(fields: [adminUserId], references: [id], onDelete: Cascade)
+
+  @@index([expiresAt])
+  @@index([adminUserId])
+}
+
+/// Persistent login throttling (shared across app instances).
+model LoginThrottle {
+  id              String    @id @default(cuid())
+  /// e.g. "email:admin@example.com" or "ip:203.0.113.1"
+  key             String    @unique
+  failedCount     Int       @default(0)
+  windowStartedAt DateTime  @default(now())
+  blockedUntil    DateTime?
+  updatedAt       DateTime  @updatedAt
+}
+
+/// Public-facing founder / blog author profile.
+model Founder {
+  id        String   @id @default(cuid())
+  /// Stable key for About Us deep links, e.g. "jane-doe" → /about#founder-jane-doe
+  bioKey    String   @unique
+  email     String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  profileImageId String?     @unique
+  profileImage   MediaAsset? @relation("FounderProfileImage", fields: [profileImageId], references: [id], onDelete: SetNull)
+
+  translations FounderTranslation[]
+  publications Publication[]
+}
+
+model FounderTranslation {
+  id               String @id @default(cuid())
+  founderId        String
+  locale           Locale
+  fullName         String
+  biography        String @db.Text
+  professionalArea String
+
+  founder Founder @relation(fields: [founderId], references: [id], onDelete: Cascade)
+
+  @@unique([founderId, locale])
+  @@index([locale])
+}
+
+model Publication {
+  id              String            @id @default(cuid())
+  /// Stable canonical slug for /publications/{slug} (shared across languages)
+  slug            String            @unique
+  categoryId      String
+  status          PublicationStatus @default(DRAFT)
+  /// Date shown to visitors
+  publishedAt     DateTime?
+  /// Required when category.requiresAuthor; must be null otherwise (service-enforced)
+  authorFounderId String?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+
+  mainImageId String?
+  pdfId       String? @unique
+  /// Optional single YouTube watch URL (canonical https://www.youtube.com/watch?v=…). Not counted toward image limits.
+  youtubeUrl  String?
+
+  category      PublicationCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  authorFounder Founder?            @relation(fields: [authorFounderId], references: [id], onDelete: Restrict)
+  mainImage     MediaAsset?         @relation("PublicationMainImage", fields: [mainImageId], references: [id], onDelete: SetNull)
+  pdf           MediaAsset?         @relation("PublicationPdf", fields: [pdfId], references: [id], onDelete: SetNull)
+  translations  PublicationTranslation[]
+  gallery       PublicationGalleryImage[]
+  featured      FeaturedPublication?
+
+  @@index([status, publishedAt])
+  @@index([categoryId, status])
+  @@index([authorFounderId])
+}
+
+model PublicationTranslation {
+  id            String @id @default(cuid())
+  publicationId String
+  locale        Locale
+  title         String
+  subtitle      String
+  /// Markdown body
+  description   String @db.Text
+
+  publication Publication @relation(fields: [publicationId], references: [id], onDelete: Cascade)
+
+  @@unique([publicationId, locale])
+  @@index([locale, title])
+}
+
+model PublicationGalleryImage {
+  id            String @id @default(cuid())
+  publicationId String
+  mediaAssetId  String
+  sortOrder     Int    @default(0)
+
+  publication Publication @relation(fields: [publicationId], references: [id], onDelete: Cascade)
+  mediaAsset  MediaAsset  @relation(fields: [mediaAssetId], references: [id], onDelete: Cascade)
+
+  @@unique([publicationId, mediaAssetId])
+  @@index([publicationId, sortOrder])
+}
+
+model Event {
+  id        String      @id @default(cuid())
+  /// Stable canonical slug for /events/{slug} (shared across languages)
+  slug      String      @unique
+  status    EventStatus @default(DRAFT)
+  /// Occurrence date shown to visitors
+  eventDate DateTime
+  /// Record creation timestamp — used for public filtering (requirements §1.3)
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  mainImageId String?
+  /// Optional single YouTube watch URL (canonical https://www.youtube.com/watch?v=…). Not counted toward image limits.
+  youtubeUrl  String?
+
+  mainImage    MediaAsset?          @relation("EventMainImage", fields: [mainImageId], references: [id], onDelete: SetNull)
+  translations EventTranslation[]
+  gallery      EventGalleryImage[]
+  featured     FeaturedEvent?
+
+  @@index([status, eventDate])
+  @@index([createdAt])
+}
+
+model EventTranslation {
+  id          String @id @default(cuid())
+  eventId     String
+  locale      Locale
+  title       String
+  subtitle    String
+  /// Markdown body
+  description String @db.Text
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, locale])
+  @@index([locale, title])
+}
+
+model EventGalleryImage {
+  id           String @id @default(cuid())
+  eventId      String
+  mediaAssetId String
+  sortOrder    Int    @default(0)
+
+  event      Event      @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  mediaAsset MediaAsset @relation(fields: [mediaAssetId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, mediaAssetId])
+  @@index([eventId, sortOrder])
+}
+
+model MediaAsset {
+  id           String    @id @default(cuid())
+  storageKey   String    @unique
+  filename     String
+  mimeType     String
+  sizeBytes    Int
+  kind         MediaKind @default(OTHER)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  altTexts MediaAltText[]
+
+  founderProfile         Founder?                   @relation("FounderProfileImage")
+  publicationMainImages  Publication[]              @relation("PublicationMainImage")
+  publicationPdfs        Publication[]              @relation("PublicationPdf")
+  publicationGallery     PublicationGalleryImage[]
+  eventMainImages        Event[]                    @relation("EventMainImage")
+  eventGallery           EventGalleryImage[]
+}
+
+model MediaAltText {
+  id           String @id @default(cuid())
+  mediaAssetId String
+  locale       Locale
+  altText      String
+
+  mediaAsset MediaAsset @relation(fields: [mediaAssetId], references: [id], onDelete: Cascade)
+
+  @@unique([mediaAssetId, locale])
+}
+
+/// Homepage featured publications slider (manual admin selection + order).
+model FeaturedPublication {
+  id            String @id @default(cuid())
+  publicationId String @unique
+  sortOrder     Int
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  publication Publication @relation(fields: [publicationId], references: [id], onDelete: Cascade)
+
+  @@index([sortOrder])
+}
+
+/// Homepage featured events (max 3 — enforced in service transactions).
+model FeaturedEvent {
+  id        String @id @default(cuid())
+  eventId   String @unique
+  sortOrder Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@index([sortOrder])
+}

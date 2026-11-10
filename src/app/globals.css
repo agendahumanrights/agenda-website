@@ -1,0 +1,412 @@
+@import "tailwindcss";
+
+:root {
+  --brand-blue: #05498c;
+  --brand-gray: #878787;
+  --background: #ffffff;
+  --foreground: #171717;
+  --muted: #878787;
+  --border: #e8e8e8;
+
+  /* Floating glass chrome (header + footer share these) */
+  --glass-tint: rgba(5, 73, 140, 0.7);
+  --glass-tint-fallback: rgba(4, 52, 102, 0.96);
+  --glass-border: rgba(255, 255, 255, 0.22);
+  --glass-highlight: rgba(255, 255, 255, 0.16);
+  --glass-blur: 20px;
+  --glass-saturate: 1.35;
+  --glass-shadow: 0 10px 36px rgba(2, 24, 48, 0.22);
+  --glass-text: #f8fafc;
+  --glass-text-muted: rgba(248, 250, 252, 0.78);
+
+  /* Fixed glass nav offset (~16px from viewport top) */
+  --site-header-top-gap: 1rem;
+  --site-header-bar-height: 3.75rem;
+  --site-header-bottom-gap: 0.5rem;
+  --site-header-height: calc(var(--site-header-top-gap) + var(--site-header-bar-height) + var(--site-header-bottom-gap));
+  --site-header-content-gap: 1.5rem;
+  /* Total top clearance for non-hero content under the fixed header */
+  --site-header-offset: calc(var(--site-header-height) + var(--site-header-content-gap));
+  --anchor-scroll-margin: calc(var(--site-header-height) + 0.75rem);
+}
+
+@media (min-width: 640px) {
+  :root {
+    --site-header-bar-height: 4rem;
+    --site-header-content-gap: 1.75rem;
+  }
+}
+
+/**
+ * Shared glass material: tinted translucent background + blur.
+ * Opacity is on the background only so text/icons stay crisp.
+ */
+.glass-panel {
+  background-color: var(--glass-tint-fallback);
+  border: 1px solid var(--glass-border);
+  box-shadow:
+    var(--glass-shadow),
+    inset 0 1px 0 var(--glass-highlight);
+  color: var(--glass-text);
+}
+
+@supports ((-webkit-backdrop-filter: blur(1px)) or (backdrop-filter: blur(1px))) {
+  .glass-panel {
+    background-color: var(--glass-tint);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+    backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  }
+}
+
+.glass-nav-pill {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background-color: rgba(255, 255, 255, 0.06);
+  color: var(--glass-text-muted);
+}
+
+.glass-nav-pill:hover {
+  border-color: rgba(255, 255, 255, 0.28);
+  background-color: rgba(255, 255, 255, 0.12);
+  color: var(--glass-text);
+}
+
+.glass-nav-pill[aria-current="page"],
+.glass-nav-pill[data-active="true"] {
+  border-color: rgba(255, 255, 255, 0.42);
+  background-color: rgba(255, 255, 255, 0.2);
+  color: var(--glass-text);
+  font-weight: 600;
+}
+
+.glass-icon-btn {
+  border: 1px solid rgba(255, 255, 255, 0.28);
+  background-color: rgba(255, 255, 255, 0.06);
+  color: var(--glass-text);
+}
+
+.glass-icon-btn:hover {
+  border-color: rgba(255, 255, 255, 0.45);
+  background-color: rgba(255, 255, 255, 0.16);
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-brand-blue: var(--brand-blue);
+  --color-brand-gray: var(--brand-gray);
+  --font-sans: var(--font-geist-sans), var(--font-noto-arabic), system-ui,
+    sans-serif;
+  --font-serif: var(--font-source-serif), var(--font-noto-arabic), "Times New Roman",
+    serif;
+  --font-mono: var(--font-geist-mono);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+}
+
+.font-editorial {
+  font-family: var(--font-serif);
+}
+
+/* Hero text legibility: strong on the inline-start edge, fades into the photo */
+.hero-media-gradient {
+  background: linear-gradient(to right,
+      rgba(0, 0, 0, 0.78) 0%,
+      rgba(0, 0, 0, 0.55) 32%,
+      rgba(0, 0, 0, 0.22) 58%,
+      rgba(0, 0, 0, 0.05) 78%,
+      transparent 100%);
+}
+
+[dir="rtl"] .hero-media-gradient {
+  background: linear-gradient(to left,
+      rgba(0, 0, 0, 0.78) 0%,
+      rgba(0, 0, 0, 0.55) 32%,
+      rgba(0, 0, 0, 0.22) 58%,
+      rgba(0, 0, 0, 0.05) 78%,
+      transparent 100%);
+}
+
+/* Full viewport heroes — header is fixed/overlay, so no negative-margin pull */
+.hero-viewport {
+  min-height: 100vh;
+  min-height: 100dvh;
+  min-height: 100svh;
+}
+
+/**
+ * Top clearance for public pages without a full-bleed hero
+ * (detail pages, empty states). Heroes pad content internally instead.
+ */
+.public-main-offset {
+  padding-top: var(--site-header-offset);
+}
+
+.anchor-offset {
+  scroll-margin-top: var(--anchor-scroll-margin);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-slide-transition {
+    transition: none !important;
+  }
+
+  .card-media-image {
+    transition: none !important;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+
+  .group:hover .card-media-image,
+  .group:focus-within .card-media-image {
+    transform: scale(1.04);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .gallery-fade {
+    transition: none !important;
+  }
+}
+
+/* Editorial Markdown body — shared by public details and admin preview */
+.article-prose {
+  color: #3f3f46;
+  font-size: 1.0625rem;
+  line-height: 1.75;
+  max-width: 65ch;
+}
+
+.article-prose :where(h2, h3, h4, h5, h6, .article-prose-h6) {
+  color: #18181b;
+  font-family: var(--font-serif);
+  font-weight: 600;
+  line-height: 1.3;
+  margin-top: 1.75em;
+  margin-bottom: 0.6em;
+  text-wrap: balance;
+}
+
+.article-prose :where(h2) {
+  font-size: 1.5rem;
+}
+
+.article-prose :where(h3) {
+  font-size: 1.25rem;
+}
+
+.article-prose :where(h4) {
+  font-size: 1.125rem;
+}
+
+.article-prose :where(h5) {
+  font-size: 1.05rem;
+}
+
+.article-prose :where(h6, .article-prose-h6) {
+  font-size: 1rem;
+}
+
+.article-prose :where(p) {
+  margin: 0.9em 0;
+  text-wrap: pretty;
+}
+
+.article-prose :where(a) {
+  color: var(--brand-blue);
+  text-decoration: underline;
+  text-underline-offset: 0.2em;
+}
+
+.article-prose :where(a:hover) {
+  color: #043a70;
+}
+
+.article-prose :where(a:focus-visible) {
+  outline: 2px solid var(--brand-blue);
+  outline-offset: 2px;
+  border-radius: 2px;
+}
+
+.article-prose :where(ul, ol) {
+  margin: 0.9em 0;
+  padding-inline-start: 1.5rem;
+}
+
+.article-prose :where(ul ul, ol ol, ul ol, ol ul) {
+  margin: 0.35em 0;
+}
+
+.article-prose :where(li) {
+  margin: 0.35em 0;
+}
+
+.article-prose :where(li > p) {
+  margin: 0.25em 0;
+}
+
+.article-prose :where(ul) {
+  list-style: disc;
+}
+
+.article-prose :where(ul ul) {
+  list-style: circle;
+}
+
+.article-prose :where(ul ul ul) {
+  list-style: square;
+}
+
+.article-prose :where(ol) {
+  list-style: decimal;
+}
+
+.article-prose :where(ul.contains-task-list) {
+  list-style: none;
+  padding-inline-start: 0.25rem;
+}
+
+.article-prose :where(li.task-list-item) {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5rem;
+  list-style: none;
+}
+
+.article-prose-task-checkbox {
+  margin-top: 0.35em;
+  accent-color: var(--brand-blue);
+}
+
+.article-prose :where(blockquote) {
+  margin: 1.25em 0;
+  border-inline-start: 3px solid var(--brand-blue);
+  padding-inline-start: 1rem;
+  color: #52525b;
+  font-style: italic;
+}
+
+.article-prose :where(hr) {
+  margin: 2em 0;
+  border: 0;
+  border-top: 1px solid #e4e4e7;
+}
+
+.article-prose :where(strong) {
+  color: #18181b;
+  font-weight: 650;
+}
+
+.article-prose :where(em) {
+  font-style: italic;
+}
+
+.article-prose :where(del) {
+  text-decoration: line-through;
+  color: #71717a;
+}
+
+.article-prose :where(code) {
+  font-family: var(--font-mono);
+  font-size: 0.9em;
+  background: #f4f4f5;
+  border-radius: 0.25rem;
+  padding: 0.1em 0.35em;
+  direction: ltr;
+  unicode-bidi: isolate;
+}
+
+.article-prose :where(pre) {
+  margin: 1.25em 0;
+  overflow-x: auto;
+  border-radius: 0.75rem;
+  background: #18181b;
+  color: #fafafa;
+  padding: 1rem 1.1rem;
+  direction: ltr;
+  unicode-bidi: isolate;
+  max-width: 100%;
+}
+
+.article-prose :where(pre code) {
+  background: transparent;
+  padding: 0;
+  color: inherit;
+}
+
+.article-prose :where(table) {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  margin: 1.25em 0;
+  font-size: 0.95em;
+  -webkit-overflow-scrolling: touch;
+}
+
+.article-prose :where(th, td) {
+  border: 1px solid #e4e4e7;
+  padding: 0.55rem 0.75rem;
+  text-align: start;
+}
+
+.article-prose :where(th) {
+  background: #fafafa;
+  font-weight: 600;
+  color: #18181b;
+}
+
+.article-prose :where(img) {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.75rem;
+  margin: 1.25em 0;
+}
+
+/* —— Admin shell (scoped; public pages unaffected) —— */
+.admin-shell {
+  --admin-bg: #f4f6f9;
+  --admin-panel: #ffffff;
+  --admin-border: #e4e7ec;
+  --admin-text: #18181b;
+  --admin-muted: #64748b;
+  --admin-accent: var(--brand-blue);
+  --admin-accent-soft: color-mix(in srgb, var(--brand-blue) 12%, white);
+  --admin-control-h: 2.75rem;
+  --admin-radius: 0.75rem;
+  background: var(--admin-bg);
+  color: var(--admin-text);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+  min-height: 100dvh;
+}
+
+.admin-shell :focus-visible {
+  outline: 2px solid var(--admin-accent);
+  outline-offset: 2px;
+}
+
+.admin-panel {
+  background: var(--admin-panel);
+  border: 1px solid var(--admin-border);
+  border-radius: var(--admin-radius);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+}
+
+.admin-control {
+  min-height: var(--admin-control-h);
+  border-radius: 0.5rem;
+  border: 1px solid var(--admin-border);
+  background: #fff;
+  padding: 0.5rem 0.75rem;
+  font-size: 0.875rem;
+}
+
+.admin-control:focus-visible {
+  border-color: var(--admin-accent);
+}

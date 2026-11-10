@@ -1,0 +1,32 @@
+---
+description: Keep agenda_website_reference.MD current with the codebase
+alwaysApply: true
+---
+
+# Maintain Agenda project reference
+
+Before modifying this project, read the relevant sections of `agenda_website_reference.MD` (overview, routes, components, schema, backend, i18n, or config as needed).
+
+## Source of truth
+
+- **Application code** is authoritative when docs disagree with the repo.
+- Requirements (`docs/WEBSITE_REQUIREMENTS.md`, PDF) describe intended behavior — not proof of implementation.
+- Never mark a feature complete merely because scaffolding, empty components, stubs, or installed packages exist.
+
+## Update the reference in the same task
+
+When you change code, dependencies, configuration, routes, schema, UI behavior, or implementation status:
+
+1. Update the matching sections of `agenda_website_reference.MD` in the **same** task.
+2. Update file/folder documentation when files are added, renamed, moved, or deleted.
+3. Revise outdated descriptions and remove obsolete claims.
+4. Add a concise dated entry under **Change history (K)** for meaningful changes, including validation actually performed.
+5. Mention reference updates in the completion summary.
+
+## Avoid circular updates
+
+A documentation-only correction (including fixing history wording) does **not** require another history entry solely for updating the history itself. Keep the main sections current; history must not replace updating them.
+
+## Do not invent
+
+Distinguish implemented, partial, placeholder/scaffold, planned, and unverified. Do not claim migrations were applied or describe production data without evidence.
