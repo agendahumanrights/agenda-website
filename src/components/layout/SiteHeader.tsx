@@ -42,6 +42,7 @@ export function SiteHeader({ locale, dict }: Props) {
                 alt={dict.nav.logoAlt}
                 width={1149}
                 height={1604}
+                sizes="36px"
                 className="h-8 w-auto sm:h-9"
                 priority
               />

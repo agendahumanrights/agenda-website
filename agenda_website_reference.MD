@@ -4,7 +4,7 @@
 > **Source of truth:** application code. Requirements and older docs describe intended or planned behavior; this file describes verified implementation.  
 > **Do not treat scaffolding as completed features.**
 
-**Last updated:** 2026-11-11 (Arabic `/ar` path prefix)  
+**Last updated:** 2026-11-11 (Performance / loading / production hardening)  
 **Inspection basis:** Checked-in source under the repository root. DB migrate/admin bootstrap depend on local `.env` (gitignored).
 
 ---
@@ -199,13 +199,16 @@ Next.js 16 **Proxy** (replaces deprecated `middleware`). Rewrites `/ar/...` to t
 
 | File | Responsibility |
 | --- | --- |
-| `layout.tsx` | Root layout: `getRequestLocale()` → `lang`/`dir`; fonts; site-wide metadata/icons/robots; `export const instant = false` |
+| `layout.tsx` | Root layout: `getRequestLocale()` → `lang`/`dir`; fonts (Noto Arabic only when `ar`); site-wide metadata/icons/robots; `export const instant = false` |
 | `sitemap.ts` / `robots.ts` | Dynamic sitemap + robots (SEO); see `SEO_IMPLEMENTATION.md` |
 | `opengraph-image.tsx` | Branded 1200×630 social fallback |
-| `globals.css` | Tailwind v4 import; brand + glass tokens (`--glass-*`); fixed header vars (`--site-header-height`, `--site-header-top-gap`, `--site-header-offset`); utilities `.public-main-offset`, `.hero-viewport`, `.anchor-offset` |
-| `loading.tsx` | Renders `LoadingState` |
-| `error.tsx` | Client error boundary (English hard-coded messages) |
-| `not-found.tsx` | Bilingual 404 + link home |
+| `globals.css` | Tailwind v4 import; brand + glass tokens (`--glass-*`); skeleton pulse; reduced-motion glass fallback; header offset utilities |
+| `loading.tsx` | Homepage-shaped skeleton fallback |
+| `(public)/**/loading.tsx` | Route skeletons (catalogue / detail / about) |
+| `admin/loading.tsx` | Admin table skeleton |
+| `error.tsx` | Branded bilingual client error UI (no raw exception text) |
+| `global-error.tsx` | Root-layout failure UI with own `<html>`/`<body>` |
+| `not-found.tsx` | Branded bilingual 404 with home / publications / events links |
 | `favicon.ico` / `icon0.svg` / `icon1.png` / `apple-icon.png` | Browser / home-screen icons (file conventions) |
 | `manifest.ts` | Web app manifest → maskable PNGs in `public/` |
 
@@ -1087,6 +1090,17 @@ Open `http://localhost:3000`.
 - Media route streams from active provider (R2 or local); orphan cleanup deletes R2 objects when unreferenced.
 - CLI: `media:test-r2`, `media:migrate-r2` (dry-run default; never deletes local files). Docs: `CLOUDFLARE_R2_STORAGE.md`. `.env.example` + `next.config.ts` remotePatterns updated.
 - No Prisma schema/migration changes. Validation: `tsc` pass; vitest 88 passed / 1 skipped; `next build` pass; `media:test-r2` put/head/delete ok; `media:migrate-r2` dry-run found 9 local assets. ESLint still reports pre-existing unrelated errors. Live admin upload browser QA not claimed here.
+
+### 2026-11-11 — Performance, loading UX, errors & production hardening
+
+- **Images:** `SoftImage` uses `next/image` for absolute R2/CDN URLs and `<img>` for `/api/media`; applied to homepage slider (priority on first slide only), cards, galleries, founder portraits. Header logo gained `sizes`.
+- **Loading:** Reusable skeletons (`Skeleton`, card/hero/detail/admin); segment `loading.tsx` for publications/events/about/admin; branded pulse respects `prefers-reduced-motion`.
+- **Errors / 404:** Branded bilingual `error.tsx` (no raw messages), `global-error.tsx`, improved `not-found.tsx` with home/publications/events links.
+- **Caching:** Public list/featured/founder biography reads use `"use cache"` + `cacheLife('minutes')` + tags; admin writes call `revalidateTag` alongside `revalidatePath`.
+- **DB:** List/featured queries `select` title/subtitle only (no markdown bodies); featured homepage filters PUBLISHED in SQL; media FK indexes migration `20261111060000_media_lookup_indexes`; lighter `findFirst` public-media checks.
+- **Bundles:** Admin `MarkdownEditor` dynamically imported; Noto Arabic font variable applied only for `ar`; glass blur disabled under reduced motion.
+- **Security headers:** `X-Content-Type-Options`, `X-Frame-Options`, `Referrer-Policy`, `Permissions-Policy` via `next.config.ts`.
+- **Validation:** `typecheck` pass; `npm test` 89 passed / 1 skipped; `npm run build` pass. Lighthouse/CWV not measured in this session. Pre-existing ESLint error in `AddCategoryModal` unchanged.
 
 ### 2026-11-11 — Arabic URLs use `/ar` path prefix
 

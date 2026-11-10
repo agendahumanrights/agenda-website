@@ -1,7 +1,10 @@
 import "server-only";
 
+import { cacheLife, cacheTag } from "next/cache";
+
 import { revalidateEventPaths } from "@/server/cache/events";
 import { revalidatePublicationPaths } from "@/server/cache/publications";
+import { CACHE_TAGS } from "@/server/cache/tags";
 import { getPrisma, isDatabaseConfigured, withDatabaseFallback } from "@/server/db";
 import { badRequest, conflict, serviceUnavailable } from "@/server/http/errors";
 import {
@@ -43,21 +46,52 @@ function revalidateHomepage() {
 export async function getFeaturedPublications(
   locale: Locale,
 ): Promise<PublicationListItem[]> {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag(CACHE_TAGS.homepage);
+  cacheTag(CACHE_TAGS.publications);
+
   return withDatabaseFallback(async () => {
     const prisma = getPrisma();
     const rows = await prisma.featuredPublication.findMany({
       orderBy: { sortOrder: "asc" },
-      include: {
+      where: {
         publication: {
-          include: {
-            category: true,
-            mainImage: true,
-            authorFounder: {
-              include: {
-                translations: { where: { locale }, take: 1 },
+          status: "PUBLISHED",
+          translations: { some: { locale } },
+        },
+      },
+      select: {
+        publication: {
+          select: {
+            id: true,
+            slug: true,
+            publishedAt: true,
+            category: {
+              select: {
+                id: true,
+                slug: true,
+                nameEn: true,
+                nameAr: true,
+                requiresAuthor: true,
               },
             },
-            translations: { where: { locale }, take: 1 },
+            mainImage: { select: { storageKey: true } },
+            authorFounder: {
+              select: {
+                bioKey: true,
+                translations: {
+                  where: { locale },
+                  take: 1,
+                  select: { fullName: true },
+                },
+              },
+            },
+            translations: {
+              where: { locale },
+              take: 1,
+              select: { title: true, subtitle: true },
+            },
           },
         },
       },
@@ -65,10 +99,7 @@ export async function getFeaturedPublications(
 
     const storage = getStorage();
     return rows
-      .filter(
-        (r) =>
-          r.publication.status === "PUBLISHED" && r.publication.translations[0],
-      )
+      .filter((r) => r.publication.translations[0])
       .map((r) => {
         const p = r.publication;
         const t = p.translations[0]!;
@@ -92,16 +123,35 @@ export async function getFeaturedPublications(
 export async function getFeaturedEvents(
   locale: Locale,
 ): Promise<EventListItem[]> {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag(CACHE_TAGS.homepage);
+  cacheTag(CACHE_TAGS.events);
+
   return withDatabaseFallback(async () => {
     const prisma = getPrisma();
     const rows = await prisma.featuredEvent.findMany({
       orderBy: { sortOrder: "asc" },
       take: MAX_FEATURED_EVENTS,
-      include: {
+      where: {
         event: {
-          include: {
-            mainImage: true,
-            translations: { where: { locale }, take: 1 },
+          status: "PUBLISHED",
+          translations: { some: { locale } },
+        },
+      },
+      select: {
+        event: {
+          select: {
+            id: true,
+            slug: true,
+            eventDate: true,
+            createdAt: true,
+            mainImage: { select: { storageKey: true } },
+            translations: {
+              where: { locale },
+              take: 1,
+              select: { title: true, subtitle: true },
+            },
           },
         },
       },
@@ -109,7 +159,7 @@ export async function getFeaturedEvents(
 
     const storage = getStorage();
     return rows
-      .filter((r) => r.event.status === "PUBLISHED" && r.event.translations[0])
+      .filter((r) => r.event.translations[0])
       .map((r) => {
         const e = r.event;
         const t = e.translations[0]!;

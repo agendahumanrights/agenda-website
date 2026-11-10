@@ -162,6 +162,8 @@ model Publication {
   @@index([status, publishedAt])
   @@index([categoryId, status])
   @@index([authorFounderId])
+  @@index([mainImageId])
+  @@index([pdfId])
 }
 
 model PublicationTranslation {
@@ -190,6 +192,7 @@ model PublicationGalleryImage {
 
   @@unique([publicationId, mediaAssetId])
   @@index([publicationId, sortOrder])
+  @@index([mediaAssetId])
 }
 
 model Event {
@@ -214,6 +217,7 @@ model Event {
 
   @@index([status, eventDate])
   @@index([createdAt])
+  @@index([mainImageId])
 }
 
 model EventTranslation {
@@ -242,6 +246,7 @@ model EventGalleryImage {
 
   @@unique([eventId, mediaAssetId])
   @@index([eventId, sortOrder])
+  @@index([mediaAssetId])
 }
 
 model MediaAsset {

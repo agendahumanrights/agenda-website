@@ -125,7 +125,8 @@ export function hreflangLanguages(
  * Kept for API compatibility; returns an empty bag because locale lives in the path.
  */
 export function catalogueCanonicalParams(
-  _locale: Locale,
+  locale: Locale,
 ): Record<string, string | undefined> {
+  void locale;
   return {};
 }

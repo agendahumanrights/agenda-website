@@ -211,36 +211,43 @@ export async function assertMediaAccess(
 
 async function isAssetPubliclyReferenced(mediaAssetId: string): Promise<boolean> {
   const prisma = getPrisma();
+  // findFirst + select id is cheaper than count; run in parallel and short-circuit.
   const [asMain, asPdf, asGallery, asEventMain, asEventGallery, asFounder] =
     await Promise.all([
-      prisma.publication.count({
+      prisma.publication.findFirst({
         where: { mainImageId: mediaAssetId, status: "PUBLISHED" },
+        select: { id: true },
       }),
-      prisma.publication.count({
+      prisma.publication.findFirst({
         where: { pdfId: mediaAssetId, status: "PUBLISHED" },
+        select: { id: true },
       }),
-      prisma.publicationGalleryImage.count({
+      prisma.publicationGalleryImage.findFirst({
         where: {
           mediaAssetId,
           publication: { status: "PUBLISHED" },
         },
+        select: { id: true },
       }),
-      prisma.event.count({
+      prisma.event.findFirst({
         where: { mainImageId: mediaAssetId, status: "PUBLISHED" },
+        select: { id: true },
       }),
-      prisma.eventGalleryImage.count({
+      prisma.eventGalleryImage.findFirst({
         where: {
           mediaAssetId,
           event: { status: "PUBLISHED" },
         },
+        select: { id: true },
       }),
-      prisma.founder.count({
+      prisma.founder.findFirst({
         where: { profileImageId: mediaAssetId },
+        select: { id: true },
       }),
     ]);
 
-  return (
-    asMain + asPdf + asGallery + asEventMain + asEventGallery + asFounder > 0
+  return Boolean(
+    asMain || asPdf || asGallery || asEventMain || asEventGallery || asFounder,
   );
 }
 

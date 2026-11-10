@@ -11,6 +11,7 @@ import {
 } from "react";
 
 import { AuthorLink } from "@/components/publications/AuthorLink";
+import { SoftImage } from "@/components/ui/SoftImage";
 import { sitePath } from "@/i18n/pathnames";
 import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/dictionaries";
@@ -165,13 +166,13 @@ export function FeaturedPublicationsSlider({
           const shouldLoad = loadedImages[i] || active;
           if (!shouldLoad || !item.mainImageUrl) return null;
           return (
-            // eslint-disable-next-line @next/next/no-img-element -- dynamic /api/media URLs; avoid eager next/image for all slides
-            <img
+            <SoftImage
               key={item.id}
               src={item.mainImageUrl}
               alt=""
-              loading={i === 0 ? "eager" : "lazy"}
-              decoding="async"
+              fill
+              sizes="100vw"
+              priority={i === 0}
               onError={() => {
                 setFailedImageIds((prev) => {
                   if (prev.has(item.id)) return prev;
@@ -181,7 +182,7 @@ export function FeaturedPublicationsSlider({
                 });
               }}
               className={cn(
-                "hero-slide-transition absolute inset-0 h-full w-full object-cover transition-opacity duration-500",
+                "hero-slide-transition object-cover transition-opacity duration-500",
                 active && !failedImageIds.has(item.id)
                   ? "opacity-100"
                   : "opacity-0",

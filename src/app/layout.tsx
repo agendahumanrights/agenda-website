@@ -82,11 +82,21 @@ export default async function RootLayout({
   const locale = await getRequestLocale();
   const dir = localeDirection(locale);
 
+  const fontClasses = [
+    geistSans.variable,
+    geistMono.variable,
+    sourceSerif.variable,
+    // Load Arabic face only when needed (English still falls back via CSS stack).
+    locale === "ar" ? notoArabic.variable : null,
+  ]
+    .filter(Boolean)
+    .join(" ");
+
   return (
     <html
       lang={locale}
       dir={dir}
-      className={`${geistSans.variable} ${geistMono.variable} ${sourceSerif.variable} ${notoArabic.variable} h-full antialiased`}
+      className={`${fontClasses} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col">{children}</body>
     </html>

@@ -1,9 +1,12 @@
 import "server-only";
 
+import { cacheLife, cacheTag } from "next/cache";
+
 import { Prisma } from "@/generated/prisma";
 
 import { slugify } from "@/lib/slugs";
 import { revalidateFounderPaths } from "@/server/cache/founders";
+import { CACHE_TAGS } from "@/server/cache/tags";
 import { getPrisma, isDatabaseConfigured, withDatabaseFallback } from "@/server/db";
 import {
   badRequest,
@@ -90,13 +93,28 @@ export async function listFounders(locale: Locale): Promise<FounderSummary[]> {
 export async function listFounderBiographies(
   locale: Locale,
 ): Promise<FounderDetail[]> {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag(CACHE_TAGS.founders);
+
   return withDatabaseFallback(async () => {
     const prisma = getPrisma();
     const rows = await prisma.founder.findMany({
       orderBy: { sortOrder: "asc" },
-      include: {
-        profileImage: true,
-        translations: { where: { locale }, take: 1 },
+      select: {
+        id: true,
+        bioKey: true,
+        email: true,
+        profileImage: { select: { storageKey: true } },
+        translations: {
+          where: { locale },
+          take: 1,
+          select: {
+            fullName: true,
+            professionalArea: true,
+            biography: true,
+          },
+        },
       },
     });
 

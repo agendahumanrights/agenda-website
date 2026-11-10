@@ -9,9 +9,21 @@ import {
   useTransition,
 } from "react";
 
+import dynamic from "next/dynamic";
+
 import { AdminConfirmDialog } from "@/components/admin/AdminConfirmDialog";
-import { MarkdownEditor } from "@/components/admin/MarkdownEditor";
 import type { MarkdownEditorLabels } from "@/components/admin/markdown/labels";
+
+const MarkdownEditor = dynamic(
+  () =>
+    import("@/components/admin/MarkdownEditor").then((m) => m.MarkdownEditor),
+  {
+    ssr: false,
+    loading: () => (
+      <div className="min-h-[12rem] animate-pulse rounded-md border border-zinc-200 bg-zinc-50" />
+    ),
+  },
+);
 import { MediaDropzone } from "@/components/admin/MediaDropzone";
 import {
   YouTubeUrlField,

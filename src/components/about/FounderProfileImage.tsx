@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 
+import { SoftImage } from "@/components/ui/SoftImage";
 import { cn } from "@/lib/utils";
 
 type Props = {
@@ -29,14 +30,13 @@ export function FounderProfileImage({ src, alt, className }: Props) {
       )}
     >
       {showImage ? (
-        // eslint-disable-next-line @next/next/no-img-element -- dynamic /api/media URLs
-        <img
+        <SoftImage
           src={src!}
           alt={alt}
-          loading="lazy"
-          decoding="async"
+          fill
+          sizes="160px"
           onError={() => setFailed(true)}
-          className="h-full w-full object-cover object-top"
+          className="object-cover object-top"
         />
       ) : (
         <div

@@ -58,6 +58,34 @@
   }
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .glass-panel {
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    background-color: var(--glass-tint-fallback);
+  }
+}
+
+.agenda-skeleton {
+  animation: agenda-skeleton-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes agenda-skeleton-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.55;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .agenda-skeleton {
+    animation: none;
+  }
+}
+
 .glass-nav-pill {
   border: 1px solid rgba(255, 255, 255, 0.14);
   background-color: rgba(255, 255, 255, 0.06);

@@ -1,5 +1,7 @@
 import "server-only";
 
+import { cacheLife, cacheTag } from "next/cache";
+
 import { Prisma } from "@/generated/prisma";
 
 import { slugify } from "@/lib/slugs";
@@ -11,6 +13,7 @@ import {
   serviceUnavailable,
 } from "@/server/http/errors";
 import { revalidatePublicationPaths } from "@/server/cache/publications";
+import { CACHE_TAGS } from "@/server/cache/tags";
 import {
   assertCategoryExists,
   mapCategorySummary,
@@ -111,6 +114,11 @@ function pickTitle(
 export async function listPublishedPublications(
   query: PublicPublicationListQuery,
 ): Promise<PaginatedResult<PublicationListItem>> {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag(CACHE_TAGS.publications);
+  cacheTag(CACHE_TAGS.categories);
+
   const empty: PaginatedResult<PublicationListItem> = {
     items: [],
     pagination: {
@@ -150,15 +158,35 @@ export async function listPublishedPublications(
       ],
       skip: (query.page - 1) * query.pageSize,
       take: query.pageSize,
-      include: {
-        category: true,
-        mainImage: true,
-        authorFounder: {
-          include: {
-            translations: { where: { locale: query.locale }, take: 1 },
+      select: {
+        id: true,
+        slug: true,
+        publishedAt: true,
+        category: {
+          select: {
+            id: true,
+            slug: true,
+            nameEn: true,
+            nameAr: true,
+            requiresAuthor: true,
           },
         },
-        translations: { where: { locale: query.locale }, take: 1 },
+        mainImage: { select: { storageKey: true } },
+        authorFounder: {
+          select: {
+            bioKey: true,
+            translations: {
+              where: { locale: query.locale },
+              take: 1,
+              select: { fullName: true },
+            },
+          },
+        },
+        translations: {
+          where: { locale: query.locale },
+          take: 1,
+          select: { title: true, subtitle: true },
+        },
       },
     }),
   ]);

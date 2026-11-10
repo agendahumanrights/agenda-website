@@ -1,8 +1,12 @@
-import { revalidatePath } from "next/cache";
+import { revalidatePath, revalidateTag } from "next/cache";
+
+import { CACHE_TAGS } from "@/server/cache/tags";
 
 /** Invalidate public event-related views after admin writes. */
 export function revalidateEventPaths(slug?: string): void {
   try {
+    revalidateTag(CACHE_TAGS.events, "max");
+    revalidateTag(CACHE_TAGS.homepage, "max");
     revalidatePath("/");
     revalidatePath("/events");
     if (slug) {

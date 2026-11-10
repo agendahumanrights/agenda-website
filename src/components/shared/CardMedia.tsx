@@ -2,18 +2,21 @@
 
 import { useState } from "react";
 
+import { SoftImage } from "@/components/ui/SoftImage";
 import { cn } from "@/lib/utils";
 
 type Props = {
   src: string | null;
   alt: string;
   className?: string;
+  /** First visible cards can opt into higher priority. */
+  priority?: boolean;
 };
 
 /**
  * 4:3 media with branded fallback when the URL is missing or fails to load.
  */
-export function CardMedia({ src, alt, className }: Props) {
+export function CardMedia({ src, alt, className, priority = false }: Props) {
   const [failed, setFailed] = useState(false);
   const showImage = Boolean(src) && !failed;
 
@@ -25,14 +28,14 @@ export function CardMedia({ src, alt, className }: Props) {
       )}
     >
       {showImage ? (
-        // eslint-disable-next-line @next/next/no-img-element -- dynamic /api/media URLs
-        <img
+        <SoftImage
           src={src!}
           alt={alt}
-          loading="lazy"
-          decoding="async"
+          fill
+          sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          priority={priority}
           onError={() => setFailed(true)}
-          className="card-media-image h-full w-full object-cover object-center transition-transform duration-500 ease-out"
+          className="card-media-image object-cover object-center transition-transform duration-500 ease-out"
         />
       ) : (
         <div

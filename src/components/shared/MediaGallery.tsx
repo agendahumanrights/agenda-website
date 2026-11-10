@@ -10,6 +10,7 @@ import {
   type TouchEvent as ReactTouchEvent,
 } from "react";
 
+import { SoftImage } from "@/components/ui/SoftImage";
 import { cn } from "@/lib/utils";
 import type { DetailMediaImage } from "@/types/media";
 
@@ -219,14 +220,14 @@ export function MediaGallery({ images, labels, className }: Props) {
                     {labels.imageFailed}
                   </p>
                 ) : (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
+                  <SoftImage
                     src={image.url}
                     alt={active ? image.alt : ""}
-                    loading={i === 0 ? "eager" : "lazy"}
-                    decoding="async"
+                    fill
+                    sizes="(max-width: 768px) 100vw, 720px"
+                    priority={i === 0}
                     onError={() => markFailed(image.id)}
-                    className="h-full w-full object-cover object-center"
+                    className="object-cover object-center"
                   />
                 )}
               </div>
@@ -298,14 +299,13 @@ export function MediaGallery({ images, labels, className }: Props) {
                         —
                       </span>
                     ) : (
-                      // eslint-disable-next-line @next/next/no-img-element
-                      <img
+                      <SoftImage
                         src={image.url}
                         alt=""
-                        loading="lazy"
-                        decoding="async"
+                        fill
+                        sizes="80px"
                         onError={() => markFailed(image.id)}
-                        className="h-full w-full object-cover object-center"
+                        className="object-cover object-center"
                       />
                     )}
                   </button>
@@ -343,10 +343,13 @@ export function MediaGallery({ images, labels, className }: Props) {
             {failed ? (
               <p className="text-sm text-white/80">{labels.imageFailed}</p>
             ) : (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
+              <SoftImage
                 src={current.url}
                 alt={current.alt}
+                width={1600}
+                height={1200}
+                sizes="100vw"
+                priority
                 className="max-h-[calc(100dvh-6rem)] max-w-full object-contain"
               />
             )}

@@ -1,10 +1,13 @@
 import "server-only";
 
+import { cacheLife, cacheTag } from "next/cache";
+
 import { Prisma } from "@/generated/prisma";
 
 import { endOfUtcDay, parseUtcDateOnly, startOfUtcDay } from "@/lib/dates";
 import { slugify } from "@/lib/slugs";
 import { revalidateEventPaths } from "@/server/cache/events";
+import { CACHE_TAGS } from "@/server/cache/tags";
 import { getPrisma, isDatabaseConfigured } from "@/server/db";
 import {
   badRequest,
@@ -98,6 +101,10 @@ function createdAtFilter(from?: Date, to?: Date) {
 export async function listPublishedEvents(
   query: PublicEventListQuery,
 ): Promise<PaginatedResult<EventListItem>> {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag(CACHE_TAGS.events);
+
   const empty: PaginatedResult<EventListItem> = {
     items: [],
     pagination: {
@@ -135,9 +142,17 @@ export async function listPublishedEvents(
       orderBy: [{ eventDate: dateDir }, { id: dateDir }],
       skip: (query.page - 1) * query.pageSize,
       take: query.pageSize,
-      include: {
-        mainImage: true,
-        translations: { where: { locale: query.locale }, take: 1 },
+      select: {
+        id: true,
+        slug: true,
+        eventDate: true,
+        createdAt: true,
+        mainImage: { select: { storageKey: true } },
+        translations: {
+          where: { locale: query.locale },
+          take: 1,
+          select: { title: true, subtitle: true },
+        },
       },
     }),
   ]);
