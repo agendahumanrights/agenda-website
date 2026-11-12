@@ -39,7 +39,7 @@ function EnvelopeIcon({ className }: { className?: string }) {
  * for publication author deep links.
  *
  * Desktop: nearly full content width — fixed-size circular portrait + flexible
- * biography card. Card stretches; body copy keeps a readable max measure.
+ * biography card. Card and copy fill the remaining row width.
  */
 export function FounderBiography({
   founder,
@@ -62,7 +62,7 @@ export function FounderBiography({
       <FounderProfileImage
         src={founder.profileImageUrl}
         alt={founder.fullName}
-        className="size-36 shrink-0 sm:size-40 lg:size-44 xl:size-48"
+        className="size-44 shrink-0 sm:size-52 lg:size-60 xl:size-64"
       />
 
       <div
@@ -74,50 +74,38 @@ export function FounderBiography({
           "ring-1 ring-[color-mix(in_srgb,var(--brand-blue)_10%,transparent)]",
         )}
       >
-        {/*
-          Card spans the remaining row width; copy stays on a comfortable
-          reading measure so ultrawide screens do not produce endless lines.
-          When the portrait sits on the end side, pin the measure toward it.
-        */}
-        <div
-          className={cn(
-            "w-full max-w-3xl xl:max-w-4xl",
-            reverse && "lg:ms-auto",
-          )}
-        >
-          <h3 className="font-editorial text-xl font-semibold tracking-tight text-balance text-zinc-900 sm:text-2xl">
-            {founder.fullName}
-          </h3>
+        <h3 className="font-editorial text-xl font-semibold tracking-tight text-balance text-zinc-900 sm:text-2xl">
+          {founder.fullName}
+        </h3>
 
-          {area ? (
-            <p className="mt-2 text-sm font-medium text-[var(--brand-blue)] sm:text-base">
-              {area}
-            </p>
-          ) : null}
+        {area ? (
+          <p className="mt-2 text-sm font-medium text-[var(--brand-blue)] sm:text-base">
+            {area}
+          </p>
+        ) : null}
 
-          {biography ? (
-            <p className="mt-4 whitespace-pre-wrap text-base leading-[1.7] text-pretty text-zinc-700 sm:mt-5 sm:text-[1.0625rem] sm:leading-[1.75]">
-              {biography}
-            </p>
-          ) : null}
+        {biography ? (
+          <p className="mt-4 whitespace-pre-wrap text-base leading-[1.7] text-pretty text-zinc-700 sm:mt-5 sm:text-[1.0625rem] sm:leading-[1.75]">
+            {biography}
+          </p>
+        ) : null}
 
-          {email ? (
-            <a
-              href={`mailto:${email}`}
-              className={cn(
-                "mt-5 inline-flex max-w-full items-center gap-2 text-sm text-[var(--brand-gray)] sm:mt-6",
-                "underline-offset-4 hover:text-[var(--brand-blue)] hover:underline",
-                "focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-blue)]",
-              )}
-            >
-              <EnvelopeIcon className="size-4 shrink-0 text-[var(--brand-blue)]" />
-              <span className="min-w-0">
-                <span className="font-medium text-zinc-600">{emailLabel}: </span>
-                <span className="break-all">{email}</span>
-              </span>
-            </a>
-          ) : null}
-        </div>
+        {email ? (
+          <a
+            href={`mailto:${email}`}
+            className={cn(
+              "mt-5 inline-flex max-w-full items-center gap-2 text-sm text-[var(--brand-gray)] sm:mt-6",
+              "underline-offset-4 hover:text-[var(--brand-blue)] hover:underline",
+              "focus-visible:rounded-sm focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-blue)]",
+            )}
+          >
+            <EnvelopeIcon className="size-4 shrink-0 text-[var(--brand-blue)]" />
+            <span className="min-w-0">
+              <span className="font-medium text-zinc-600">{emailLabel}: </span>
+              <span className="break-all">{email}</span>
+            </span>
+          </a>
+        ) : null}
       </div>
     </article>
   );

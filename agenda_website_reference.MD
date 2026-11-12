@@ -493,7 +493,7 @@ No logout route or working login form exists.
 | `OrganizationIntro` | About page vision + mission via `AboutContentBlock` (mission column reversed on desktop) |
 | `AboutContentBlock` / `IllustrationPanel` / `AccentHeading` | Shared two-column layout, white illustration card with decorative circles, blue vertical accent |
 | `AboutIllustrations` | Lightweight brand-blue SVGs (vision target, mission document/check, inclusion figures) |
-| `FounderBiography` | Full-width alternating desktop rows: fixed circular portrait + flexible soft bio card (name → role → full biography → labeled email); card stretches, copy capped ~`max-w-3xl`/`xl:max-w-4xl` for readability; mobile stacks portrait above card; `id=founder-{bioKey}`; `.anchor-offset` |
+| `FounderBiography` | Full-width alternating desktop rows: fixed circular portrait + flexible soft bio card (name → role → full biography → labeled email); card and copy fill remaining row width; mobile stacks portrait above card; `id=founder-{bioKey}`; `.anchor-offset` |
 | `FounderProfileImage` | Circular portrait (`object-cover object-top`) with soft blue ring; person-silhouette fallback when missing/failed |
 | `FounderCard` | Alias → `FounderBiography` (compat) |
 
@@ -1094,8 +1094,8 @@ Open `http://localhost:3000`.
 ### 2026-11-12 — About Founders full-width layout
 
 - Removed `lg:max-w-prose` / single-founder `max-w-3xl` constraints that left large desktop gutters and tall narrow bios.
-- Founder rows now span the About `Container` width: portrait stays fixed size (top-aligned); biography card uses `flex-1` across remaining space with an inner readable measure (`max-w-3xl` / `xl:max-w-4xl`, pinned toward the portrait when reversed).
-- Preserved alternating L/R placement, anchors, content, and mobile stack. Validation: `tsc --noEmit` on touched files; visual check vs prior screenshot intent.
+- Founder rows span the About `Container` width: larger fixed portraits (`size-44` → `xl:size-64`, top-aligned); biography card uses `flex-1` and copy fills the card (no inner max-width / `ms-auto` gap on reversed rows).
+- Preserved alternating L/R placement, anchors, content, and mobile stack.
 
 ### 2026-11-11 — Performance, loading UX, errors & production hardening
 

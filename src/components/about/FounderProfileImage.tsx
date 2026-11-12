@@ -34,7 +34,7 @@ export function FounderProfileImage({ src, alt, className }: Props) {
           src={src!}
           alt={alt}
           fill
-          sizes="(max-width: 640px) 144px, (max-width: 1024px) 160px, 192px"
+          sizes="(max-width: 640px) 176px, (max-width: 1024px) 208px, 256px"
           onError={() => setFailed(true)}
           className="object-cover object-top"
         />
