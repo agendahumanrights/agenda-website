@@ -4,7 +4,7 @@
 > **Source of truth:** application code. Requirements and older docs describe intended or planned behavior; this file describes verified implementation.  
 > **Do not treat scaffolding as completed features.**
 
-**Last updated:** 2026-11-11 (Performance / loading / production hardening)  
+**Last updated:** 2026-11-12 (About Founders full-width layout)  
 **Inspection basis:** Checked-in source under the repository root. DB migrate/admin bootstrap depend on local `.env` (gitignored).
 
 ---
@@ -376,7 +376,7 @@ Other query params preserved. `/api` and static-like paths not rewritten.
 | --- | --- |
 | Purpose | Organization intro, vision, mission, founders |
 | Data | `getOrganizationCopy(locale)` from `content/about.ts`; `listFounderBiographies(locale)` (DB or `[]`) |
-| UI | `PageHero` + vision/mission blocks; founders: `AccentHeading` + alternating circular-portrait / soft panel rows (`id=founder-{bioKey}`, `.anchor-offset`); single founder centered |
+| UI | `PageHero` + vision/mission blocks; founders: `AccentHeading` + full-width alternating circular-portrait / soft panel rows (`id=founder-{bioKey}`, `.anchor-offset`); bio card flexes to remaining width with inner readable measure |
 | Auth | None |
 | Status | **Implemented** (org copy static; founders depend on admin/DB rows) |
 
@@ -493,7 +493,7 @@ No logout route or working login form exists.
 | `OrganizationIntro` | About page vision + mission via `AboutContentBlock` (mission column reversed on desktop) |
 | `AboutContentBlock` / `IllustrationPanel` / `AccentHeading` | Shared two-column layout, white illustration card with decorative circles, blue vertical accent |
 | `AboutIllustrations` | Lightweight brand-blue SVGs (vision target, mission document/check, inclusion figures) |
-| `FounderBiography` | Alternating desktop rows: large circular portrait + soft rounded bio panel (name → role → full biography → labeled email); mobile stacks portrait above panel; `id=founder-{bioKey}`; `.anchor-offset` for fixed header |
+| `FounderBiography` | Full-width alternating desktop rows: fixed circular portrait + flexible soft bio card (name → role → full biography → labeled email); card stretches, copy capped ~`max-w-3xl`/`xl:max-w-4xl` for readability; mobile stacks portrait above card; `id=founder-{bioKey}`; `.anchor-offset` |
 | `FounderProfileImage` | Circular portrait (`object-cover object-top`) with soft blue ring; person-silhouette fallback when missing/failed |
 | `FounderCard` | Alias → `FounderBiography` (compat) |
 
@@ -1090,6 +1090,12 @@ Open `http://localhost:3000`.
 - Media route streams from active provider (R2 or local); orphan cleanup deletes R2 objects when unreferenced.
 - CLI: `media:test-r2`, `media:migrate-r2` (dry-run default; never deletes local files). Docs: `CLOUDFLARE_R2_STORAGE.md`. `.env.example` + `next.config.ts` remotePatterns updated.
 - No Prisma schema/migration changes. Validation: `tsc` pass; vitest 88 passed / 1 skipped; `next build` pass; `media:test-r2` put/head/delete ok; `media:migrate-r2` dry-run found 9 local assets. ESLint still reports pre-existing unrelated errors. Live admin upload browser QA not claimed here.
+
+### 2026-11-12 — About Founders full-width layout
+
+- Removed `lg:max-w-prose` / single-founder `max-w-3xl` constraints that left large desktop gutters and tall narrow bios.
+- Founder rows now span the About `Container` width: portrait stays fixed size (top-aligned); biography card uses `flex-1` across remaining space with an inner readable measure (`max-w-3xl` / `xl:max-w-4xl`, pinned toward the portrait when reversed).
+- Preserved alternating L/R placement, anchors, content, and mobile stack. Validation: `tsc --noEmit` on touched files; visual check vs prior screenshot intent.
 
 ### 2026-11-11 — Performance, loading UX, errors & production hardening
 

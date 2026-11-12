@@ -15,7 +15,6 @@ import { sitePath } from "@/i18n/pathnames";
 import { breadcrumbJsonLd, organizationJsonLd } from "@/lib/seo/json-ld";
 import { absoluteLocalizedUrl } from "@/lib/seo/locale-url";
 import { aboutPageMetadata } from "@/lib/seo/page-metadata";
-import { cn } from "@/lib/utils";
 import { listFounderBiographies } from "@/server/services/founders";
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -28,7 +27,6 @@ export default async function AboutPage() {
   const dict = await getDictionary(locale);
   const founders = await listFounderBiographies(locale);
   const org = getOrganizationCopy(locale);
-  const singleFounder = founders.length === 1;
 
   return (
     <>
@@ -65,7 +63,7 @@ export default async function AboutPage() {
           <section
             id="about-founders"
             aria-labelledby="founders-heading"
-            className="anchor-offset flex flex-col gap-8 sm:gap-10 lg:gap-12"
+            className="anchor-offset flex w-full flex-col gap-8 sm:gap-10 lg:gap-12"
           >
             <AccentHeading id="founders-heading">
               {dict.about.founders}
@@ -74,20 +72,12 @@ export default async function AboutPage() {
             {founders.length === 0 ? (
               <EmptyState title={dict.about.foundersPending} />
             ) : (
-              <ul
-                className={cn(
-                  "flex flex-col gap-10 sm:gap-12 lg:gap-14",
-                  singleFounder && "items-center",
-                )}
-              >
+              <ul className="flex w-full flex-col gap-10 sm:gap-12 lg:gap-14 xl:gap-16">
                 {founders.map((founder, index) => (
-                  <li
-                    key={founder.id}
-                    className={cn(singleFounder && "w-full max-w-3xl")}
-                  >
+                  <li key={founder.id} className="w-full">
                     <FounderBiography
                       founder={founder}
-                      reverse={!singleFounder && index % 2 === 1}
+                      reverse={index % 2 === 1}
                       emailLabel={dict.about.founderEmail}
                     />
                   </li>
