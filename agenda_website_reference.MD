@@ -4,7 +4,7 @@
 > **Source of truth:** application code. Requirements and older docs describe intended or planned behavior; this file describes verified implementation.  
 > **Do not treat scaffolding as completed features.**
 
-**Last updated:** 2026-11-12 (About Founders full-width layout)  
+**Last updated:** 2026-11-14 (SoftImage reliable CDN loading)  
 **Inspection basis:** Checked-in source under the repository root. DB migrate/admin bootstrap depend on local `.env` (gitignored).
 
 ---
@@ -343,7 +343,7 @@ Other query params preserved. `/api` and static-like paths not rewritten.
 | --- | --- |
 | Purpose | Publication detail |
 | Data | `getPublishedPublicationBySlug`; without DB → `EmptyState` placeholder; missing row/translation → `notFound()` |
-| UI | Editorial `PublicationDetails`: breadcrumbs, category/date, title/subtitle, blog author (portrait + area + bio link), share controls, `MediaGallery`, optional YouTube embed, Markdown, PDF actions |
+| UI | Editorial `PublicationDetails`: wide shell (`max-w-6xl` / `xl:max-w-7xl`); breadcrumbs; header with meta/title/subtitle/author + share/PDF; full-width gallery; optional YouTube; Markdown fills content width |
 | Auth | None |
 | Status | **Implemented** (content depends on DB + published locale translation) |
 
@@ -366,7 +366,7 @@ Other query params preserved. `/api` and static-like paths not rewritten.
 | --- | --- |
 | Purpose | Event detail |
 | Data | `getPublishedEventBySlug`; same DB/empty/notFound pattern as publications |
-| UI | Editorial `EventDetails`: breadcrumbs, Event label + `eventDate`, title/subtitle, share controls, `MediaGallery`, optional YouTube embed, Markdown (no PDF) |
+| UI | Editorial `EventDetails`: same wide shell as publications; breadcrumbs; header with Event label + `eventDate`/title/subtitle + share; gallery; optional YouTube; Markdown fills content width (no PDF) |
 | Auth | None |
 | Status | **Implemented** (content depends on DB) |
 
@@ -457,7 +457,7 @@ No logout route or working login form exists.
 | `PublicationCategoryBadge` | Localized category label (list cards / legacy) |
 | `AuthorLink` | `/about#founder-{bioKey}` |
 | `PublicationAuthor` | Circular portrait, name link, professional area (blogs) |
-| `PublicationDetails` | Editorial layout: breadcrumbs → meta → title/subtitle → author → share (+ PDF actions) → gallery → optional YouTube → Markdown |
+| `PublicationDetails` | Wide editorial layout (`max-w-6xl`/`xl:max-w-7xl`): breadcrumbs → header (meta/title/subtitle/author | share + PDF) → gallery → optional YouTube → full-width Markdown |
 | `PublicationPdfActions` | Client: View PDF (new tab) + Download PDF under share controls; no iframe preview. Download fetches `/api/media/...?download=1` as a blob |
 | `PdfPreview` / `PdfDownloadLink` | Legacy helpers (unused on public detail page after PDF action move) |
 | `PublicationFilters` | **Implemented** live search + category + date sort (debounced `q`, immediate category/sort, Reset); URL replace; IME-safe |
@@ -467,7 +467,7 @@ No logout route or working login form exists.
 | Component | Status |
 | --- | --- |
 | `EventCard` / `EventGrid` | `ContentCard` with localized “Event / فعالية” badge; visitor-facing `eventDate` (not `createdAt`); subtitle as excerpt; 1/2/3-col grid |
-| `EventDetails` | Same editorial pattern as publications (no author/PDF); uses `eventDate`; optional YouTube between gallery and Markdown |
+| `EventDetails` | Same wide editorial pattern as publications (no author/PDF); uses `eventDate`; optional YouTube between gallery and Markdown |
 | `EventDateFilter` | **Implemented** live title search + Sort by Date (`eventDate`) + Reset (debounced; no public creation-date fields) |
 | `CatalogueLiveProvider` / `CatalogueResultsFrame` | Soft-nav pending indicator; keeps prior results visible while updating |
 
@@ -1090,6 +1090,18 @@ Open `http://localhost:3000`.
 - Media route streams from active provider (R2 or local); orphan cleanup deletes R2 objects when unreferenced.
 - CLI: `media:test-r2`, `media:migrate-r2` (dry-run default; never deletes local files). Docs: `CLOUDFLARE_R2_STORAGE.md`. `.env.example` + `next.config.ts` remotePatterns updated.
 - No Prisma schema/migration changes. Validation: `tsc` pass; vitest 88 passed / 1 skipped; `next build` pass; `media:test-r2` put/head/delete ok; `media:migrate-r2` dry-run found 9 local assets. ESLint still reports pre-existing unrelated errors. Live admin upload browser QA not claimed here.
+
+### 2026-11-14 — SoftImage reliable CDN loading
+
+- Gallery/detail images were failing after switching MediaGallery to `SoftImage` + optimized `next/image` (optimizer proxy errors marked slides permanently broken).
+- `SoftImage` now loads absolute R2/CDN URLs with `unoptimized` (direct CDN) and falls back to native `<img>` on any `next/image` error; `onError` fires only if the native load also fails. `/api/media` paths still use `<img>`.
+
+### 2026-11-14 — Publication / event detail width & UX
+
+- Reclaimed large side gutters: detail articles use `max-w-6xl` / `xl:max-w-7xl` instead of `max-w-3xl` + `.article-prose` `65ch` cap.
+- Header UX: meta/title/subtitle/author grouped with a bottom border; share/PDF sit as a side aside on desktop.
+- Gallery uses larger `sizes` and slightly rounder frame; Markdown/body typography slightly larger with no width cap so it follows the content box.
+- Detail loading skeleton matched to the wider shell. Validation: targeted lint/typecheck on touched files.
 
 ### 2026-11-12 — About Founders full-width layout
 

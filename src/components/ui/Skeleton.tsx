@@ -68,17 +68,21 @@ export function CatalogueGridSkeleton({ count = 6 }: { count?: number }) {
 
 export function DetailSkeleton() {
   return (
-    <div className="mx-auto w-full max-w-3xl px-4 py-10" aria-busy="true">
-      <Skeleton className="h-3 w-48" />
-      <Skeleton className="mt-6 h-4 w-24" />
-      <Skeleton className="mt-4 h-10 w-[90%]" />
-      <Skeleton className="mt-3 h-5 w-[70%]" />
-      <Skeleton className="mt-8 aspect-[16/10] w-full" />
-      <div className="mt-8 space-y-3">
+    <div
+      className="mx-auto w-full max-w-6xl px-4 py-10 xl:max-w-7xl"
+      aria-busy="true"
+    >
+      <Skeleton className="h-3 w-56" />
+      <Skeleton className="mt-6 h-4 w-28" />
+      <Skeleton className="mt-4 h-11 w-[85%]" />
+      <Skeleton className="mt-3 h-5 w-[60%]" />
+      <Skeleton className="mt-10 aspect-[16/10] w-full rounded-2xl sm:aspect-[2/1]" />
+      <div className="mt-10 space-y-3">
         <Skeleton className="h-4 w-full" />
-        <Skeleton className="h-4 w-[95%]" />
-        <Skeleton className="h-4 w-[88%]" />
+        <Skeleton className="h-4 w-[96%]" />
         <Skeleton className="h-4 w-[92%]" />
+        <Skeleton className="h-4 w-[94%]" />
+        <Skeleton className="h-4 w-[88%]" />
       </div>
     </div>
   );

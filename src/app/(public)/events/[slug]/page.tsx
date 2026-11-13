@@ -111,7 +111,7 @@ export default async function EventDetailPage({
           }),
         ]}
       />
-      <Container className="pb-10 sm:pb-12">
+      <Container className="pb-12 sm:pb-16 lg:pb-20">
         <EventDetails
           locale={locale}
           event={event}

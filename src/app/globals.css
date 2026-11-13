@@ -201,12 +201,13 @@ body {
   }
 }
 
-/* Editorial Markdown body — shared by public details and admin preview */
+/* Editorial Markdown body — shared by public details and admin preview.
+   Width is controlled by the page layout (not capped here). */
 .article-prose {
   color: #3f3f46;
-  font-size: 1.0625rem;
-  line-height: 1.75;
-  max-width: 65ch;
+  font-size: 1.125rem;
+  line-height: 1.8;
+  max-width: none;
 }
 
 .article-prose :where(h2, h3, h4, h5, h6, .article-prose-h6) {

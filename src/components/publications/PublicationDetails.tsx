@@ -34,9 +34,10 @@ export function PublicationDetails({
       })
     : null;
   const sharePath = sitePath(`/publications/${publication.slug}`, locale);
+  const hasActions = Boolean(publication.pdfUrl);
 
   return (
-    <article className="flex flex-col gap-8 sm:gap-10">
+    <article className="mx-auto flex w-full max-w-6xl flex-col gap-8 sm:gap-10 xl:max-w-7xl">
       <Breadcrumbs
         label={shared.breadcrumbNav}
         items={[
@@ -46,8 +47,8 @@ export function PublicationDetails({
         ]}
       />
 
-      <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_auto] lg:items-start lg:gap-12">
-        <div className="min-w-0">
+      <header className="flex flex-col gap-6 border-b border-[var(--border)] pb-8 sm:gap-7 sm:pb-10 lg:flex-row lg:items-start lg:justify-between lg:gap-10">
+        <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm tracking-wide">
             <span className="font-semibold text-[var(--brand-blue)] uppercase underline decoration-2 underline-offset-8">
               {categoryLabel}
@@ -67,12 +68,12 @@ export function PublicationDetails({
             ) : null}
           </div>
 
-          <h1 className="font-editorial mt-5 text-[clamp(1.85rem,4.5vw,3rem)] leading-[1.2] font-semibold text-balance text-[var(--brand-blue)]">
+          <h1 className="font-editorial mt-4 text-[clamp(1.85rem,4vw,3.15rem)] leading-[1.15] font-semibold text-balance text-[var(--brand-blue)] sm:mt-5">
             {publication.title}
           </h1>
 
           {publication.subtitle ? (
-            <p className="mt-4 max-w-3xl text-base leading-relaxed text-zinc-600 text-pretty sm:text-lg">
+            <p className="mt-4 max-w-4xl text-base leading-relaxed text-zinc-600 text-pretty sm:mt-5 sm:text-lg sm:leading-relaxed">
               {publication.subtitle}
             </p>
           ) : null}
@@ -91,7 +92,13 @@ export function PublicationDetails({
           ) : null}
         </div>
 
-        <div className="flex flex-col gap-5 sm:gap-6 lg:pt-1">
+        <aside
+          className={
+            hasActions
+              ? "flex shrink-0 flex-col gap-4 sm:flex-row sm:items-center lg:flex-col lg:items-stretch lg:pt-1"
+              : "flex shrink-0 lg:pt-1"
+          }
+        >
           <ShareControls
             title={publication.title}
             path={sharePath}
@@ -114,8 +121,8 @@ export function PublicationDetails({
               downloadFailed: labels.pdfDownloadFailed,
             }}
           />
-        </div>
-      </div>
+        </aside>
+      </header>
 
       <MediaGallery
         images={publication.images}
@@ -142,7 +149,7 @@ export function PublicationDetails({
       <ArticleMarkdown
         source={publication.description}
         locale={locale}
-        className="max-w-3xl"
+        className="w-full"
       />
     </article>
   );

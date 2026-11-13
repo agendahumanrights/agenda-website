@@ -201,7 +201,7 @@ export function MediaGallery({ images, labels, className }: Props) {
           {labels.gallery}
         </h2>
 
-        <div className="relative aspect-[16/10] overflow-hidden rounded-xl bg-zinc-100 ring-1 ring-zinc-200 sm:aspect-[2/1]">
+        <div className="relative aspect-[16/10] overflow-hidden rounded-2xl bg-zinc-100 ring-1 ring-zinc-200 sm:aspect-[2/1]">
           {images.map((image, i) => {
             if (!loaded[i] && i !== safeIndex) return null;
             const active = i === safeIndex;
@@ -224,7 +224,7 @@ export function MediaGallery({ images, labels, className }: Props) {
                     src={image.url}
                     alt={active ? image.alt : ""}
                     fill
-                    sizes="(max-width: 768px) 100vw, 720px"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1280px) 90vw, 1280px"
                     priority={i === 0}
                     onError={() => markFailed(image.id)}
                     className="object-cover object-center"
