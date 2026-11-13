@@ -7,6 +7,10 @@ import { AppError } from "@/server/http/errors";
 import { getAdminFounderById } from "@/server/services/founders";
 import { MEDIA_LIMITS } from "@/server/storage/limits";
 
+
+/** Admin routes read cookies/session — allow blocking navigations. */
+export const instant = false;
+
 export default async function AdminEditFounderPage({
   params,
 }: {

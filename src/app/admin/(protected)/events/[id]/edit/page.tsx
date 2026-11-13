@@ -7,6 +7,10 @@ import { AppError } from "@/server/http/errors";
 import { getAdminEventById } from "@/server/services/events";
 import { MEDIA_LIMITS } from "@/server/storage/limits";
 
+
+/** Admin routes read cookies/session — allow blocking navigations. */
+export const instant = false;
+
 export default async function AdminEditEventPage({
   params,
 }: {

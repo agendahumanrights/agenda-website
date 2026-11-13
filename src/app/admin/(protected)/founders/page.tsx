@@ -12,6 +12,9 @@ import {
 } from "@/server/services/founders";
 import { adminFounderListQuerySchema } from "@/server/validations/founders";
 
+
+/** Admin routes read cookies/session — allow blocking navigations. */
+export const instant = false;
 async function FoundersList({
   searchParams,
 }: {

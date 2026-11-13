@@ -8,7 +8,12 @@ import { endOfUtcDay, parseUtcDateOnly, startOfUtcDay } from "@/lib/dates";
 import { slugify } from "@/lib/slugs";
 import { revalidateEventPaths } from "@/server/cache/events";
 import { CACHE_TAGS } from "@/server/cache/tags";
-import { getPrisma, isDatabaseConfigured } from "@/server/db";
+import {
+  getPrisma,
+  isDatabaseConfigured,
+  withInteractiveTransaction,
+} from "@/server/db";
+
 import {
   badRequest,
   conflict,
@@ -439,53 +444,47 @@ export async function createEvent(
   const prisma = getPrisma();
   const galleryIds = input.galleryImageIds ?? [];
 
+  // Nested create is one DB round-trip (atomic). Avoid interactive transactions
+  // here — remote pooler latency was exceeding Prisma's default 5s timeout.
+  let featuredCreate: { sortOrder: number } | undefined;
+  if (input.featureOnHomepage) {
+    if (input.status !== "PUBLISHED") {
+      throw badRequest("Only published events can be featured.");
+    }
+    const count = await prisma.featuredEvent.count();
+    if (count >= 3) {
+      throw badRequest("At most 3 events can be featured on the homepage.");
+    }
+    featuredCreate = { sortOrder: count };
+  }
+
   try {
-    const created = await prisma.$transaction(async (tx) => {
-      const event = await tx.event.create({
-        data: {
-          slug,
-          status: input.status,
-          eventDate,
-          mainImageId: input.mainImageId ?? null,
-          youtubeUrl: input.youtubeUrl ?? null,
-          translations: {
-            create: input.translations.map((t) => ({
-              locale: t.locale,
-              title: t.title.trim(),
-              subtitle: t.subtitle.trim(),
-              description: t.description,
-            })),
-          },
-          gallery: {
-            create: galleryIds.map((mediaAssetId, index) => ({
-              mediaAssetId,
-              sortOrder: index,
-            })),
-          },
+    const created = await prisma.event.create({
+      data: {
+        slug,
+        status: input.status,
+        eventDate,
+        mainImageId: input.mainImageId ?? null,
+        youtubeUrl: input.youtubeUrl ?? null,
+        translations: {
+          create: input.translations.map((t) => ({
+            locale: t.locale,
+            title: t.title.trim(),
+            subtitle: t.subtitle.trim(),
+            description: t.description,
+          })),
         },
-        include: adminInclude,
-      });
-
-      if (input.featureOnHomepage) {
-        if (event.status !== "PUBLISHED") {
-          throw badRequest("Only published events can be featured.");
-        }
-        const count = await tx.featuredEvent.count();
-        if (count >= 3) {
-          throw badRequest("At most 3 events can be featured on the homepage.");
-        }
-        await tx.featuredEvent.create({
-          data: {
-            eventId: event.id,
-            sortOrder: count,
-          },
-        });
-      }
-
-      return tx.event.findUniqueOrThrow({
-        where: { id: event.id },
-        include: adminInclude,
-      });
+        gallery: {
+          create: galleryIds.map((mediaAssetId, index) => ({
+            mediaAssetId,
+            sortOrder: index,
+          })),
+        },
+        ...(featuredCreate
+          ? { featured: { create: featuredCreate } }
+          : {}),
+      },
+      include: adminInclude,
     });
 
     revalidateEventPaths(created.slug);
@@ -567,7 +566,11 @@ export async function updateEvent(
     ...existing.gallery.map((g) => g.mediaAssetId),
   ].filter(Boolean) as string[];
 
-  const updated = await prisma.$transaction(async (tx) => {
+  if (input.featureOnHomepage === true && nextStatus !== "PUBLISHED") {
+    throw badRequest("Only published events can be featured.");
+  }
+
+  const updated = await withInteractiveTransaction(async (tx) => {
     if (input.translations) {
       for (const t of input.translations) {
         await tx.eventTranslation.upsert({
@@ -619,26 +622,14 @@ export async function updateEvent(
       },
     });
 
-    if (input.featureOnHomepage === true) {
-      const current = await tx.event.findUniqueOrThrow({
-        where: { id },
-        select: { status: true },
-      });
-      if (current.status !== "PUBLISHED") {
-        throw badRequest("Only published events can be featured.");
+    if (input.featureOnHomepage === true && !existing.featured) {
+      const count = await tx.featuredEvent.count();
+      if (count >= 3) {
+        throw badRequest("At most 3 events can be featured on the homepage.");
       }
-      const existingFeatured = await tx.featuredEvent.findUnique({
-        where: { eventId: id },
+      await tx.featuredEvent.create({
+        data: { eventId: id, sortOrder: count },
       });
-      if (!existingFeatured) {
-        const count = await tx.featuredEvent.count();
-        if (count >= 3) {
-          throw badRequest("At most 3 events can be featured on the homepage.");
-        }
-        await tx.featuredEvent.create({
-          data: { eventId: id, sortOrder: count },
-        });
-      }
     }
 
     return tx.event.findUniqueOrThrow({
@@ -674,7 +665,7 @@ export async function deleteEvent(id: string): Promise<void> {
     ...existing.gallery.map((g) => g.mediaAssetId),
   ].filter(Boolean) as string[];
 
-  await prisma.$transaction(async (tx) => {
+  await withInteractiveTransaction(async (tx) => {
     await tx.featuredEvent.deleteMany({ where: { eventId: id } });
     await tx.event.delete({ where: { id } });
   });

@@ -9,6 +9,10 @@ import { listFounders } from "@/server/services/founders";
 import { getAdminPublicationById } from "@/server/services/publications";
 import { MEDIA_LIMITS } from "@/server/storage/limits";
 
+
+/** Admin routes read cookies/session — allow blocking navigations. */
+export const instant = false;
+
 export default async function AdminEditPublicationPage({
   params,
 }: {

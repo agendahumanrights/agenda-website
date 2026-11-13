@@ -5,7 +5,12 @@ import { cacheLife, cacheTag } from "next/cache";
 import { Prisma } from "@/generated/prisma";
 
 import { slugify } from "@/lib/slugs";
-import { getPrisma, isDatabaseConfigured } from "@/server/db";
+import {
+  getPrisma,
+  isDatabaseConfigured,
+  withInteractiveTransaction,
+} from "@/server/db";
+
 import {
   badRequest,
   conflict,
@@ -550,57 +555,51 @@ export async function createPublication(
   const prisma = getPrisma();
   const galleryIds = input.galleryImageIds ?? [];
 
+  // Nested create is one DB round-trip (atomic). Avoid interactive transactions
+  // here — remote pooler latency was exceeding Prisma's default 5s timeout.
+  let featuredCreate: { sortOrder: number } | undefined;
+  if (input.featureOnHomepage) {
+    if (input.status !== "PUBLISHED") {
+      throw badRequest("Only published publications can be featured.");
+    }
+    const maxOrder = await prisma.featuredPublication.aggregate({
+      _max: { sortOrder: true },
+    });
+    featuredCreate = { sortOrder: (maxOrder._max.sortOrder ?? -1) + 1 };
+  }
+
   try {
-    const created = await prisma.$transaction(async (tx) => {
-      const publication = await tx.publication.create({
-        data: {
-          slug,
-          categoryId: input.categoryId,
-          status: input.status,
-          publishedAt: input.publishedAt ?? null,
-          authorFounderId: category.requiresAuthor
-            ? (input.authorFounderId ?? null)
-            : null,
-          mainImageId: input.mainImageId ?? null,
-          pdfId: input.pdfId ?? null,
-          youtubeUrl: input.youtubeUrl ?? null,
-          translations: {
-            create: input.translations.map((t) => ({
-              locale: t.locale,
-              title: t.title.trim(),
-              subtitle: t.subtitle.trim(),
-              description: t.description,
-            })),
-          },
-          gallery: {
-            create: galleryIds.map((mediaAssetId, index) => ({
-              mediaAssetId,
-              sortOrder: index,
-            })),
-          },
+    const created = await prisma.publication.create({
+      data: {
+        slug,
+        categoryId: input.categoryId,
+        status: input.status,
+        publishedAt: input.publishedAt ?? null,
+        authorFounderId: category.requiresAuthor
+          ? (input.authorFounderId ?? null)
+          : null,
+        mainImageId: input.mainImageId ?? null,
+        pdfId: input.pdfId ?? null,
+        youtubeUrl: input.youtubeUrl ?? null,
+        translations: {
+          create: input.translations.map((t) => ({
+            locale: t.locale,
+            title: t.title.trim(),
+            subtitle: t.subtitle.trim(),
+            description: t.description,
+          })),
         },
-        include: adminInclude,
-      });
-
-      if (input.featureOnHomepage) {
-        if (publication.status !== "PUBLISHED") {
-          throw badRequest("Only published publications can be featured.");
-        }
-        const maxOrder = await tx.featuredPublication.aggregate({
-          _max: { sortOrder: true },
-        });
-        await tx.featuredPublication.create({
-          data: {
-            publicationId: publication.id,
-            sortOrder: (maxOrder._max.sortOrder ?? -1) + 1,
-          },
-        });
-      }
-
-      return tx.publication.findUniqueOrThrow({
-        where: { id: publication.id },
-        include: adminInclude,
-      });
+        gallery: {
+          create: galleryIds.map((mediaAssetId, index) => ({
+            mediaAssetId,
+            sortOrder: index,
+          })),
+        },
+        ...(featuredCreate
+          ? { featured: { create: featuredCreate } }
+          : {}),
+      },
+      include: adminInclude,
     });
 
     revalidatePublicationPaths(created.slug);
@@ -702,7 +701,11 @@ export async function updatePublication(
     ...existing.gallery.map((g) => g.mediaAssetId),
   ].filter(Boolean) as string[];
 
-  const updated = await prisma.$transaction(async (tx) => {
+  if (input.featureOnHomepage === true && nextStatus !== "PUBLISHED") {
+    throw badRequest("Only published publications can be featured.");
+  }
+
+  const updated = await withInteractiveTransaction(async (tx) => {
     if (input.translations) {
       for (const t of input.translations) {
         await tx.publicationTranslation.upsert({
@@ -764,28 +767,16 @@ export async function updatePublication(
       },
     });
 
-    if (input.featureOnHomepage === true) {
-      const current = await tx.publication.findUniqueOrThrow({
-        where: { id },
-        select: { status: true },
+    if (input.featureOnHomepage === true && !existing.featured) {
+      const maxOrder = await tx.featuredPublication.aggregate({
+        _max: { sortOrder: true },
       });
-      if (current.status !== "PUBLISHED") {
-        throw badRequest("Only published publications can be featured.");
-      }
-      const existingFeatured = await tx.featuredPublication.findUnique({
-        where: { publicationId: id },
+      await tx.featuredPublication.create({
+        data: {
+          publicationId: id,
+          sortOrder: (maxOrder._max.sortOrder ?? -1) + 1,
+        },
       });
-      if (!existingFeatured) {
-        const maxOrder = await tx.featuredPublication.aggregate({
-          _max: { sortOrder: true },
-        });
-        await tx.featuredPublication.create({
-          data: {
-            publicationId: id,
-            sortOrder: (maxOrder._max.sortOrder ?? -1) + 1,
-          },
-        });
-      }
     }
 
     return tx.publication.findUniqueOrThrow({
@@ -823,7 +814,7 @@ export async function deletePublication(id: string): Promise<void> {
     ...existing.gallery.map((g) => g.mediaAssetId),
   ].filter(Boolean) as string[];
 
-  await prisma.$transaction(async (tx) => {
+  await withInteractiveTransaction(async (tx) => {
     await tx.featuredPublication.deleteMany({ where: { publicationId: id } });
     await tx.publication.delete({ where: { id } });
   });

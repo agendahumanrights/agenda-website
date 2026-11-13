@@ -5,7 +5,13 @@ import { cacheLife, cacheTag } from "next/cache";
 import { revalidateEventPaths } from "@/server/cache/events";
 import { revalidatePublicationPaths } from "@/server/cache/publications";
 import { CACHE_TAGS } from "@/server/cache/tags";
-import { getPrisma, isDatabaseConfigured, withDatabaseFallback } from "@/server/db";
+import {
+  getPrisma,
+  isDatabaseConfigured,
+  withDatabaseFallback,
+  withInteractiveTransaction,
+} from "@/server/db";
+
 import { badRequest, conflict, serviceUnavailable } from "@/server/http/errors";
 import {
   localizeCategoryName,
@@ -356,7 +362,7 @@ export async function setFeaturedPublications(
   const ids = input.publicationIds;
   const prisma = getPrisma();
 
-  await prisma.$transaction(async (tx) => {
+  await withInteractiveTransaction(async (tx) => {
     if (ids.length > 0) {
       const publications = await tx.publication.findMany({
         where: { id: { in: ids } },
@@ -402,7 +408,7 @@ export async function setFeaturedEvents(
 
   const prisma = getPrisma();
 
-  await prisma.$transaction(async (tx) => {
+  await withInteractiveTransaction(async (tx) => {
     if (ids.length > 0) {
       const events = await tx.event.findMany({
         where: { id: { in: ids } },

@@ -8,6 +8,9 @@ import { parseWithSchema } from "@/server/http/parse";
 import { listAdminPublicationCategories } from "@/server/services/categories";
 import { adminPublicationCategoryListQuerySchema } from "@/server/validations/categories";
 
+
+/** Admin routes read cookies/session — allow blocking navigations. */
+export const instant = false;
 async function CategoriesList({
   searchParams,
 }: {

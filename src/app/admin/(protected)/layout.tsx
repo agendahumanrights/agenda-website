@@ -1,15 +1,43 @@
+import { Suspense } from "react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { AdminShell } from "@/components/admin/AdminShell";
 import { AdminUnavailable } from "@/components/shared/AdminUnavailable";
+import { AdminTableSkeleton } from "@/components/ui/Skeleton";
 import { getDictionary } from "@/i18n/get-dictionary";
 import { getRequestLocale } from "@/i18n/get-locale";
 import { getAdminSession } from "@/server/auth";
 import { safeAdminNextPath } from "@/server/auth/redirects";
 import { isDatabaseConfigured } from "@/server/db";
 
-export default async function AdminProtectedLayout({
+/**
+ * Auth gate + shell are request-time. Allow blocking navigations into protected admin.
+ * Session read streams behind Suspense so a fallback can paint first.
+ */
+export const instant = false;
+
+export default function AdminProtectedLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <Suspense fallback={<AdminProtectedFallback />}>
+      <AdminProtectedGate>{children}</AdminProtectedGate>
+    </Suspense>
+  );
+}
+
+function AdminProtectedFallback() {
+  return (
+    <div className="p-6">
+      <AdminTableSkeleton rows={8} />
+    </div>
+  );
+}
+
+async function AdminProtectedGate({
   children,
 }: {
   children: React.ReactNode;

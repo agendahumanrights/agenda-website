@@ -7,7 +7,13 @@ import { Prisma } from "@/generated/prisma";
 import { slugify } from "@/lib/slugs";
 import { revalidateFounderPaths } from "@/server/cache/founders";
 import { CACHE_TAGS } from "@/server/cache/tags";
-import { getPrisma, isDatabaseConfigured, withDatabaseFallback } from "@/server/db";
+import {
+  getPrisma,
+  isDatabaseConfigured,
+  withDatabaseFallback,
+  withInteractiveTransaction,
+} from "@/server/db";
+
 import {
   badRequest,
   conflict,
@@ -407,7 +413,7 @@ export async function updateFounder(
 
   const previousImageId = existing.profileImageId;
 
-  const updated = await prisma.$transaction(async (tx) => {
+  const updated = await withInteractiveTransaction(async (tx) => {
     if (input.translations) {
       for (const t of input.translations) {
         await tx.founderTranslation.upsert({
@@ -485,7 +491,7 @@ export async function deleteFounder(id: string): Promise<void> {
   const imageId = existing.profileImageId;
 
   try {
-    await prisma.$transaction(async (tx) => {
+    await withInteractiveTransaction(async (tx) => {
       await tx.founder.delete({ where: { id } });
     });
   } catch (error) {
@@ -563,7 +569,7 @@ export async function reorderFounders(
   const prisma = getPrisma();
   const ids = input.founderIds;
 
-  await prisma.$transaction(async (tx) => {
+  await withInteractiveTransaction(async (tx) => {
     const all = await tx.founder.findMany({ select: { id: true } });
     const allIds = new Set(all.map((f) => f.id));
     if (ids.length !== allIds.size) {

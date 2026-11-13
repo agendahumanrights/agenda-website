@@ -4,6 +4,10 @@ import { getDictionary } from "@/i18n/get-dictionary";
 import { getRequestLocale } from "@/i18n/get-locale";
 import { getAdminHomepageSelectionState } from "@/server/services/homepage";
 
+
+/** Admin routes read cookies/session — allow blocking navigations. */
+export const instant = false;
+
 export default async function AdminHomepagePage() {
   const locale = await getRequestLocale();
   const dict = await getDictionary(locale);

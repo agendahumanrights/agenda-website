@@ -10,6 +10,9 @@ import { listPublicationCategories } from "@/server/services/categories";
 import { listAdminPublications } from "@/server/services/publications";
 import { adminPublicationListQuerySchema } from "@/server/validations/publications";
 
+
+/** Admin routes read cookies/session — allow blocking navigations. */
+export const instant = false;
 async function PublicationsList({
   searchParams,
 }: {

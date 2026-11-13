@@ -5,6 +5,10 @@ import { listPublicationCategories } from "@/server/services/categories";
 import { listFounders } from "@/server/services/founders";
 import { MEDIA_LIMITS } from "@/server/storage/limits";
 
+
+/** Admin routes read cookies/session — allow blocking navigations. */
+export const instant = false;
+
 export default async function AdminNewPublicationPage() {
   const locale = await getRequestLocale();
   const dict = await getDictionary(locale);

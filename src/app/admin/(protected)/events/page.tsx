@@ -9,6 +9,9 @@ import { parseWithSchema } from "@/server/http/parse";
 import { listAdminEvents } from "@/server/services/events";
 import { adminEventListQuerySchema } from "@/server/validations/events";
 
+
+/** Admin routes read cookies/session — allow blocking navigations. */
+export const instant = false;
 async function EventsList({
   searchParams,
 }: {
