@@ -11,7 +11,7 @@ export type OrganizationCopy = {
   intro: string;
   vision: string;
   mission: string;
-  /** Short mission blurb for the homepage About teaser. */
+  /** Short mission blurb (e.g. public footer). */
   missionSummary: string;
 };
 

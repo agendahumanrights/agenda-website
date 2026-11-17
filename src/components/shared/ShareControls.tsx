@@ -4,6 +4,7 @@ import {
   useCallback,
   useEffect,
   useId,
+  useLayoutEffect,
   useRef,
   useState,
 } from "react";
@@ -28,6 +29,8 @@ type Props = {
   className?: string;
 };
 
+type Placement = "below" | "above";
+
 function absoluteUrl(path: string): string {
   const normalized = path.startsWith("/") ? path : `/${path}`;
   if (typeof window === "undefined") return normalized;
@@ -35,17 +38,20 @@ function absoluteUrl(path: string): string {
 }
 
 const actionClass =
-  "inline-flex h-10 w-10 shrink-0 items-center justify-center text-zinc-600 transition-colors hover:text-[var(--brand-blue)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-blue)]";
+  "inline-flex size-10 shrink-0 items-center justify-center rounded-full text-zinc-600 transition-colors hover:bg-[color-mix(in_srgb,var(--brand-blue)_8%,white)] hover:text-[var(--brand-blue)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-blue)]";
 
 /**
- * Expandable share menu: circular trigger + horizontal action pill.
- * Used on publication and event detail pages.
+ * Expandable share menu: circular trigger + vertical action stack
+ * (opens below when space allows, otherwise above). Used on publication
+ * and event detail pages.
  */
 export function ShareControls({ title, path, labels, className }: Props) {
   const [open, setOpen] = useState(false);
+  const [placement, setPlacement] = useState<Placement>("below");
   const [status, setStatus] = useState<"idle" | "ok" | "err">("idle");
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
 
   const close = useCallback((restoreFocus = false) => {
@@ -55,11 +61,34 @@ export function ShareControls({ title, path, labels, className }: Props) {
     }
   }, []);
 
+  const updatePlacement = useCallback(() => {
+    const trigger = triggerRef.current;
+    const menu = menuRef.current;
+    if (!trigger || !menu) return;
+
+    const triggerRect = trigger.getBoundingClientRect();
+    const menuHeight = menu.offsetHeight || 240;
+    const gap = 12;
+    const spaceBelow = window.innerHeight - triggerRect.bottom - gap;
+    const spaceAbove = triggerRect.top - gap;
+
+    if (spaceBelow < menuHeight && spaceAbove > spaceBelow) {
+      setPlacement("above");
+    } else {
+      setPlacement("below");
+    }
+  }, []);
+
   useEffect(() => {
     if (status === "idle") return;
     const timer = window.setTimeout(() => setStatus("idle"), 2500);
     return () => window.clearTimeout(timer);
   }, [status]);
+
+  useLayoutEffect(() => {
+    if (!open) return;
+    updatePlacement();
+  }, [open, updatePlacement]);
 
   useEffect(() => {
     if (!open) return;
@@ -77,15 +106,21 @@ export function ShareControls({ title, path, labels, className }: Props) {
       }
     };
 
+    const onViewportChange = () => updatePlacement();
+
     document.addEventListener("mousedown", onPointerDown);
     document.addEventListener("touchstart", onPointerDown);
     document.addEventListener("keydown", onKeyDown);
+    window.addEventListener("resize", onViewportChange);
+    window.addEventListener("scroll", onViewportChange, true);
     return () => {
       document.removeEventListener("mousedown", onPointerDown);
       document.removeEventListener("touchstart", onPointerDown);
       document.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("resize", onViewportChange);
+      window.removeEventListener("scroll", onViewportChange, true);
     };
-  }, [open, close]);
+  }, [open, close, updatePlacement]);
 
   const encodedTitle = encodeURIComponent(title);
   // Path-only in markup for SSR/hydration stability; absolute URL applied on click.
@@ -102,16 +137,17 @@ export function ShareControls({ title, path, labels, className }: Props) {
 
   return (
     <div className={cn("flex flex-col gap-2", className)}>
-      <div ref={rootRef} className="relative inline-flex items-center self-start">
+      <div ref={rootRef} className="relative inline-flex self-start">
         <button
           ref={triggerRef}
           type="button"
           aria-label={labels.share}
           aria-expanded={open}
           aria-controls={menuId}
+          aria-haspopup="menu"
           onClick={() => setOpen((value) => !value)}
           className={cn(
-            "relative z-10 inline-flex h-11 w-11 items-center justify-center rounded-full bg-white text-[var(--brand-gray)]",
+            "relative z-10 inline-flex size-11 items-center justify-center rounded-full bg-white text-[var(--brand-gray)]",
             "shadow-[0_4px_14px_rgba(5,73,140,0.12)] ring-1 ring-zinc-200/80",
             "transition-colors hover:text-[var(--brand-blue)]",
             "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-blue)]",
@@ -122,18 +158,17 @@ export function ShareControls({ title, path, labels, className }: Props) {
         </button>
 
         <div
+          ref={menuRef}
           id={menuId}
           role="menu"
           aria-label={labels.share}
           aria-hidden={!open}
           inert={open ? undefined : true}
           className={cn(
-            "absolute z-20",
-            // Desktop: open beside the trigger toward inline-end
-            "top-1/2 start-full ms-3 -translate-y-1/2",
-            // Mobile: open below to avoid horizontal overflow
-            "max-sm:start-0 max-sm:ms-0 max-sm:top-full max-sm:mt-3 max-sm:translate-y-0",
-            "origin-left rtl:origin-right max-sm:origin-top max-sm:rtl:origin-top",
+            "absolute z-30 start-0",
+            placement === "below"
+              ? "top-full mt-3 origin-top"
+              : "bottom-full mb-3 origin-bottom",
             "motion-safe:transition-[opacity,transform] motion-safe:duration-200 motion-safe:ease-out",
             open
               ? "pointer-events-auto opacity-100 motion-safe:scale-100"
@@ -143,29 +178,29 @@ export function ShareControls({ title, path, labels, className }: Props) {
         >
           <div
             className={cn(
-              "relative flex items-center rounded-full bg-white px-1.5 py-1",
+              "relative flex flex-col items-center gap-0.5 rounded-2xl bg-white px-1.5 py-1.5",
               "shadow-[0_8px_24px_rgba(5,73,140,0.14)] ring-1 ring-zinc-200/70",
-              "max-w-[calc(100vw-2rem)]",
             )}
           >
-            {/* Side pointer (desktop) */}
-            <span
-              aria-hidden
-              className={cn(
-                "absolute top-1/2 hidden size-0 -translate-y-1/2 sm:block",
-                "end-full border-y-[7px] border-y-transparent border-e-[8px] border-e-white",
-                "drop-shadow-[-1px_0_0_rgba(228,228,231,0.9)]",
-              )}
-            />
-            {/* Top pointer (mobile) */}
-            <span
-              aria-hidden
-              className={cn(
-                "absolute start-5 bottom-full size-0 sm:hidden",
-                "border-x-[7px] border-x-transparent border-b-[8px] border-b-white",
-                "drop-shadow-[0_-1px_0_rgba(228,228,231,0.9)]",
-              )}
-            />
+            {placement === "below" ? (
+              <span
+                aria-hidden
+                className={cn(
+                  "absolute start-4 bottom-full size-0",
+                  "border-x-[7px] border-x-transparent border-b-[8px] border-b-white",
+                  "drop-shadow-[0_-1px_0_rgba(228,228,231,0.9)]",
+                )}
+              />
+            ) : (
+              <span
+                aria-hidden
+                className={cn(
+                  "absolute start-4 top-full size-0",
+                  "border-x-[7px] border-x-transparent border-t-[8px] border-t-white",
+                  "drop-shadow-[0_1px_0_rgba(228,228,231,0.9)]",
+                )}
+              />
+            )}
 
             <a
               role="menuitem"
@@ -250,7 +285,7 @@ export function ShareControls({ title, path, labels, className }: Props) {
 }
 
 function Separator() {
-  return <span aria-hidden className="h-5 w-px shrink-0 bg-zinc-200" />;
+  return <span aria-hidden className="h-px w-6 shrink-0 bg-zinc-200" />;
 }
 
 function ShareIcon() {

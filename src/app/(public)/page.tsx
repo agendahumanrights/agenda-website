@@ -3,13 +3,11 @@ import { Suspense } from "react";
 
 import { FeaturedEventsSection } from "@/components/home/FeaturedEventsSection";
 import { FeaturedPublicationsSlider } from "@/components/home/FeaturedPublicationsSlider";
-import { HomeAboutSection } from "@/components/home/HomeAboutSection";
 import { PublicationGrid } from "@/components/home/PublicationGrid";
 import { SectionHeader } from "@/components/home/SectionHeader";
 import { Container } from "@/components/layout/Container";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { LoadingState } from "@/components/ui/LoadingState";
-import { getOrganizationCopy } from "@/content/about";
 import { getDictionary } from "@/i18n/get-dictionary";
 import { getRequestLocale } from "@/i18n/get-locale";
 import { sitePath } from "@/i18n/pathnames";
@@ -35,7 +33,6 @@ async function HomeContent() {
     getFeaturedPublications(locale),
     getFeaturedEvents(locale),
   ]);
-  const org = getOrganizationCopy(locale);
 
   return (
     <>
@@ -89,18 +86,6 @@ async function HomeContent() {
             labels={dict.home}
             eventLabels={dict.events}
             emptyLabel={dict.home.eventsEmpty}
-          />
-        </Container>
-      </section>
-
-      <section className="bg-white py-10 sm:py-12 lg:py-[4.5rem]">
-        <Container>
-          <HomeAboutSection
-            locale={locale}
-            org={org}
-            siteName={dict.meta.siteName}
-            logoAlt={dict.nav.logoAlt}
-            labels={dict.home}
           />
         </Container>
       </section>

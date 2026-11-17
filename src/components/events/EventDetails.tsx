@@ -66,7 +66,7 @@ export function EventDetails({
           ) : null}
         </div>
 
-        <aside className="flex shrink-0 lg:pt-1">
+        <aside className="relative z-20 flex shrink-0 overflow-visible lg:pt-1">
           <ShareControls
             title={event.title}
             path={sharePath}
@@ -109,7 +109,7 @@ export function EventDetails({
       <ArticleMarkdown
         source={event.description}
         locale={locale}
-        className="w-full"
+        className="w-full max-w-[80ch] me-auto"
       />
     </article>
   );

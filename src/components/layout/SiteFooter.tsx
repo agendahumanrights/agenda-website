@@ -49,20 +49,6 @@ export function SiteFooter({ locale, dict }: Props) {
     { href: sitePath("/events", locale), label: dict.nav.events },
     { href: sitePath("/about", locale), label: dict.nav.about },
   ];
-  const aboutLinks = [
-    {
-      href: `${sitePath("/about", locale)}#about-vision`,
-      label: dict.footer.vision,
-    },
-    {
-      href: `${sitePath("/about", locale)}#about-mission`,
-      label: dict.footer.mission,
-    },
-    {
-      href: `${sitePath("/about", locale)}#about-founders`,
-      label: dict.footer.founders,
-    },
-  ];
 
   return (
     <footer className="relative mt-auto overflow-hidden">
@@ -72,7 +58,7 @@ export function SiteFooter({ locale, dict }: Props) {
       />
       <div className="relative px-3 py-8 sm:px-5 sm:py-10 lg:px-6 lg:py-12">
         <div className="glass-panel mx-auto w-full overflow-hidden rounded-[1.75rem] sm:rounded-[2rem]">
-          <div className="grid gap-0 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,1fr)_auto]">
+          <div className="grid gap-0 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,0.85fr)_auto]">
             {/* Brand */}
             <div className="flex flex-col gap-5 p-6 sm:p-8 lg:p-9">
               <Link
@@ -98,37 +84,23 @@ export function SiteFooter({ locale, dict }: Props) {
             </div>
 
             {/* Navigation — desktop vertical divider */}
-            <div className="border-t border-white/15 p-6 sm:p-8 lg:border-t-0 lg:border-s lg:p-9">
-              <p className="mb-4 text-xs font-semibold tracking-[0.14em] text-white/55 uppercase">
-                {dict.footer.explore}
-              </p>
-              <div className="grid grid-cols-2 gap-x-6 gap-y-1 sm:gap-x-10">
-                <ul className="flex flex-col gap-1">
-                  {primaryLinks.map((item) => (
-                    <li key={item.href}>
-                      <Link
-                        href={item.href}
-                        className="inline-flex min-h-10 items-center rounded-md text-sm text-white/90 transition hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:text-[0.95rem]"
-                      >
-                        {item.label}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-                <ul className="flex flex-col gap-1">
-                  {aboutLinks.map((item) => (
-                    <li key={item.href}>
-                      <Link
-                        href={item.href}
-                        className="inline-flex min-h-10 items-center rounded-md text-sm text-white/90 transition hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:text-[0.95rem]"
-                      >
-                        {item.label}
-                      </Link>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
+            <nav
+              aria-label={dict.nav.mainNav}
+              className="border-t border-white/15 p-6 sm:p-8 lg:border-t-0 lg:border-s lg:p-9"
+            >
+              <ul className="flex flex-col gap-1">
+                {primaryLinks.map((item) => (
+                  <li key={item.href}>
+                    <Link
+                      href={item.href}
+                      className="inline-flex min-h-10 items-center rounded-md text-sm text-white/90 transition hover:text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white sm:text-[0.95rem]"
+                    >
+                      {item.label}
+                    </Link>
+                  </li>
+                ))}
+              </ul>
+            </nav>
 
             {/* Social */}
             <div className="border-t border-white/15 p-6 sm:p-8 lg:border-t-0 lg:border-s lg:p-9">

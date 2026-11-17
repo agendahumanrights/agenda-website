@@ -8,14 +8,17 @@ type Props = {
   className?: string;
 };
 
-/** Safe Markdown with editorial article typography (shared with admin preview). */
+/**
+ * Safe Markdown with editorial article typography.
+ * Callers set the reading measure (e.g. publication details ~⅔ width).
+ */
 export function ArticleMarkdown({ source, locale, className }: Props) {
   return (
     <MarkdownContent
       source={source}
       dir={locale === "ar" ? "rtl" : "ltr"}
       shiftHeadings
-      className={cn("article-prose", className)}
+      className={cn("article-prose w-full min-w-0", className)}
     />
   );
 }

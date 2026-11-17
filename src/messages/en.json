@@ -21,7 +21,6 @@
     "viewAllPublications": "View all publications",
     "featuredEvents": "Events",
     "viewAllEvents": "View all events",
-    "aboutCta": "More about us",
     "sliderPrev": "Previous slide",
     "sliderNext": "Next slide",
     "goToSlide": "Go to slide {n}",
@@ -631,11 +630,7 @@
   "footer": {
     "rights": "All rights reserved.",
     "domain": "humanrightsagenda.org",
-    "explore": "Explore",
     "social": "Social",
-    "vision": "Our Vision",
-    "mission": "Our Mission",
-    "founders": "Founders",
     "socialFacebook": "Agenda on Facebook",
     "socialLinkedIn": "Agenda on LinkedIn",
     "socialYouTube": "Agenda on YouTube"

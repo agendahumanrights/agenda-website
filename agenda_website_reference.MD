@@ -4,7 +4,7 @@
 > **Source of truth:** application code. Requirements and older docs describe intended or planned behavior; this file describes verified implementation.  
 > **Do not treat scaffolding as completed features.**
 
-**Last updated:** 2026-11-17 (Decorative section pills removed site-wide)  
+**Last updated:** 2026-11-17 (Sticky Share fix + gallery alignment)  
 **Inspection basis:** Checked-in source under the repository root. DB migrate/admin bootstrap depend on local `.env` (gitignored).
 
 ---
@@ -219,7 +219,7 @@ Next.js 16 **Proxy** (replaces deprecated `middleware`). Rewrites `/ar/...` to t
 | File | Role |
 | --- | --- |
 | `layout.tsx` | Suspense + `SiteHeader` / `main` / `SiteFooter` |
-| `page.tsx` | Home: full-bleed featured pubs slider (outside `Container`), then catalogue / events / about teaser inside `Container` |
+| `page.tsx` | Home: full-bleed featured pubs slider (outside `Container`), then publications catalogue + featured events inside `Container` (no About teaser) |
 | `publications/page.tsx` | Publications catalogue with `PageHero` + live filters (`q`, `category`, `sort`, `page`) |
 | `publications/[slug]/page.tsx` | Publication detail by canonical slug |
 | `events/page.tsx` | Events catalogue with `PageHero` + live title search + date sort (`q`, `sort`, `page`) |
@@ -315,7 +315,7 @@ Other query params preserved. `/api` and static-like paths not rewritten.
 
 | Aspect | Detail |
 | --- | --- |
-| Purpose | Home: branded header + full-bleed featured publications hero, publications catalogue, featured events, About teaser (`HomeAboutSection`) |
+| Purpose | Home: branded header + full-bleed featured publications hero, publications catalogue, featured events (no homepage About teaser; About is `/about` only) |
 | Layout | Sticky glass header; full-bleed hero under header; shared full-width `Container` (padding only, no max-width) for Publications / Events / About; Events on subtle gray wash; editorial `SectionHeader` on Pubs/Events |
 | Data | `getFeaturedPublications`, `getFeaturedEvents` (DB or `[]`); `getOrganizationCopy` (static nulls); dictionaries |
 | Rendering | Async Server Component |
@@ -343,7 +343,7 @@ Other query params preserved. `/api` and static-like paths not rewritten.
 | --- | --- |
 | Purpose | Publication detail |
 | Data | `getPublishedPublicationBySlug`; without DB → `EmptyState` placeholder; missing row/translation → `notFound()` |
-| UI | Editorial `PublicationDetails`: wide shell (`max-w-6xl` / `xl:max-w-7xl`); breadcrumbs; header with meta/title/subtitle/author + share/PDF; full-width gallery; optional YouTube; Markdown fills content width |
+| UI | Editorial `PublicationDetails`: wide shell; header + PDF; gallery; then `lg` 2fr/1fr grid (YouTube + Markdown | sticky Share). Share column stretches; Share pinned to trailing shell edge (`lg:ms-auto`, matches image/page end); `top: var(--site-header-offset)`. Mobile: Share above body. |
 | Auth | None |
 | Status | **Implemented** (content depends on DB + published locale translation) |
 
@@ -424,7 +424,7 @@ No logout route or working login form exists.
 | `Container` | Full-width padded wrapper (`px-4 sm:px-6 lg:px-8`, no max-width) for below-hero home sections + other public pages |
 | `SiteHeader` | **Fixed** transparent overlay (`fixed inset-x-0 top-0`); full-width glass capsule ~16px from top. No in-flow white band. Heroes/detail pages extend behind it; clearance via padding / `.public-main-offset`. Logo · pill nav · language · mobile menu. |
 | `PageHero` | Full-bleed navy→brand-blue intro from viewport top; internal top padding clears fixed header; content row matches `Container` padding (no max-width); breadcrumbs; 4:3 framed image; curved content transition |
-| `SiteFooter` | Full-width glass rounded panel over blue/gray wash: brand + mission summary · two link columns · circular social icons (Facebook/LinkedIn/YouTube) · copyright row. No newsletter. |
+| `SiteFooter` | Full-width glass rounded panel over blue/gray wash: brand + mission summary · single primary nav column (Home / Publications / Events / About) · circular social icons (Facebook/LinkedIn/YouTube) · copyright row. No Explore heading or Vision/Mission/Founders footer links. No newsletter. |
 | `MainNavigation` | Pill links with brighter active glass surface |
 | `MobileNavigation` | Glass panel under fixed header; Escape/focus trap/overlay preserved |
 | `nav-items.ts` | Shared nav href/label helpers + active-path matching |
@@ -457,7 +457,7 @@ No logout route or working login form exists.
 | `PublicationCategoryBadge` | Localized category label (list cards / legacy) |
 | `AuthorLink` | `/about#founder-{bioKey}` |
 | `PublicationAuthor` | Circular portrait, name link, professional area (blogs) |
-| `PublicationDetails` | Wide editorial layout (`max-w-6xl`/`xl:max-w-7xl`): breadcrumbs → header (meta/title/subtitle/author | share + PDF) → gallery → optional YouTube → full-width Markdown |
+| `PublicationDetails` | Wide editorial layout: breadcrumbs → header (+ PDF) → gallery → body grid with sticky Share in the trailing column (`lg+`). Sticky requires a stretched Share column (not `items-start`/`self-start`). |
 | `PublicationPdfActions` | Client: View PDF (new tab) + Download PDF under share controls; no iframe preview. Download fetches `/api/media/...?download=1` as a blob |
 | `PdfPreview` / `PdfDownloadLink` | Legacy helpers (unused on public detail page after PDF action move) |
 | `PublicationFilters` | **Implemented** live search + category + date sort (debounced `q`, immediate category/sort, Reset); URL replace; IME-safe |
@@ -476,11 +476,11 @@ No logout route or working login form exists.
 | Component | Status |
 | --- | --- |
 | `Breadcrumbs` | Localized Home → section → current title |
-| `ShareControls` | Client expandable share menu: circular trigger + white pill (pointer, separators) with X, Facebook, LinkedIn, email, copy link; outside/Escape close; RTL/LTR; copy feedback; `aria-expanded` / `aria-controls` |
+| `ShareControls` | Client expandable share menu: circular trigger + **vertical** white stack (pointer, separators) with X, Facebook, LinkedIn, email, copy link; opens below (or above if space is tight); outside/Escape close; RTL/LTR via `start`; copy feedback; `aria-expanded` / `aria-controls` / `aria-haspopup` |
 | `MediaGallery` | Client: main+gallery images (deduped by media id); frame uses full-bleed `object-cover` (lightbox keeps `object-contain`); centered thumb row (`w-max min-w-full justify-center`) with horizontal scroll when needed; prev/next, counter, fullscreen, keyboard/swipe, RTL-aware; omits when empty |
 | `YouTubeEmbed` | Shared responsive 16:9 iframe via `youtube-nocookie.com` from validated video ID; optional heading; lazy by default; omits when URL invalid |
 | `YouTubeUrlField` | Admin Media-card control: URL input (LTR), live preview, remove; used by Publication/Event forms |
-| `ArticleMarkdown` / `MarkdownContent` | Shared safe GFM renderer (sanitize, external links, heading shift); `.article-prose` typography for public details + admin preview |
+| `ArticleMarkdown` / `MarkdownContent` | Shared safe GFM renderer (sanitize, external links, heading shift); `.article-prose` typography for public details + admin preview; reading measure set by the caller |
 | `MarkdownEditor` | Admin toolbar editor (Write/Preview/Split, expand, help, undo/redo); used by Publication + Event AR/EN description fields |
 | `lib/markdown-editor.ts` | Pure Markdown textarea transforms + `markdownToPlainText` for excerpts |
 | `buildDetailImages` | Server helper: main first, gallery append, skip duplicate media ids, localized alt |
@@ -489,7 +489,7 @@ No logout route or working login form exists.
 
 | Component | Status |
 | --- | --- |
-| `HomeAboutSection` | Teaser using shared title/action styles (no decorative pill); vision + mission summary; official logo (`/images/agenda-logo.png`) in the white panel |
+| `HomeAboutSection` | **Removed** — homepage no longer renders an About teaser; standalone `/about` unchanged |
 | `OrganizationIntro` | About page vision + mission via `AboutContentBlock` (mission column reversed on desktop) |
 | `AboutContentBlock` / `IllustrationPanel` / `AccentHeading` | Shared two-column layout, white illustration card with decorative circles, blue vertical accent |
 | `AboutIllustrations` | Lightweight brand-blue SVGs (vision target, mission document/check, inclusion figures) |
@@ -1093,6 +1093,41 @@ Open `http://localhost:3000`.
 ---
 
 ## K. Change history
+
+### 2026-11-17 — Sticky Share fix + align under gallery
+
+- **Root cause of sticky failure:** the description grid used `items-start` and the Share `aside` used `self-start`, so the sticky containing block was only as tall as the button — sticky had no travel range.
+- **Fix:** let the Share column stretch with the reading column; keep `position: sticky` + `top: var(--site-header-offset)` on an inner wrapper. Move optional YouTube into the reading column so Share starts immediately under the main gallery. Share uses `lg:ms-auto` so it sits on the trailing edge of the content shell (aligned with the main image / page width end).
+- Validation: `tsc --noEmit` pass; ESLint same pre-existing unrelated issues; `next build` compiled and generated routes, then exited on Next.js security-upgrade advisory.
+
+### 2026-11-17 — Sticky Share beside publication description
+
+- Moved publication Share into a description-section grid (`lg: 2fr / 1fr`); PDF remains in the header; Events unchanged. Superseded sticky details by the fix entry above.
+
+### 2026-11-17 — ShareControls vertical menu
+
+- `ShareControls` expanded actions now stack **vertically** under the trigger (flip above when viewport space below is insufficient), fixing horizontal overflow that clipped LinkedIn/email/copy on detail headers.
+- Preserved X / Facebook / LinkedIn / email / copy-link behavior, Escape/outside close, copy status, and EN/AR `start` alignment. Used on publication and event details.
+- Validation: `tsc --noEmit` pass; ESLint same pre-existing unrelated issues; `next build` compiled and generated routes, then exited on Next.js security-upgrade advisory.
+
+### 2026-11-17 — Publication details reading column (~⅔ width)
+
+- Publication Markdown body constrained to ~⅔ of the detail shell on `lg+` (`md` ~85%, mobile full width), aligned to the inline-start via `me-auto` (empty trailing third; LTR left / RTL right). Title, gallery, share/PDF unchanged.
+- `ArticleMarkdown` no longer hardcodes `max-w-[80ch]`; Event details keep an `80ch` measure explicitly. Overflow wrap for long tokens; existing `.article-prose` table/pre scroll preserved.
+- Validation: `tsc --noEmit` pass; ESLint same pre-existing unrelated issues; `next build` compiled and generated routes, then exited on Next.js security-upgrade advisory.
+
+### 2026-11-17 — Remove homepage About Us teaser
+
+- Homepage (`src/app/(public)/page.tsx`) no longer renders the About teaser; flow is slider → Publications → Events → footer.
+- Deleted unused `HomeAboutSection` and `home.aboutCta` EN/AR keys. Standalone `/about`, nav/footer About links, and org copy for the About page/footer unchanged.
+- Validation: `tsc --noEmit` pass; ESLint same pre-existing unrelated issues; `next build` compiled and generated routes (including `/about`), then exited on Next.js security-upgrade advisory.
+
+### 2026-11-17 — Footer: drop Explore + About anchor links
+
+- `SiteFooter` now lists only Home / Publications / Events / About Us (EN+AR). Removed the **Explore** heading and Vision / Mission / Founders footer links.
+- About page `#about-vision` / `#about-mission` / `#about-founders` content and `about.*` dictionary labels unchanged.
+- Removed unused `footer.explore` / `footer.vision` / `footer.mission` / `footer.founders` EN/AR keys.
+- Validation: `tsc --noEmit` pass; ESLint same pre-existing unrelated issues; `next build` compiled and generated routes, then exited on Next.js security-upgrade advisory.
 
 ### 2026-11-17 — Remove decorative section pills site-wide
 

@@ -21,7 +21,6 @@
     "viewAllPublications": "عرض جميع الإصدارات",
     "featuredEvents": "فعاليات",
     "viewAllEvents": "عرض جميع الفعاليات",
-    "aboutCta": "المزيد عنا",
     "sliderPrev": "الشريحة السابقة",
     "sliderNext": "الشريحة التالية",
     "goToSlide": "الانتقال إلى الشريحة {n}",
@@ -631,11 +630,7 @@
   "footer": {
     "rights": "جميع الحقوق محفوظة.",
     "domain": "humanrightsagenda.org",
-    "explore": "استكشف",
     "social": "التواصل",
-    "vision": "رؤيتنا",
-    "mission": "رسالتنا",
-    "founders": "المؤسسون",
     "socialFacebook": "مفكرة على فيسبوك",
     "socialLinkedIn": "مفكرة على لينكدإن",
     "socialYouTube": "مفكرة على يوتيوب"

@@ -34,10 +34,21 @@ export function PublicationDetails({
       })
     : null;
   const sharePath = sitePath(`/publications/${publication.slug}`, locale);
-  const hasActions = Boolean(publication.pdfUrl);
+  const hasPdf = Boolean(publication.pdfUrl);
+
+  const shareLabels = {
+    share: shared.share,
+    shareOnX: shared.shareOnX,
+    shareOnFacebook: shared.shareOnFacebook,
+    shareOnLinkedIn: shared.shareOnLinkedIn,
+    shareByEmail: shared.shareByEmail,
+    copyLink: shared.copyLink,
+    copySuccess: shared.copySuccess,
+    copyFailed: shared.copyFailed,
+  };
 
   return (
-    <article className="mx-auto flex w-full max-w-6xl flex-col gap-8 sm:gap-10 xl:max-w-7xl">
+    <article className="mx-auto flex w-full max-w-6xl flex-col gap-8 overflow-visible sm:gap-10 xl:max-w-7xl">
       <Breadcrumbs
         label={shared.breadcrumbNav}
         items={[
@@ -92,36 +103,18 @@ export function PublicationDetails({
           ) : null}
         </div>
 
-        <aside
-          className={
-            hasActions
-              ? "flex shrink-0 flex-col gap-4 sm:flex-row sm:items-center lg:flex-col lg:items-stretch lg:pt-1"
-              : "flex shrink-0 lg:pt-1"
-          }
-        >
-          <ShareControls
-            title={publication.title}
-            path={sharePath}
-            labels={{
-              share: shared.share,
-              shareOnX: shared.shareOnX,
-              shareOnFacebook: shared.shareOnFacebook,
-              shareOnLinkedIn: shared.shareOnLinkedIn,
-              shareByEmail: shared.shareByEmail,
-              copyLink: shared.copyLink,
-              copySuccess: shared.copySuccess,
-              copyFailed: shared.copyFailed,
-            }}
-          />
-          <PublicationPdfActions
-            url={publication.pdfUrl}
-            labels={{
-              viewPdf: labels.viewPdf,
-              downloadPdf: labels.downloadPdf,
-              downloadFailed: labels.pdfDownloadFailed,
-            }}
-          />
-        </aside>
+        {hasPdf ? (
+          <aside className="flex shrink-0 lg:pt-1">
+            <PublicationPdfActions
+              url={publication.pdfUrl}
+              labels={{
+                viewPdf: labels.viewPdf,
+                downloadPdf: labels.downloadPdf,
+                downloadFailed: labels.pdfDownloadFailed,
+              }}
+            />
+          </aside>
+        ) : null}
       </header>
 
       <MediaGallery
@@ -138,19 +131,43 @@ export function PublicationDetails({
         }}
       />
 
-      {publication.youtubeUrl ? (
-        <YouTubeEmbed
-          url={publication.youtubeUrl}
-          title={publication.title}
-          heading={shared.watchVideo}
-        />
-      ) : null}
+      {/*
+        Sticky Share lives in a column that *stretches* to the description
+        height. Prior `items-start` / `self-start` shrunk that column to the
+        button height, so sticky had no travel distance. YouTube sits in the
+        reading column so Share starts flush under the gallery.
+      */}
+      <section
+        aria-label={labels.title}
+        className="grid w-full grid-cols-1 gap-6 overflow-visible lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:gap-10"
+      >
+        <div className="flex min-w-0 flex-col gap-8 sm:gap-10">
+          {publication.youtubeUrl ? (
+            <YouTubeEmbed
+              url={publication.youtubeUrl}
+              title={publication.title}
+              heading={shared.watchVideo}
+            />
+          ) : null}
 
-      <ArticleMarkdown
-        source={publication.description}
-        locale={locale}
-        className="w-full"
-      />
+          <ArticleMarkdown
+            source={publication.description}
+            locale={locale}
+            className="w-full break-words [overflow-wrap:anywhere]"
+          />
+        </div>
+
+        <aside className="relative order-first min-h-0 overflow-visible lg:order-none">
+          {/* ms-auto pins Share to the trailing edge of the shell (matches image/page end). */}
+          <div className="z-20 w-fit max-lg:ms-0 lg:ms-auto lg:sticky lg:top-[var(--site-header-offset)]">
+            <ShareControls
+              title={publication.title}
+              path={sharePath}
+              labels={shareLabels}
+            />
+          </div>
+        </aside>
+      </section>
     </article>
   );
 }

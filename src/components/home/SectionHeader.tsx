@@ -14,7 +14,6 @@ type Props = {
   className?: string;
 };
 
-/** Kept for About teaser and other homepage surfaces that match section chrome. */
 export const sectionTitleClassName =
   "font-editorial text-[clamp(1.625rem,2.8vw,2.5rem)] font-semibold leading-[1.15] tracking-tight text-balance text-zinc-900";
 
