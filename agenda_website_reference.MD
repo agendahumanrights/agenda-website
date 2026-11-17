@@ -4,7 +4,7 @@
 > **Source of truth:** application code. Requirements and older docs describe intended or planned behavior; this file describes verified implementation.  
 > **Do not treat scaffolding as completed features.**
 
-**Last updated:** 2026-11-16 (Arabic org name → مفكرة)  
+**Last updated:** 2026-11-17 (Homepage slider bottom copy layout)  
 **Inspection basis:** Checked-in source under the repository root. DB migrate/admin bootstrap depend on local `.env` (gitignored).
 
 ---
@@ -436,14 +436,14 @@ No logout route or working login form exists.
 
 | Component | Status |
 | --- | --- |
-| `ContentCard` | Compact 4:3 card (`rounded-xl` ~12px): badge inset on image; blue panel order title → excerpt → optional “By/بقلم” author → bottom row (date start + Read more end with arrow). Desktop reserves 2-line title / 3-line excerpt for row alignment; hover lift; no whole-card link. |
+| `ContentCard` | Compact 4:3 card (`rounded-xl` ~12px): badge inset on image; blue panel order title → excerpt → optional “By/بقلم” author → date. **Title** (and image) are the detail links — no separate Read more CTA. Desktop reserves 2-line title / 2-line excerpt for row alignment; title has subtle hover + focus ring; card hover lift. |
 | `CardMedia` | Client: lazy `<img>` with `object-cover`, branded gradient fallback when URL missing/fails; restrained hover zoom via `.card-media-image` (disabled under `prefers-reduced-motion`). |
 
 ### Home
 
 | Component | Status |
 | --- | --- |
-| `FeaturedPublicationsSlider` | **Implemented** full-bleed hero: category, title, subtitle, locale date, blog `AuthorLink`, “Read more” CTA. Manual only (arrows, dots, keyboard when focused, horizontal swipe). No autoplay. Hides controls for a single slide. Localized empty state; branded fallback when image missing/fails. Eager-loads only the first slide image; others load when selected. Respects `prefers-reduced-motion`. |
+| `FeaturedPublicationsSlider` | **Implemented** full-bleed hero: copy anchored at the **bottom** (category, clickable title, subtitle, date, blog `AuthorLink`) with a bottom-up `.hero-media-gradient` wash so mid/upper photo stays clear. No separate Read more CTA. Manual only (arrows, dots, keyboard when focused, horizontal swipe). No autoplay. Hides controls for a single slide. Localized empty state; branded fallback when image missing/fails. Images use `object-cover object-center`. Eager-loads only the first slide image; others load when selected. Respects `prefers-reduced-motion`. |
 | `SectionHeader` | Shared editorial header: blue pill label + large heading (inline-start); description + outlined action (inline-end); stacks on mobile; RTL-aware |
 | `HomeFeaturedGrid` | Homepage featured row: same full-width 1/2/3-col grid as listing pages (no centered max-width gutters) |
 | `PublicationGrid` | 1/2/3-col grid or `variant="home"` via `HomeFeaturedGrid`; EmptyState when empty |
@@ -1093,6 +1093,21 @@ Open `http://localhost:3000`.
 ---
 
 ## K. Change history
+
+### 2026-11-17 — Homepage slider bottom copy + image-first overlay
+
+- Repositioned `FeaturedPublicationsSlider` text (category, title, subtitle, date/author) to the bottom of the hero with ~48–72px bottom padding (extra clearance when pagination dots are present); EN/AR use natural start alignment.
+- Replaced the side-edge `.hero-media-gradient` with a bottom-up transparent→dark wash so the upper/middle photo stays visible; images keep `object-cover object-center`.
+- Tightened responsive title/subtitle scale and max width so copy no longer dominates the frame. Navigation arrows, dots, swipe/keyboard, and locale links unchanged.
+- Removed unused slider `categoryLabels` prop (badge uses localized `category.name` from the item).
+- Validation: `tsc --noEmit` pass; ESLint same pre-existing unrelated issues (no longer warns on unused `categoryLabels`); `next build` compiled and generated routes, then exited on Next.js security-upgrade advisory.
+
+### 2026-11-17 — Card titles replace Read more CTAs
+
+- Removed publication/event **Read more** / **اقرأ المزيد** actions from `ContentCard` and the homepage `FeaturedPublicationsSlider`.
+- Detail navigation is via the existing title `Link` (and card image link); title keeps editorial styling with subtle hover + keyboard focus ring (no underline).
+- Dropped unused `readMoreLabel` props through `PublicationCard` / `EventCard` / grids / pages, and removed `home.readMore`, `publications.readMore`, and `events.readMore` from EN/AR dictionaries.
+- Preserved dates, authors, View All / PDF actions, routes, and RTL/LTR. Validation: no remaining `readMore` UI strings in `src/`; `tsc --noEmit` pass; ESLint same pre-existing issues; `next build` compiled and generated routes successfully (process then exited with Next.js security-upgrade advisory).
 
 ### 2026-11-16 — Arabic organization name → مفكرة
 

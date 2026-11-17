@@ -53,7 +53,6 @@ async function HomeContent() {
         locale={locale}
         items={featuredPublications}
         labels={dict.home}
-        categoryLabels={dict.publications}
       />
 
       <section
@@ -76,7 +75,6 @@ async function HomeContent() {
             items={featuredPublications}
             emptyLabel={dict.publications.empty}
             categoryLabels={dict.publications}
-            readMoreLabel={dict.publications.readMore}
             variant="home"
           />
         </Container>

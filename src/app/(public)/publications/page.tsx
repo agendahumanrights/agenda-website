@@ -202,7 +202,6 @@ async function PublicationsResults({
         items={result.items}
         emptyLabel={dict.publications.empty}
         categoryLabels={dict.publications}
-        readMoreLabel={dict.publications.readMore}
       />
       <Pagination
         page={result.pagination.page}

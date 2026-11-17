@@ -6,11 +6,10 @@ import type { EventListItem } from "@/types/event";
 type Props = {
   locale: Locale;
   item: EventListItem;
-  readMoreLabel: string;
   badgeLabel: string;
 };
 
-export function EventCard({ locale, item, readMoreLabel, badgeLabel }: Props) {
+export function EventCard({ locale, item, badgeLabel }: Props) {
   const href = sitePath(`/events/${item.slug}`, locale);
   const dateLabel = new Date(item.eventDate).toLocaleDateString(locale, {
     day: "numeric",
@@ -27,7 +26,6 @@ export function EventCard({ locale, item, readMoreLabel, badgeLabel }: Props) {
       badge={badgeLabel}
       title={item.title}
       excerpt={item.subtitle}
-      readMoreLabel={readMoreLabel}
       dateTime={item.eventDate}
       dateLabel={dateLabel}
     />

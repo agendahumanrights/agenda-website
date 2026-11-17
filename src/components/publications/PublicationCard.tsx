@@ -8,15 +8,9 @@ type Props = {
   locale: Locale;
   item: PublicationListItem;
   categoryLabels: Dictionary["publications"];
-  readMoreLabel: string;
 };
 
-export function PublicationCard({
-  locale,
-  item,
-  categoryLabels,
-  readMoreLabel,
-}: Props) {
+export function PublicationCard({ locale, item, categoryLabels }: Props) {
   const href = sitePath(`/publications/${item.slug}`, locale);
   const dateLabel = item.publishedAt
     ? new Date(item.publishedAt).toLocaleDateString(locale, {
@@ -44,7 +38,6 @@ export function PublicationCard({
       badge={item.category.name}
       title={item.title}
       excerpt={item.subtitle}
-      readMoreLabel={readMoreLabel}
       dateTime={item.publishedAt}
       dateLabel={dateLabel}
       author={author}

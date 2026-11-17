@@ -18,7 +18,6 @@ type Props = {
   badge: string;
   title: string;
   excerpt?: string | null;
-  readMoreLabel: string;
   dateTime?: string | null;
   dateLabel?: string | null;
   author?: AuthorInfo | null;
@@ -29,6 +28,7 @@ type Props = {
 /**
  * Shared publication/event card: 4:3 media, compact blue panel,
  * aligned title/excerpt/footer row across grid cells.
+ * Title (and image) link to the detail page — no separate Read more CTA.
  */
 export function ContentCard({
   href,
@@ -37,7 +37,6 @@ export function ContentCard({
   badge,
   title,
   excerpt,
-  readMoreLabel,
   dateTime,
   dateLabel,
   author,
@@ -85,7 +84,11 @@ export function ContentCard({
         >
           <Link
             href={href}
-            className="line-clamp-2 rounded-sm [overflow-wrap:anywhere] transition-colors hover:text-white/90 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+            className={cn(
+              "line-clamp-2 rounded-sm no-underline [overflow-wrap:anywhere]",
+              "transition-colors hover:text-white/85",
+              "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white",
+            )}
           >
             {title}
           </Link>
@@ -117,51 +120,15 @@ export function ContentCard({
           </p>
         ) : null}
 
-        <div className="mt-auto flex flex-wrap items-end justify-between gap-x-4 gap-y-2 pt-4">
-          {dateTime && dateLabel ? (
-            <time
-              dateTime={dateTime}
-              className="text-[0.8125rem] leading-snug text-white/85 sm:text-sm"
-            >
-              {dateLabel}
-            </time>
-          ) : (
-            <span />
-          )}
-          <Link
-            href={href}
-            className={cn(
-              "inline-flex min-h-9 items-center gap-1.5 py-1 text-sm font-semibold text-white",
-              "underline-offset-4 hover:underline",
-              "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white",
-            )}
+        {dateTime && dateLabel ? (
+          <time
+            dateTime={dateTime}
+            className="mt-auto pt-4 text-[0.8125rem] leading-snug text-white/85 sm:text-sm"
           >
-            <span>{readMoreLabel}</span>
-            <ArrowIcon />
-          </Link>
-        </div>
+            {dateLabel}
+          </time>
+        ) : null}
       </div>
     </article>
-  );
-}
-
-function ArrowIcon() {
-  return (
-    <svg
-      width="14"
-      height="14"
-      viewBox="0 0 14 14"
-      fill="none"
-      aria-hidden
-      className="rtl:rotate-180"
-    >
-      <path
-        d="M2.5 7h9M7.5 3.5 11 7l-3.5 3.5"
-        stroke="currentColor"
-        strokeWidth="1.6"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      />
-    </svg>
   );
 }

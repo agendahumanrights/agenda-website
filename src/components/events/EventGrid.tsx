@@ -8,7 +8,6 @@ type Props = {
   locale: Locale;
   items: EventListItem[];
   emptyLabel: string;
-  readMoreLabel: string;
   badgeLabel: string;
   /** Center sparse rows on the homepage; listing pages keep a full 3-col grid. */
   variant?: "default" | "home";
@@ -18,7 +17,6 @@ export function EventGrid({
   locale,
   items,
   emptyLabel,
-  readMoreLabel,
   badgeLabel,
   variant = "default",
 }: Props) {
@@ -28,12 +26,7 @@ export function EventGrid({
 
   const cards = items.map((item) => (
     <li key={item.id} className="flex min-w-0">
-      <EventCard
-        locale={locale}
-        item={item}
-        readMoreLabel={readMoreLabel}
-        badgeLabel={badgeLabel}
-      />
+      <EventCard locale={locale} item={item} badgeLabel={badgeLabel} />
     </li>
   ));
 

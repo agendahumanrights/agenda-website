@@ -36,7 +36,6 @@ export function FeaturedEventsSection({
         locale={locale}
         items={items}
         emptyLabel={emptyLabel}
-        readMoreLabel={eventLabels.readMore}
         badgeLabel={eventLabels.categoryEvent}
         variant="home"
       />

@@ -22,7 +22,6 @@ type Props = {
   locale: Locale;
   items: PublicationListItem[];
   labels: Dictionary["home"];
-  categoryLabels: Dictionary["publications"];
 };
 
 /**
@@ -32,7 +31,6 @@ export function FeaturedPublicationsSlider({
   locale,
   items,
   labels,
-  categoryLabels,
 }: Props) {
   const [index, setIndex] = useState(0);
   const [failedImageIds, setFailedImageIds] = useState<ReadonlySet<string>>(
@@ -182,7 +180,7 @@ export function FeaturedPublicationsSlider({
                 });
               }}
               className={cn(
-                "hero-slide-transition object-cover transition-opacity duration-500",
+                "hero-slide-transition object-cover object-center transition-opacity duration-500",
                 active && !failedImageIds.has(item.id)
                   ? "opacity-100"
                   : "opacity-0",
@@ -201,32 +199,35 @@ export function FeaturedPublicationsSlider({
 
       <div
         className={cn(
-          "relative z-10 flex flex-1 flex-col justify-end pt-[var(--site-header-offset)]",
+          "relative z-10 mt-auto flex w-full flex-col justify-end pt-[var(--site-header-offset)]",
+          /* Clear side arrows; leave room above pagination dots */
           multi
-            ? "px-14 pb-20 sm:px-16 sm:pb-24 lg:px-6"
-            : "px-4 pb-14 sm:px-6 sm:pb-20",
+            ? "px-14 pb-16 sm:px-16 sm:pb-[4.25rem] lg:px-10 lg:pb-[4.5rem]"
+            : "px-5 pb-12 sm:px-8 sm:pb-14 lg:px-10 lg:pb-16",
         )}
       >
-        <div className="mx-auto w-full">
-        <div className="max-w-xl lg:max-w-2xl">
-          <p className="text-xs font-semibold uppercase tracking-[0.18em] text-white/90 sm:text-sm">
+        <div className="w-full max-w-xl lg:max-w-[36rem]">
+          <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.16em] text-white/90 sm:text-xs">
             {categoryLabel}
           </p>
-          <h3 className="font-editorial mt-3 text-[clamp(1.75rem,4.2vw,3.25rem)] leading-[1.15] font-semibold text-balance text-white">
+          <h3 className="font-editorial mt-2 text-[clamp(1.35rem,2.6vw,2.25rem)] leading-[1.2] font-semibold text-balance text-white sm:mt-2.5">
             <Link
               href={href}
-              className="rounded-sm focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white"
+              className={cn(
+                "rounded-sm no-underline transition-colors hover:text-white/85",
+                "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white",
+              )}
             >
               {current.title}
             </Link>
           </h3>
           {current.subtitle ? (
-            <p className="mt-3 max-w-prose text-[clamp(0.95rem,1.6vw,1.125rem)] leading-relaxed text-white/90 text-pretty">
+            <p className="mt-2 max-w-prose text-[clamp(0.875rem,1.35vw,1.0625rem)] leading-relaxed text-white/90 text-pretty sm:mt-2.5">
               {current.subtitle}
             </p>
           ) : null}
 
-          <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm uppercase tracking-wide text-white/85">
+          <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs uppercase tracking-wide text-white/85 sm:mt-3.5 sm:text-sm">
             {dateLabel && current.publishedAt ? (
               <time dateTime={current.publishedAt}>{dateLabel}</time>
             ) : null}
@@ -244,21 +245,6 @@ export function FeaturedPublicationsSlider({
               </>
             ) : null}
           </div>
-
-          <Link
-            href={href}
-            className={cn(
-              "mt-7 inline-flex items-center gap-2 border border-white/85 px-5 py-2.5 text-sm font-medium text-white",
-              "transition-colors hover:border-white hover:bg-white hover:text-[var(--brand-blue)]",
-              "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white",
-            )}
-          >
-            <span>{labels.readMore}</span>
-            <span aria-hidden className="rtl:rotate-180">
-              →
-            </span>
-          </Link>
-        </div>
         </div>
       </div>
 

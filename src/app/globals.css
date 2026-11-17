@@ -139,23 +139,16 @@ body {
   font-family: var(--font-serif);
 }
 
-/* Hero text legibility: strong on the inline-start edge, fades into the photo */
+/* Hero text legibility: bottom wash only — keeps mid/upper photo clear */
 .hero-media-gradient {
-  background: linear-gradient(to right,
-      rgba(0, 0, 0, 0.78) 0%,
-      rgba(0, 0, 0, 0.55) 32%,
-      rgba(0, 0, 0, 0.22) 58%,
-      rgba(0, 0, 0, 0.05) 78%,
-      transparent 100%);
-}
-
-[dir="rtl"] .hero-media-gradient {
-  background: linear-gradient(to left,
-      rgba(0, 0, 0, 0.78) 0%,
-      rgba(0, 0, 0, 0.55) 32%,
-      rgba(0, 0, 0, 0.22) 58%,
-      rgba(0, 0, 0, 0.05) 78%,
-      transparent 100%);
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.72) 0%,
+    rgba(0, 0, 0, 0.48) 22%,
+    rgba(0, 0, 0, 0.22) 48%,
+    rgba(0, 0, 0, 0.06) 68%,
+    transparent 82%
+  );
 }
 
 /* Full viewport heroes — header is fixed/overlay, so no negative-margin pull */

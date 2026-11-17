@@ -10,7 +10,6 @@ type Props = {
   items: PublicationListItem[];
   emptyLabel: string;
   categoryLabels: Dictionary["publications"];
-  readMoreLabel: string;
   /** Center sparse rows on the homepage; listing pages keep a full 3-col grid. */
   variant?: "default" | "home";
 };
@@ -20,7 +19,6 @@ export function PublicationGrid({
   items,
   emptyLabel,
   categoryLabels,
-  readMoreLabel,
   variant = "default",
 }: Props) {
   if (items.length === 0) {
@@ -33,7 +31,6 @@ export function PublicationGrid({
         locale={locale}
         item={item}
         categoryLabels={categoryLabels}
-        readMoreLabel={readMoreLabel}
       />
     </li>
   ));

@@ -177,7 +177,6 @@ async function EventsResults({
         locale={locale}
         items={result.items}
         emptyLabel={dict.events.empty}
-        readMoreLabel={dict.events.readMore}
         badgeLabel={dict.events.categoryEvent}
       />
       <Pagination
