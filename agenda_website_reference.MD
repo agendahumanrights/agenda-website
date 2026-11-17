@@ -4,7 +4,7 @@
 > **Source of truth:** application code. Requirements and older docs describe intended or planned behavior; this file describes verified implementation.  
 > **Do not treat scaffolding as completed features.**
 
-**Last updated:** 2026-11-14 (SoftImage reliable CDN loading)  
+**Last updated:** 2026-11-16 (Arabic org name → مفكرة)  
 **Inspection basis:** Checked-in source under the repository root. DB migrate/admin bootstrap depend on local `.env` (gitignored).
 
 ---
@@ -923,6 +923,24 @@ Same editorial pattern without author/PDF. Visitor-facing date is `eventDate`. P
 | Publication/event/founder content | DB `*Translation` tables |
 | Organization intro/vision/mission | `src/content/about.ts` (localized EN/AR strings) |
 
+### Publications terminology (UI)
+
+| Locale | Publications section label |
+| --- | --- |
+| Arabic (`ar.json`) | **الإصدارات** (and related forms: إصدارات / إصداراً / إصدار) |
+| English (`en.json`) | **Publications** (unchanged) |
+
+Routes (`/publications`, `/ar/publications`), Prisma models, APIs, and file identifiers remain `publication(s)`. Publish-status Arabic (`منشور`, `منشورة`, `النشر`, `إلغاء النشر`) is unchanged.
+
+### Organization name (UI)
+
+| Locale | Organization name |
+| --- | --- |
+| Arabic (`ar.json` + JSON-LD `alternateName`) | **مفكرة** / **مفكرة لحقوق الإنسان** |
+| English (`en.json`) | **Agenda** / **Human Rights Agenda** (unchanged) |
+
+Logo assets are unchanged (English lockup). Code identifiers, routes, cookie names, and social profile URLs that contain `agenda` are unchanged.
+
 ### Detection, switching, persistence, fallback
 
 | Concern | Behavior |
@@ -1076,6 +1094,19 @@ Open `http://localhost:3000`.
 
 ## K. Change history
 
+### 2026-11-16 — Arabic organization name → مفكرة
+
+- Renamed Arabic UI org name from **أجندة** to **مفكرة** in `src/messages/ar.json` (site name/description, logo alt, home About teaser, events subtitle, footer social labels) and JSON-LD `alternateName` in `src/lib/seo/json-ld.ts`.
+- English remains **Agenda** / **Human Rights Agenda**; logo files and social URLs unchanged; no route/schema/API changes.
+- Validation: repo-wide search found no remaining user-facing `أجندة`; `tsc --noEmit` pass; `next build` pass. ESLint still reports pre-existing unrelated issues.
+
+### 2026-11-16 — Arabic Publications UI label → الإصدارات
+
+- Renamed Arabic UI chrome for the Publications section from **المنشورات** / **منشورات** to **الإصدارات** / **إصدارات** in `src/messages/ar.json` (nav, home, catalogue, detail placeholders, SEO `meta.siteDescription`, admin, homepage featured, 404 CTAs).
+- English `en.json` still uses **Publications**; no route, schema, API, or DB content changes.
+- Preserved publish-status wording (`منشور` / `منشورة` / `النشر` / `إلغاء النشر`).
+- Validation: repo-wide grep found no remaining `المنشورات` / `منشورات`; `tsc --noEmit` pass; ESLint still reports pre-existing unrelated issues (1 error / 4 warnings).
+
 ### 2026-11-10 — Founder create validation UX + admin session Date prerender
 
 - Confirmed R2 founder portrait upload works; create `400 Validation failed` was Zod rejecting the JSON body (commonly invalid email — client previously only checked non-empty).
@@ -1090,11 +1121,6 @@ Open `http://localhost:3000`.
 - Media route streams from active provider (R2 or local); orphan cleanup deletes R2 objects when unreferenced.
 - CLI: `media:test-r2`, `media:migrate-r2` (dry-run default; never deletes local files). Docs: `CLOUDFLARE_R2_STORAGE.md`. `.env.example` + `next.config.ts` remotePatterns updated.
 - No Prisma schema/migration changes. Validation: `tsc` pass; vitest 88 passed / 1 skipped; `next build` pass; `media:test-r2` put/head/delete ok; `media:migrate-r2` dry-run found 9 local assets. ESLint still reports pre-existing unrelated errors. Live admin upload browser QA not claimed here.
-
-### 2026-11-14 — SoftImage reliable CDN loading
-
-- Gallery/detail images were failing after switching MediaGallery to `SoftImage` + optimized `next/image` (optimizer proxy errors marked slides permanently broken).
-- `SoftImage` now loads absolute R2/CDN URLs with `unoptimized` (direct CDN) and falls back to native `<img>` on any `next/image` error; `onError` fires only if the native load also fails. `/api/media` paths still use `<img>`.
 
 ### 2026-11-14 — Publication / event detail width & UX
 

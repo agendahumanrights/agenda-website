@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -19,19 +19,13 @@ type Props = {
   onError?: () => void;
 };
 
-function isAbsoluteHttpUrl(src: string): boolean {
+function canOptimize(src: string): boolean {
   return /^https?:\/\//i.test(src);
 }
 
-type Mode = "next" | "native";
-
 /**
- * Reliable media image:
- * - Absolute R2/CDN URLs try `next/image` with `unoptimized` (direct CDN, no
- *   optimizer proxy — avoids broken gallery frames when the optimizer fails).
- * - On any `next/image` error, seamlessly fall back to a native `<img>`.
- * - Relative `/api/media` keys always use native `<img>` (access-checked).
- * - `onError` fires only after native loading also fails.
+ * Uses `next/image` for absolute http(s) URLs (e.g. R2 CDN).
+ * Falls back to `<img>` for same-origin `/api/media` keys (access-checked).
  */
 export function SoftImage({
   src,
@@ -44,23 +38,16 @@ export function SoftImage({
   height,
   onError,
 }: Props) {
-  const absolute = isAbsoluteHttpUrl(src);
-  const [mode, setMode] = useState<Mode>(absolute ? "next" : "native");
   const [failed, setFailed] = useState(false);
-
-  useEffect(() => {
-    setMode(absolute ? "next" : "native");
-    setFailed(false);
-  }, [src, absolute]);
 
   if (failed) return null;
 
-  function failCompletely() {
+  function handleError() {
     setFailed(true);
     onError?.();
   }
 
-  if (mode === "next" && absolute) {
+  if (canOptimize(src)) {
     if (fill) {
       return (
         <Image
@@ -69,8 +56,7 @@ export function SoftImage({
           fill
           sizes={sizes}
           priority={priority}
-          unoptimized
-          onError={() => setMode("native")}
+          onError={handleError}
           className={cn(className)}
         />
       );
@@ -83,22 +69,21 @@ export function SoftImage({
         height={height ?? 800}
         sizes={sizes}
         priority={priority}
-        unoptimized
-        onError={() => setMode("native")}
+        onError={handleError}
         className={cn(className)}
       />
     );
   }
 
   return (
-    // eslint-disable-next-line @next/next/no-img-element -- CDN fallback + /api/media
+    // eslint-disable-next-line @next/next/no-img-element -- legacy /api/media delivery
     <img
       src={src}
       alt={alt}
       loading={priority ? "eager" : "lazy"}
       decoding="async"
       fetchPriority={priority ? "high" : "auto"}
-      onError={failCompletely}
+      onError={handleError}
       className={cn(fill && "absolute inset-0 h-full w-full", className)}
       width={fill ? undefined : width}
       height={fill ? undefined : height}

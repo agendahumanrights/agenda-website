@@ -19,7 +19,7 @@ export function organizationJsonLd(siteName: string) {
     "@context": "https://schema.org",
     "@type": "Organization",
     name: siteName,
-    alternateName: ["Agenda", "Human Rights Agenda", "أجندة"],
+    alternateName: ["Agenda", "Human Rights Agenda", "مفكرة"],
     url: getSiteUrl() || PRODUCTION_SITE_URL,
     logo: absoluteUrl(ORGANIZATION_LOGO_PATH),
     sameAs: [...ORGANIZATION_SAME_AS],
