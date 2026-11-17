@@ -24,9 +24,7 @@ export function FeaturedEventsSection({
     <div className="flex flex-col gap-6 sm:gap-7 lg:gap-8">
       <SectionHeader
         id="featured-events-heading"
-        label={labels.eventsSectionLabel}
         title={labels.featuredEvents}
-        description={labels.eventsSectionDescription}
         action={{
           href: sitePath("/events", locale),
           label: labels.viewAllEvents,

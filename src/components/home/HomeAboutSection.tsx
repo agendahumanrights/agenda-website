@@ -3,7 +3,6 @@ import Link from "next/link";
 
 import {
   sectionActionClassName,
-  sectionLabelClassName,
   sectionTitleClassName,
 } from "@/components/home/SectionHeader";
 import type { OrganizationCopy } from "@/content/about";
@@ -34,8 +33,7 @@ export function HomeAboutSection({
     >
       <div className="grid items-center gap-8 lg:grid-cols-2 lg:gap-12 xl:gap-14">
         <div className="flex flex-col gap-4 sm:gap-5">
-          <p className={sectionLabelClassName}>{labels.aboutSectionLabel}</p>
-          <h2 id="home-about-heading" className={cn(sectionTitleClassName, "mt-0")}>
+          <h2 id="home-about-heading" className={sectionTitleClassName}>
             {siteName}
           </h2>
           <p className="max-w-xl text-base leading-relaxed text-zinc-800 text-pretty sm:text-lg">

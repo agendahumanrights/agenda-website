@@ -62,9 +62,7 @@ async function HomeContent() {
         <Container className="flex flex-col gap-6 sm:gap-7 lg:gap-8">
           <SectionHeader
             id="home-pubs-heading"
-            label={dict.home.publicationsSectionLabel}
             title={dict.home.publicationsCatalogue}
-            description={dict.home.publicationsSectionDescription}
             action={{
               href: sitePath("/publications", locale),
               label: dict.home.viewAllPublications,

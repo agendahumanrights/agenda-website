@@ -4,7 +4,7 @@
 > **Source of truth:** application code. Requirements and older docs describe intended or planned behavior; this file describes verified implementation.  
 > **Do not treat scaffolding as completed features.**
 
-**Last updated:** 2026-11-17 (Homepage slider bottom copy layout)  
+**Last updated:** 2026-11-17 (Decorative section pills removed site-wide)  
 **Inspection basis:** Checked-in source under the repository root. DB migrate/admin bootstrap depend on local `.env` (gitignored).
 
 ---
@@ -444,7 +444,7 @@ No logout route or working login form exists.
 | Component | Status |
 | --- | --- |
 | `FeaturedPublicationsSlider` | **Implemented** full-bleed hero: copy anchored at the **bottom** (category, clickable title, subtitle, date, blog `AuthorLink`) with a bottom-up `.hero-media-gradient` wash so mid/upper photo stays clear. No separate Read more CTA. Manual only (arrows, dots, keyboard when focused, horizontal swipe). No autoplay. Hides controls for a single slide. Localized empty state; branded fallback when image missing/fails. Images use `object-cover object-center`. Eager-loads only the first slide image; others load when selected. Respects `prefers-reduced-motion`. |
-| `SectionHeader` | Shared editorial header: blue pill label + large heading (inline-start); description + outlined action (inline-end); stacks on mobile; RTL-aware |
+| `SectionHeader` | Shared editorial header: large heading + outlined action on one row (stacks on mobile; RTL-aware). No decorative pill labels or intro blurbs. |
 | `HomeFeaturedGrid` | Homepage featured row: same full-width 1/2/3-col grid as listing pages (no centered max-width gutters) |
 | `PublicationGrid` | 1/2/3-col grid or `variant="home"` via `HomeFeaturedGrid`; EmptyState when empty |
 | `FeaturedEventsSection` | `SectionHeader` + home `EventGrid` (max three featured from homepage selection) |
@@ -489,7 +489,7 @@ No logout route or working login form exists.
 
 | Component | Status |
 | --- | --- |
-| `HomeAboutSection` | Teaser using shared section label/title/action styles; vision + mission summary; official logo (`/images/agenda-logo.png`) in the white panel |
+| `HomeAboutSection` | Teaser using shared title/action styles (no decorative pill); vision + mission summary; official logo (`/images/agenda-logo.png`) in the white panel |
 | `OrganizationIntro` | About page vision + mission via `AboutContentBlock` (mission column reversed on desktop) |
 | `AboutContentBlock` / `IllustrationPanel` / `AccentHeading` | Shared two-column layout, white illustration card with decorative circles, blue vertical accent |
 | `AboutIllustrations` | Lightweight brand-blue SVGs (vision target, mission document/check, inclusion figures) |
@@ -1093,6 +1093,18 @@ Open `http://localhost:3000`.
 ---
 
 ## K. Change history
+
+### 2026-11-17 — Remove decorative section pills site-wide
+
+- Extended the Publications header cleanup: homepage Events and About teaser no longer show light-blue section pills (“Dialogue & Participation” / “حوار ومشاركة”, “About Us” / “من نحن”) or Events intro blurb.
+- `SectionHeader` is now title + View-all action only (label/description props removed). Functional card/category badges and page-hero / org copy unchanged.
+- Removed unused EN/AR keys: `eventsSectionLabel`, `eventsSectionDescription`, `aboutSectionLabel`, `aboutOverview` (plus earlier Publications pill/description keys).
+- Validation: `tsc --noEmit` pass; ESLint same pre-existing unrelated issues; `next build` compiled and generated routes, then exited on Next.js security-upgrade advisory.
+
+### 2026-11-17 — Homepage Publications header: drop pill + description
+
+- Homepage Publications `SectionHeader` showed only the **Publications** / **الإصدارات** heading and **View all publications** action (superseded by the site-wide entry above for Events/About).
+- Validation at the time: `tsc --noEmit` pass; ESLint same pre-existing unrelated issues; `next build` compiled then exited on Next.js security-upgrade advisory.
 
 ### 2026-11-17 — Homepage slider bottom copy + image-first overlay
 
