@@ -83,9 +83,9 @@ export async function getFeaturedPublications(
               },
             },
             mainImage: { select: { storageKey: true } },
-            authorFounder: {
+            authorWriter: {
               select: {
-                bioKey: true,
+                slug: true,
                 translations: {
                   where: { locale },
                   take: 1,
@@ -119,8 +119,8 @@ export async function getFeaturedPublications(
           mainImageUrl: p.mainImage
             ? storage.getPublicUrl(p.mainImage.storageKey)
             : null,
-          authorName: p.authorFounder?.translations[0]?.fullName ?? null,
-          authorBioKey: p.authorFounder?.bioKey ?? null,
+          authorName: p.authorWriter?.translations[0]?.fullName ?? null,
+          authorSlug: p.authorWriter?.slug ?? null,
         };
       });
   }, []);

@@ -7,7 +7,7 @@ import { cn } from "@/lib/utils";
 
 type AuthorInfo = {
   name: string;
-  bioKey: string;
+  slug: string;
   byLabel: string;
 };
 
@@ -134,7 +134,7 @@ export function ContentCard({
               <p className="relative z-[3] text-[0.75rem] leading-snug text-white/95 sm:text-[0.8125rem]">
                 <span className="text-white/80">{author.byLabel} </span>
                 <AuthorLink
-                  bioKey={author.bioKey}
+                  slug={author.slug}
                   name={author.name}
                   locale={locale}
                   className="font-medium text-white underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"

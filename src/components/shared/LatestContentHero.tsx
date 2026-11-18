@@ -14,7 +14,7 @@ import { cn } from "@/lib/utils";
 
 export type LatestContentHeroAuthor = {
   name: string;
-  bioKey: string;
+  slug: string;
   byLabel: string;
 };
 
@@ -169,7 +169,7 @@ export function LatestContentHero({
                     <p className="text-white/90">
                       <span className="text-white/75">{author.byLabel} </span>
                       <AuthorLink
-                        bioKey={author.bioKey}
+                        slug={author.slug}
                         name={author.name}
                         locale={locale}
                         className="font-medium text-white underline decoration-white/50 underline-offset-4 hover:decoration-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"

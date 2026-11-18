@@ -56,12 +56,18 @@ export function folderForMediaPurpose(purpose: MediaPurpose): string {
       return "agenda/publications/gallery";
     case "publication-pdf":
       return "agenda/publications/documents";
+    case "publication-inline":
+      return "agenda/publications/inline";
     case "event-main":
       return "agenda/events/main";
     case "event-gallery":
       return "agenda/events/gallery";
+    case "event-inline":
+      return "agenda/events/inline";
     case "founder-profile":
       return "agenda/founders/profile";
+    case "writer-profile":
+      return "agenda/writers/profile";
     default: {
       const _exhaustive: never = purpose;
       return _exhaustive;

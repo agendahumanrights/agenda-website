@@ -42,14 +42,13 @@ import type {
 } from "@/types/founder";
 
 /**
- * Founders are blog authors and appear on About Us.
- * Scope update: managed via Admin Dashboard (supersedes requirements §2.5 founder restriction).
- * Organization vision/mission remain outside admin.
+ * Founders appear on About Us only (not publication authors; see Writer).
+ * Managed via Admin Dashboard. Organization vision/mission remain outside admin.
  *
  * Rules:
  * - Create/update require complete ar+en name, professional area, biography, email, profile image.
  * - bioKey is generated on create and immutable afterward.
- * - Delete is rejected (409) while any publication (draft or published) references the founder.
+ * - Delete removes the founder and orphans the portrait when unused.
  * - Biography is plain text (whitespace-preserved), not Markdown/HTML.
  */
 
@@ -179,7 +178,6 @@ export async function getFounderByBioKey(
 const adminInclude = {
   profileImage: { include: { altTexts: true } },
   translations: true,
-  _count: { select: { publications: true } },
 } satisfies Prisma.FounderInclude;
 
 function mapAdminDetail(
@@ -192,7 +190,6 @@ function mapAdminDetail(
     sortOrder: row.sortOrder,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
-    publicationCount: row._count.publications,
     translations: row.translations.map((t) => ({
       locale: t.locale,
       fullName: t.fullName,
@@ -273,7 +270,6 @@ export async function listAdminFounders(
       include: {
         profileImage: true,
         translations: true,
-        _count: { select: { publications: true } },
       },
     }),
   ]);
@@ -301,7 +297,6 @@ export async function listAdminFounders(
       profileImageUrl: row.profileImage
         ? storage.getPublicUrl(row.profileImage.storageKey)
         : null,
-      publicationCount: row._count.publications,
     };
   });
 
@@ -464,47 +459,15 @@ export async function deleteFounder(id: string): Promise<void> {
 
   const existing = await prisma.founder.findUnique({
     where: { id },
-    include: {
-      _count: { select: { publications: true } },
-      publications: {
-        select: { id: true, slug: true, status: true },
-        take: 20,
-      },
-    },
+    select: { profileImageId: true },
   });
   if (!existing) throw notFound("Founder not found");
 
-  if (existing._count.publications > 0) {
-    throw conflict(
-      "Cannot delete a founder linked to publications. Reassign or remove those publications first.",
-      {
-        publicationCount: existing._count.publications,
-        publications: existing.publications.map((p) => ({
-          id: p.id,
-          slug: p.slug,
-          status: p.status,
-        })),
-      },
-    );
-  }
-
   const imageId = existing.profileImageId;
 
-  try {
-    await withInteractiveTransaction(async (tx) => {
-      await tx.founder.delete({ where: { id } });
-    });
-  } catch (error) {
-    if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === "P2003"
-    ) {
-      throw conflict(
-        "Cannot delete a founder linked to publications. Reassign or remove those publications first.",
-      );
-    }
-    throw error;
-  }
+  await withInteractiveTransaction(async (tx) => {
+    await tx.founder.delete({ where: { id } });
+  });
 
   if (imageId) {
     await deleteMediaAssetIfOrphaned(imageId);
@@ -528,7 +491,6 @@ export async function listAllAdminFoundersOrdered(
     include: {
       profileImage: true,
       translations: true,
-      _count: { select: { publications: true } },
     },
   });
 
@@ -553,7 +515,6 @@ export async function listAllAdminFoundersOrdered(
       profileImageUrl: row.profileImage
         ? storage.getPublicUrl(row.profileImage.storageKey)
         : null,
-      publicationCount: row._count.publications,
     };
   });
 }

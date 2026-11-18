@@ -563,6 +563,10 @@ export function EventForm({
                     value={active.description}
                     disabled={busy}
                     labels={markdownLabels}
+                    imageUpload={{
+                      purpose: "event-inline",
+                      maxImageBytes: mediaLimits.maxImageBytes,
+                    }}
                     onChange={(value) => {
                       markDirty();
                       setActive((s) => ({ ...s, description: value }));

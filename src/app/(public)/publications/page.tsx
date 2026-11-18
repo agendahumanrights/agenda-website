@@ -226,6 +226,49 @@ async function PublicationsResults({
   );
 }
 
+async function PublicationsCatalogue({
+  locale,
+  dict,
+  searchParams,
+}: {
+  locale: Locale;
+  dict: Dictionary;
+  searchParams: SearchParams;
+}) {
+  const applied = parsePublicationCatalogueParams(await searchParams);
+  const categories = await listPublicationCategories(locale);
+
+  return (
+    <CatalogueLiveProvider>
+      <div className="flex flex-col gap-6">
+        <PublicationFilters
+          locale={locale}
+          labels={dict.publications}
+          catalogueLabels={dict.catalogue}
+          categories={categories}
+          applied={{
+            q: applied.q,
+            category: applied.category,
+            sort: applied.sort,
+          }}
+        />
+        <CatalogueResultsFrame loadingLabel={dict.catalogue.loading}>
+          <Suspense
+            fallback={<ResultsPending label={dict.catalogue.loading} />}
+          >
+            <PublicationsResults
+              locale={locale}
+              dict={dict}
+              applied={applied}
+              categories={categories}
+            />
+          </Suspense>
+        </CatalogueResultsFrame>
+      </div>
+    </CatalogueLiveProvider>
+  );
+}
+
 export default async function PublicationsPage({
   searchParams,
 }: {
@@ -233,9 +276,6 @@ export default async function PublicationsPage({
 }) {
   const locale = await getRequestLocale();
   const dict = await getDictionary(locale);
-  const raw = await searchParams;
-  const applied = parsePublicationCatalogueParams(raw);
-  const categories = await listPublicationCategories(locale);
 
   const breadcrumbs = [
     { label: dict.nav.home, href: sitePath("/", locale) },
@@ -288,10 +328,10 @@ export default async function PublicationsPage({
           dateTime={newest.publishedAt}
           dateLabel={dateLabel}
           author={
-            newest.authorName && newest.authorBioKey
+            newest.authorName && newest.authorSlug
               ? {
                   name: newest.authorName,
-                  bioKey: newest.authorBioKey,
+                  slug: newest.authorSlug,
                   byLabel: dict.publications.authorBy,
                 }
               : null
@@ -307,33 +347,15 @@ export default async function PublicationsPage({
         />
       )}
       <Container className="flex flex-col gap-6 pt-10 pb-10 sm:gap-7 sm:pt-12 sm:pb-12 lg:pt-14">
-        <CatalogueLiveProvider>
-          <div className="flex flex-col gap-6">
-            <PublicationFilters
-              locale={locale}
-              labels={dict.publications}
-              catalogueLabels={dict.catalogue}
-              categories={categories}
-              applied={{
-                q: applied.q,
-                category: applied.category,
-                sort: applied.sort,
-              }}
-            />
-            <CatalogueResultsFrame loadingLabel={dict.catalogue.loading}>
-              <Suspense
-                fallback={<ResultsPending label={dict.catalogue.loading} />}
-              >
-                <PublicationsResults
-                  locale={locale}
-                  dict={dict}
-                  applied={applied}
-                  categories={categories}
-                />
-              </Suspense>
-            </CatalogueResultsFrame>
-          </div>
-        </CatalogueLiveProvider>
+        <Suspense
+          fallback={<ResultsPending label={dict.catalogue.loading} />}
+        >
+          <PublicationsCatalogue
+            locale={locale}
+            dict={dict}
+            searchParams={searchParams}
+          />
+        </Suspense>
       </Container>
     </>
   );

@@ -85,4 +85,18 @@ describe("MarkdownContent", () => {
     expect(html.toLowerCase()).not.toContain("javascript:");
     expect(html).toContain('src="https://cdn.example/a.png"');
   });
+
+  it("allows same-origin /api/media images and optional captions", () => {
+    const html = renderToStaticMarkup(
+      <MarkdownContent
+        source={
+          '![Local](/api/media/agenda/publications/inline/a.jpg "Harbor boats")\n\n![Bad](/evil/path.png)'
+        }
+      />,
+    );
+    expect(html).toContain('src="/api/media/agenda/publications/inline/a.jpg"');
+    expect(html).toContain("<figure");
+    expect(html).toContain("<figcaption>Harbor boats</figcaption>");
+    expect(html).not.toContain("/evil/path.png");
+  });
 });

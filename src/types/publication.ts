@@ -44,7 +44,8 @@ export type PublicationListItem = {
   slug: string;
   mainImageUrl: string | null;
   authorName: string | null;
-  authorBioKey: string | null;
+  /** Writer public slug for /writers/{slug}. */
+  authorSlug: string | null;
 };
 
 export type PublicationDetail = PublicationListItem & {
@@ -56,7 +57,8 @@ export type PublicationDetail = PublicationListItem & {
   galleryImageUrls: string[];
   /** Main image first, then gallery (deduped by media id). */
   images: DetailMediaImage[];
-  authorProfessionalArea: string | null;
+  /** Writer major / professional specialization. */
+  authorMajor: string | null;
   authorImageUrl: string | null;
 };
 
@@ -95,9 +97,9 @@ export type AdminPublicationDetail = {
   publishedAt: string | null;
   createdAt: string;
   updatedAt: string;
-  authorFounderId: string | null;
+  authorWriterId: string | null;
   authorName: string | null;
-  authorBioKey: string | null;
+  authorSlug: string | null;
   translations: {
     locale: "ar" | "en";
     title: string;

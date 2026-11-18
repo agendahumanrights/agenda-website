@@ -6,8 +6,8 @@
 // - Titles/subtitles/descriptions remain on *Translation tables; language comes from the cookie.
 // - Lookups resolve by slug, then load the translation for the active locale.
 //
-// About Us content (vision/mission/founder bios) is NOT managed via Admin (requirements §2.5).
-// Founder records still live here so blog publications can reference authors.
+// About Us content (vision/mission) is NOT managed via Admin (requirements §2.5).
+// Founders power About Us biographies; Writers are independent publication authors.
 //
 // Migration note: If an earlier draft schema with per-translation slugs was applied,
 // create a forward migration that adds Publication.slug / Event.slug, backfills from a
@@ -40,7 +40,7 @@ model PublicationCategory {
   slug           String   @unique
   nameEn         String
   nameAr         String
-  /// When true, publications require a founder author (seeded for BLOG).
+  /// When true, publications require a writer author to publish.
   requiresAuthor Boolean  @default(false)
   sortOrder      Int      @default(0)
   createdAt      DateTime @default(now())
@@ -102,7 +102,7 @@ model LoginThrottle {
   updatedAt       DateTime  @updatedAt
 }
 
-/// Public-facing founder / blog author profile.
+/// Public-facing founder profile (About Us). Independent from Writers.
 model Founder {
   id        String   @id @default(cuid())
   /// Stable key for About Us deep links, e.g. "jane-doe" → /about#founder-jane-doe
@@ -116,7 +116,43 @@ model Founder {
   profileImage   MediaAsset? @relation("FounderProfileImage", fields: [profileImageId], references: [id], onDelete: SetNull)
 
   translations FounderTranslation[]
+}
+
+/// Publication authors (independent from Founders). Public profile at /writers/{slug}.
+model Writer {
+  id        String   @id @default(cuid())
+  /// Stable canonical slug for /writers/{slug}
+  slug      String   @unique
+  /// Optional so founder→writer migration can preserve incomplete legacy emails.
+  email     String?
+  /// JSON array of { platform: string, url: string } (no duplicates by platform).
+  socialLinks Json   @default("[]")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  profileImageId String?     @unique
+  profileImage   MediaAsset? @relation("WriterProfileImage", fields: [profileImageId], references: [id], onDelete: SetNull)
+
+  translations WriterTranslation[]
   publications Publication[]
+
+  @@index([email])
+}
+
+model WriterTranslation {
+  id       String @id @default(cuid())
+  writerId String
+  locale   Locale
+  fullName String
+  /// Professional specialization / major
+  major    String
+  /// Markdown biography; empty string allowed for legacy rows migrated without copy.
+  biography String @default("") @db.Text
+
+  writer Writer @relation(fields: [writerId], references: [id], onDelete: Cascade)
+
+  @@unique([writerId, locale])
+  @@index([locale])
 }
 
 model FounderTranslation {
@@ -141,10 +177,10 @@ model Publication {
   status          PublicationStatus @default(DRAFT)
   /// Date shown to visitors
   publishedAt     DateTime?
-  /// Optional founder author for any category; required to publish when category.requiresAuthor
-  authorFounderId String?
-  createdAt       DateTime          @default(now())
-  updatedAt       DateTime          @updatedAt
+  /// Optional writer author for any category; required to publish when category.requiresAuthor
+  authorWriterId String?
+  createdAt      DateTime          @default(now())
+  updatedAt      DateTime          @updatedAt
 
   mainImageId String?
   /// Optional English PDF attachment (locale-matched on public EN pages).
@@ -154,18 +190,18 @@ model Publication {
   /// Optional single YouTube watch URL (canonical https://www.youtube.com/watch?v=…). Not counted toward image limits.
   youtubeUrl  String?
 
-  category      PublicationCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  authorFounder Founder?            @relation(fields: [authorFounderId], references: [id], onDelete: Restrict)
-  mainImage     MediaAsset?         @relation("PublicationMainImage", fields: [mainImageId], references: [id], onDelete: SetNull)
-  pdfEn         MediaAsset?         @relation("PublicationPdfEn", fields: [pdfEnId], references: [id], onDelete: SetNull)
-  pdfAr         MediaAsset?         @relation("PublicationPdfAr", fields: [pdfArId], references: [id], onDelete: SetNull)
-  translations  PublicationTranslation[]
-  gallery       PublicationGalleryImage[]
-  featured      FeaturedPublication?
+  category     PublicationCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  authorWriter Writer?             @relation(fields: [authorWriterId], references: [id], onDelete: Restrict)
+  mainImage    MediaAsset?         @relation("PublicationMainImage", fields: [mainImageId], references: [id], onDelete: SetNull)
+  pdfEn        MediaAsset?         @relation("PublicationPdfEn", fields: [pdfEnId], references: [id], onDelete: SetNull)
+  pdfAr        MediaAsset?         @relation("PublicationPdfAr", fields: [pdfArId], references: [id], onDelete: SetNull)
+  translations PublicationTranslation[]
+  gallery      PublicationGalleryImage[]
+  featured     FeaturedPublication?
 
   @@index([status, publishedAt])
   @@index([categoryId, status])
-  @@index([authorFounderId])
+  @@index([authorWriterId])
   @@index([mainImageId])
   @@index([pdfEnId])
   @@index([pdfArId])
@@ -267,6 +303,7 @@ model MediaAsset {
   altTexts MediaAltText[]
 
   founderProfile         Founder?                   @relation("FounderProfileImage")
+  writerProfile          Writer?                    @relation("WriterProfileImage")
   publicationMainImages  Publication[]              @relation("PublicationMainImage")
   publicationPdfsEn      Publication[]              @relation("PublicationPdfEn")
   publicationPdfsAr      Publication[]              @relation("PublicationPdfAr")

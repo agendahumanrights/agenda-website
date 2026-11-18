@@ -201,6 +201,38 @@ async function EventsResults({
   );
 }
 
+async function EventsCatalogue({
+  locale,
+  dict,
+  searchParams,
+}: {
+  locale: Locale;
+  dict: Dictionary;
+  searchParams: SearchParams;
+}) {
+  const applied = parseEventCatalogueParams(await searchParams);
+
+  return (
+    <CatalogueLiveProvider>
+      <div className="flex flex-col gap-6">
+        <EventDateFilter
+          locale={locale}
+          labels={dict.events}
+          catalogueLabels={dict.catalogue}
+          applied={{ q: applied.q, sort: applied.sort }}
+        />
+        <CatalogueResultsFrame loadingLabel={dict.catalogue.loading}>
+          <Suspense
+            fallback={<ResultsPending label={dict.catalogue.loading} />}
+          >
+            <EventsResults locale={locale} dict={dict} applied={applied} />
+          </Suspense>
+        </CatalogueResultsFrame>
+      </div>
+    </CatalogueLiveProvider>
+  );
+}
+
 export default async function EventsPage({
   searchParams,
 }: {
@@ -208,8 +240,6 @@ export default async function EventsPage({
 }) {
   const locale = await getRequestLocale();
   const dict = await getDictionary(locale);
-  const raw = await searchParams;
-  const applied = parseEventCatalogueParams(raw);
 
   const breadcrumbs = [
     { label: dict.nav.home, href: sitePath("/", locale) },
@@ -272,23 +302,15 @@ export default async function EventsPage({
         />
       )}
       <Container className="flex flex-col gap-6 pt-10 pb-10 sm:gap-7 sm:pt-12 sm:pb-12 lg:pt-14">
-        <CatalogueLiveProvider>
-          <div className="flex flex-col gap-6">
-            <EventDateFilter
-              locale={locale}
-              labels={dict.events}
-              catalogueLabels={dict.catalogue}
-              applied={{ q: applied.q, sort: applied.sort }}
-            />
-            <CatalogueResultsFrame loadingLabel={dict.catalogue.loading}>
-              <Suspense
-                fallback={<ResultsPending label={dict.catalogue.loading} />}
-              >
-                <EventsResults locale={locale} dict={dict} applied={applied} />
-              </Suspense>
-            </CatalogueResultsFrame>
-          </div>
-        </CatalogueLiveProvider>
+        <Suspense
+          fallback={<ResultsPending label={dict.catalogue.loading} />}
+        >
+          <EventsCatalogue
+            locale={locale}
+            dict={dict}
+            searchParams={searchParams}
+          />
+        </Suspense>
       </Container>
     </>
   );

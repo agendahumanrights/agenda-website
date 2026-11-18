@@ -5,8 +5,8 @@ import { getDictionary } from "@/i18n/get-dictionary";
 import { getRequestLocale } from "@/i18n/get-locale";
 import { AppError } from "@/server/http/errors";
 import { listPublicationCategories } from "@/server/services/categories";
-import { listFounders } from "@/server/services/founders";
 import { getAdminPublicationById } from "@/server/services/publications";
+import { listWriters } from "@/server/services/writers";
 import { MEDIA_LIMITS } from "@/server/storage/limits";
 
 
@@ -30,8 +30,8 @@ export default async function AdminEditPublicationPage({
     throw error;
   }
 
-  const [founders, categories] = await Promise.all([
-    listFounders(locale),
+  const [writers, categories] = await Promise.all([
+    listWriters(locale),
     listPublicationCategories(locale),
   ]);
 
@@ -41,7 +41,7 @@ export default async function AdminEditPublicationPage({
       locale={locale}
       labels={dict.admin.pub}
       markdownLabels={dict.admin.markdown}
-      founders={founders.map((f) => ({ id: f.id, fullName: f.fullName }))}
+      writers={writers.map((w) => ({ id: w.id, fullName: w.fullName }))}
       categories={categories}
       mediaLimits={{
         maxImageBytes: MEDIA_LIMITS.maxImageBytes,

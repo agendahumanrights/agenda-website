@@ -72,6 +72,32 @@ describe("markdown-editor transforms", () => {
     ).toBe("![Alt](https://example.com/a.png)");
 
     expect(
+      insertImage(
+        {
+          value:
+            "Climate change is affecting coastal communities in Yemen.\n\nTraditional fishing communities face increasing challenges.",
+          selectionStart: 59,
+          selectionEnd: 59,
+        },
+        "https://cdn.example/coast.png",
+        "Fishing communities on Yemen's coast",
+      ).value,
+    ).toBe(
+      "Climate change is affecting coastal communities in Yemen.\n\n![Fishing communities on Yemen's coast](https://cdn.example/coast.png)\n\nTraditional fishing communities face increasing challenges.",
+    );
+
+    expect(
+      insertImage(
+        { value: "Before", selectionStart: 6, selectionEnd: 6 },
+        "/api/media/agenda/publications/inline/a.jpg",
+        "Inline",
+        "Caption text",
+      ).value,
+    ).toBe(
+      'Before\n\n![Inline](/api/media/agenda/publications/inline/a.jpg "Caption text")',
+    );
+
+    expect(
       insertFencedCode(
         { value: "x", selectionStart: 0, selectionEnd: 1 },
         "ts",

@@ -205,12 +205,34 @@ export function insertImage(
   sel: EditorSelection,
   url: string,
   alt: string,
+  title?: string,
 ): EditorUpdate {
   const altText = alt.trim() || "image";
   const safeUrl = url.trim() || "https://";
-  const snippet = `![${altText}](${safeUrl})`;
+  const caption = title?.trim();
+  const titlePart = caption
+    ? ` "${caption.replace(/\\/g, "\\\\").replace(/"/g, '\\"')}"`
+    : "";
+  const imageMd = `![${altText}](${safeUrl}${titlePart})`;
+
+  // Block images sit on their own lines so they render as article figures.
+  const before = sel.value.slice(0, sel.selectionStart);
+  const after = sel.value.slice(sel.selectionEnd);
+  const lead =
+    before.length === 0 || before.endsWith("\n\n")
+      ? ""
+      : before.endsWith("\n")
+        ? "\n"
+        : "\n\n";
+  const trail =
+    after.length === 0 || after.startsWith("\n\n")
+      ? ""
+      : after.startsWith("\n")
+        ? "\n"
+        : "\n\n";
+  const snippet = `${lead}${imageMd}${trail}`;
   const next = replaceRange(sel.value, sel.selectionStart, sel.selectionEnd, snippet);
-  const urlStart = sel.selectionStart + altText.length + 4;
+  const urlStart = sel.selectionStart + lead.length + altText.length + 4;
   return {
     value: next,
     selectionStart: urlStart,

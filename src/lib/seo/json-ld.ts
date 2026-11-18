@@ -142,6 +142,31 @@ export function eventJsonLd(input: {
   };
 }
 
+/** Person markup for public writer profiles (only real fields). */
+export function personJsonLd(input: {
+  name: string;
+  url: string;
+  imageUrl?: string | null;
+  jobTitle?: string | null;
+  email?: string | null;
+  description?: string | null;
+  sameAs?: string[];
+}) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "Person",
+    name: input.name,
+    url: input.url,
+    ...(input.imageUrl ? { image: absoluteUrl(input.imageUrl) } : {}),
+    ...(input.jobTitle ? { jobTitle: input.jobTitle } : {}),
+    ...(input.email ? { email: input.email } : {}),
+    ...(input.description ? { description: input.description } : {}),
+    ...(input.sameAs && input.sameAs.length > 0
+      ? { sameAs: input.sameAs }
+      : {}),
+  };
+}
+
 /** Safe JSON for embedding in <script type="application/ld+json">. */
 export function serializeJsonLd(data: unknown): string {
   return JSON.stringify(data).replace(/</g, "\\u003c");

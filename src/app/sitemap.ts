@@ -11,6 +11,7 @@ import {
   listPublishedEventsForSitemap,
   listPublishedPublicationsForSitemap,
 } from "@/server/services/seo-sitemap";
+import { listWriterSlugsForSitemap } from "@/server/services/writers";
 
 const STATIC_PATHS: { path: string; priority: number; changeFrequency: MetadataRoute.Sitemap[0]["changeFrequency"] }[] = [
   { path: "/", priority: 1, changeFrequency: "daily" },
@@ -55,9 +56,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   try {
-    const [publications, events] = await Promise.all([
+    const [publications, events, writerSlugs] = await Promise.all([
       listPublishedPublicationsForSitemap(),
       listPublishedEventsForSitemap(),
+      listWriterSlugsForSitemap(),
     ]);
 
     for (const pub of publications) {
@@ -76,6 +78,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
           lastModified: event.updatedAt,
           changeFrequency: "weekly",
           priority: 0.7,
+        }),
+      );
+    }
+
+    for (const slug of writerSlugs) {
+      entries.push(
+        ...entriesForPath(`/writers/${slug}`, LOCALES, {
+          changeFrequency: "monthly",
+          priority: 0.5,
+          lastModified: new Date(),
         }),
       );
     }

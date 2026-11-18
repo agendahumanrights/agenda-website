@@ -89,12 +89,12 @@ export function PublicationDetails({
             </p>
           ) : null}
 
-          {publication.authorName && publication.authorBioKey ? (
+          {publication.authorName && publication.authorSlug ? (
             <PublicationAuthor
               className="mt-6"
               name={publication.authorName}
-              bioKey={publication.authorBioKey}
-              professionalArea={publication.authorProfessionalArea}
+              slug={publication.authorSlug}
+              major={publication.authorMajor}
               imageUrl={publication.authorImageUrl}
               locale={locale}
             />

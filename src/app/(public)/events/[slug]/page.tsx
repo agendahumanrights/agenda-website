@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
 import { EventDetails } from "@/components/events/EventDetails";
 import { Container } from "@/components/layout/Container";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { DetailSkeleton } from "@/components/ui/Skeleton";
 import { getDictionary } from "@/i18n/get-dictionary";
 import { getRequestLocale } from "@/i18n/get-locale";
 import {
@@ -50,11 +52,7 @@ export async function generateMetadata({
   }
 }
 
-export default async function EventDetailPage({
-  params,
-}: {
-  params: Params;
-}) {
+async function EventDetailContent({ params }: { params: Params }) {
   const { slug } = await params;
   const locale = await getRequestLocale();
   const dict = await getDictionary(locale);
@@ -121,5 +119,19 @@ export default async function EventDetailPage({
         />
       </Container>
     </div>
+  );
+}
+
+export default function EventDetailPage({ params }: { params: Params }) {
+  return (
+    <Suspense
+      fallback={
+        <div className="public-main-offset pb-16">
+          <DetailSkeleton />
+        </div>
+      }
+    >
+      <EventDetailContent params={params} />
+    </Suspense>
   );
 }

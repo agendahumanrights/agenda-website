@@ -4,7 +4,7 @@
 > **Source of truth:** application code. Requirements and older docs describe intended or planned behavior; this file describes verified implementation.  
 > **Do not treat scaffolding as completed features.**
 
-**Last updated:** 2026-11-18 (Blog author optional)  
+**Last updated:** 2026-11-18 (Inline Markdown image uploads)  
 **Inspection basis:** Checked-in source under the repository root. DB migrate/admin bootstrap depend on local `.env` (gitignored).
 
 ---
@@ -35,14 +35,14 @@
 | --- | --- |
 | Public site | Home, publications catalogue + detail, events catalogue + detail, About Us |
 | Admin dashboard | Login/logout, publications CRUD, events CRUD, homepage featured selection |
-| Shared backend | Localized records, founder–publication author links, media/PDF storage, auth, homepage ordering |
+| Shared backend | Localized records, Writers as publication authors, Founders for About Us, media/PDF storage, auth, homepage ordering |
 
 ### Public website and admin dashboard
 
 | Surface | Current status (verified) |
 | --- | --- |
 | **Public website** | App Router pages render a bilingual shell (`/ar` or unmarked English). Pages call read services; without `DATABASE_URL` they show empty/placeholder states. |
-| **Admin dashboard** | Auth + Publications + Events + **Founders** CRUD + homepage featured pubs/events (max 3). |
+| **Admin dashboard** | Auth + Publications + Events + **Founders** CRUD + **Writers** CRUD + homepage featured pubs/events (max 3). |
 
 ### Current development stage
 
@@ -59,6 +59,7 @@
 | Publications admin CRUD, publish rules, uploads, Markdown | **Implemented** |
 | Events admin CRUD, publish rules, uploads, Markdown | **Implemented** |
 | Founders admin CRUD, reorder, About Us bios | **Implemented** (scope update vs original PDF §2.5) |
+| Writers admin + public profiles | **Implemented** — admin CRUD; public `/writers/{slug}` (+ `/ar/…`); no public writers directory or header/footer nav; publication authors use `authorWriterId` |
 | Homepage featured publications + events (max 3) | **Implemented** (sectioned saves) |
 | Migrations folder | **Present** (`20251018100000_init`, `20261107120000_add_youtube_url`, `20261107180000_publication_categories`) |
 
@@ -66,7 +67,7 @@
 
 | Package | Locked version |
 | --- | --- |
-| `next` | 16.4.2 |
+| `next` | 16.4.6 |
 | `react` / `react-dom` | 19.3.0 |
 | `typescript` | 5.9.3 |
 | `tailwindcss` | 4.3.3 |
@@ -77,7 +78,7 @@
 | `dotenv` | 18.0.8 |
 | `server-only` | 0.0.1 |
 | `@aws-sdk/client-s3` | ^3.1165.0 (Cloudflare R2 via S3 API) |
-| `eslint` / `eslint-config-next` | 9.39.5 / 16.4.2 |
+| `eslint` / `eslint-config-next` | 9.39.5 / 16.4.6 |
 
 Package manager: **npm** (`package-lock.json`). No separate Express server.
 
@@ -240,6 +241,7 @@ Next.js 16 **Proxy** (replaces deprecated `middleware`). Rewrites `/ar/...` to t
 | `(protected)/publications/**` | List / new / edit — **implemented** (`instant = false` on each page) |
 | `(protected)/events/**` | List / new / edit — **implemented** (`instant = false` on each page) |
 | `(protected)/founders/**` | List / new / edit + reorder dialog — **implemented** (`instant = false` on each page) |
+| `(protected)/writers/**` | List / new / edit — **implemented** (`instant = false` on each page; no reorder) |
 | `(protected)/homepage/page.tsx` | Homepage selection — dual-panel curation UI (`instant = false`) |
 
 ### `src/app/api/`
@@ -350,6 +352,7 @@ Other query params preserved. `/api` and static-like paths not rewritten.
 | Purpose | Publication detail |
 | Data | `getPublishedPublicationBySlug`; without DB → `EmptyState` placeholder; missing row/translation → `notFound()` |
 | UI | Editorial `PublicationDetails`: wide shell; header + PDF; gallery; then `lg` 2fr/1fr grid (YouTube + Markdown | sticky Share). Share column stretches; Share pinned to trailing shell edge (`lg:ms-auto`, matches image/page end); `top: var(--site-header-offset)`. Mobile: Share above body. |
+| Instant nav | `params` read inside Suspense + `DetailSkeleton` fallback |
 | Auth | None |
 | Status | **Implemented** (content depends on DB + published locale translation) |
 
@@ -374,8 +377,16 @@ Other query params preserved. `/api` and static-like paths not rewritten.
 | Purpose | Event detail |
 | Data | `getPublishedEventBySlug`; same DB/empty/notFound pattern as publications |
 | UI | Editorial `EventDetails`: same wide shell as publications; breadcrumbs; header with Event label + `eventDate`/title/subtitle + share; gallery; optional YouTube; Markdown fills content width (no PDF) |
+| Instant nav | `params` read inside Suspense + `DetailSkeleton` fallback |
 | Auth | None |
 | Status | **Implemented** (content depends on DB) |
+
+#### `/writers/[slug]` — `src/app/(public)/writers/[slug]/page.tsx`
+
+- Writer public profile (no directory page; not in header/footer nav).
+- Localized name/major/biography; shared email, social links, portrait; Person JSON-LD + metadata.
+- `params` awaited inside `<Suspense>` (Partial Prefetching / instant-shell URL-data); `loading.tsx` uses `DetailSkeleton`.
+- Arabic: `/ar/writers/[slug]`.
 
 #### `/about` — `src/app/(public)/about/page.tsx`
 
@@ -463,7 +474,7 @@ No logout route or working login form exists.
 | --- | --- |
 | `PublicationCard` | Uses `ContentCard`; localized category badge; `publishedAt`; author shown whenever assigned (`authorBy` + bio link), any category; subtitle as excerpt |
 | `PublicationCategoryBadge` | Localized category label (list cards / legacy) |
-| `AuthorLink` | `/about#founder-{bioKey}` |
+| `AuthorLink` | `/writers/{slug}` (locale-aware via `sitePath`) |
 | `PublicationAuthor` | Circular portrait, name link, professional area (blogs) |
 | `PublicationDetails` | Wide editorial layout: breadcrumbs → header (+ PDF) → gallery → body grid with sticky Share in the trailing column (`lg+`). Sticky requires a stretched Share column (not `items-start`/`self-start`). |
 | `PublicationPdfActions` | Client: View/Download for the locale-matched `pdfUrl` only; hidden when that locale has no PDF. Download via `/api/media/...?download=1` blob |
@@ -488,9 +499,11 @@ No logout route or working login form exists.
 | `MediaGallery` | Client: main+gallery images (deduped by media id); frame uses full-bleed `object-cover` (lightbox keeps `object-contain`); centered thumb row (`w-max min-w-full justify-center`) with horizontal scroll when needed; prev/next, counter, fullscreen, keyboard/swipe, RTL-aware; omits when empty |
 | `YouTubeEmbed` | Shared responsive 16:9 iframe via `youtube-nocookie.com` from validated video ID; optional heading; lazy by default; omits when URL invalid |
 | `YouTubeUrlField` | Admin Media-card control: URL input (LTR), live preview, remove; used by Publication/Event forms |
-| `ArticleMarkdown` / `MarkdownContent` | Shared safe GFM renderer (sanitize, external links, heading shift); `.article-prose` typography for public details + admin preview; reading measure set by the caller |
-| `MarkdownEditor` | Admin toolbar editor (Write/Preview/Split, expand, help, undo/redo); used by Publication + Event AR/EN description fields |
-| `lib/markdown-editor.ts` | Pure Markdown textarea transforms + `markdownToPlainText` for excerpts |
+| `ArticleMarkdown` / `MarkdownContent` | Shared safe GFM renderer (sanitize, external links, heading shift); `.article-prose` typography for public details + admin preview; reading measure set by the caller; inline images allow http(s) + `/api/media/…`; optional Markdown title → `<figure>`/`<figcaption>`; lazy-loaded |
+| `MarkdownEditor` | Admin toolbar editor (Write/Preview/Split, expand, help, undo/redo); Publication/Event descriptions support Image **upload** or URL via `MarkdownImageDialog`; cursor selection snapshotted before dialogs; optional paste/drop image upload |
+| `MarkdownImageDialog` | Insert-image dialog: Upload (MediaDropzone + progress) or URL; alt + optional caption; disables Insert until upload completes |
+| `lib/markdown-editor.ts` | Pure Markdown textarea transforms + `markdownToPlainText` for excerpts; `insertImage` places block images on their own lines |
+| `lib/markdown-media.ts` | Detects media keys/URLs inside Markdown (access + orphan safety) |
 | `buildDetailImages` | Server helper: main first, gallery append, skip duplicate media ids, localized alt |
 
 ### About
@@ -511,7 +524,7 @@ No logout route or working login form exists.
 | --- | --- |
 | `AdminShell` | Authenticated chrome: sticky header, desktop sidebar, mobile drawer; scoped `.admin-shell` styles |
 | `AdminHeader` | Logo, org title, signed-in account, language switcher, sign-out, mobile menu toggle |
-| `AdminSidebar` | Full-height nav with icons + blue active state |
+| `AdminSidebar` | Full-height nav with icons + blue active state (Writers link after Founders) |
 | `AdminPageHeader` | Title/description helper |
 | `AdminConfirmDialog` / `AdminOverflowMenu` | Accessible confirm + overflow actions |
 | `MediaDropzone` | Click + drag-and-drop upload surface; optional `multiple` / `onFiles` for gallery batches |
@@ -519,7 +532,9 @@ No logout route or working login form exists.
 | `AddCategoryModal` / `CategoriesTable` | Create bilingual categories from the form or `/admin/publications/categories` |
 | `PublicationsTable` | Debounced search, filters, desktop table + mobile cards, overflow delete/view |
 | `EventForm` / `EventsTable` | Matches Publications chrome; required `*` on title, description, main image, event date; subtitle / YouTube optional; publish without subtitle allowed |
-| `FounderForm` / `FoundersTable` | **Redesigned** to match admin chrome: debounced name search, founder cards/table, overflow View/Delete, reorder dialog (DnD + keyboard, complete ID list), two-column form with AR/EN tabs, circular MediaDropzone portrait, sticky actions |
+| `FounderForm` / `FoundersTable` | **Redesigned** to match admin chrome: debounced name search, founder cards/table (no publication column), overflow View/Delete, reorder dialog (DnD + keyboard, complete ID list), two-column form with AR/EN tabs, circular MediaDropzone portrait, sticky actions |
+| `WriterForm` / `WritersTable` | Major + Markdown biography per locale tab; required email + portrait (`writer-profile`); optional social links; delete blocked (409) when publications linked; View public → `/writers/{slug}` |
+| `WriterProfile` | Compact max-w-4xl header (portrait + name/major/email/socials) + optional “About the Writer” Markdown section (hidden when empty) |
 | `HomepageSelection` | **Redesigned** dual-panel curation: selected cards (thumb, order, DnD + keyboard move, remove), available browser with bilingual title search + load-more, independent dirty/save/reset per section, brand-blue saves, accurate empty/error states, beforeunload when unsaved |
 
 ### Shared UI
@@ -539,8 +554,8 @@ No logout route or working login form exists.
 
 | Requirement area | Implementation |
 | --- | --- |
-| Markdown editor | Shared admin `MarkdownEditor`: toolbar (headings, emphasis, lists, tasks, quotes, links, images, code, tables, HR, undo/redo), Write / Preview / Split, expand + help; stores Markdown strings |
-| Markdown renderer | Shared `MarkdownContent` + `ArticleMarkdown` (GFM, sanitize, safe http(s)/mailto, heading shift, `.article-prose`) for admin preview and public details |
+| Markdown editor | Shared admin `MarkdownEditor`: toolbar (headings, emphasis, lists, tasks, quotes, links, images, code, tables, HR, undo/redo), Write / Preview / Split, expand + help; stores Markdown strings; Publication/Event Image dialog uploads to R2/local via `publication-inline` / `event-inline` (separate from main+gallery 10-image cap) |
+| Markdown renderer | Shared `MarkdownContent` + `ArticleMarkdown` (GFM, sanitize, safe http(s)/mailto + `/api/media`, heading shift, `.article-prose` with centered responsive inline images + optional captions) for admin preview and public details |
 | PDF view/download | `PublicationPdfActions` under share controls; `GET /api/media/...?download=1` forces attachment |
 | Image galleries | `MediaGallery` on publication/event details (main + gallery, lightbox) |
 
@@ -598,7 +613,7 @@ No logout route or working login form exists.
 | `profileImageId` | String? **unique** FK → `MediaAsset` | `onDelete: SetNull` |
 | timestamps | | |
 
-Relations: `translations`, `publications` (as optional/required founder authors by category).
+Relations: `translations` only (About Us bios; publication authors use `Writer`).
 
 #### `FounderTranslation`
 
@@ -607,6 +622,27 @@ Relations: `translations`, `publications` (as optional/required founder authors 
 | `founderId` + `locale` | **@@unique**; cascade delete with founder |
 | `fullName`, `biography` (Text), `professionalArea` | Localized |
 | Index | `[locale]` |
+
+#### `Writer`
+
+Independent publication authors (not Founders). Public profile: `/writers/{slug}`.
+
+| Field | Notes |
+| --- | --- |
+| `slug` | unique URL key (immutable after create) |
+| `email` | optional in DB (required in admin create/update); migrated founders may lack email |
+| `socialLinks` | JSON array `{ platform, url }` — platforms: facebook, x, linkedin, instagram, youtube, website |
+| `profileImageId` | unique FK MediaAsset SetNull |
+
+Relations: `translations`, `publications` (as `authorWriter`).
+
+#### `WriterTranslation`
+
+| Field | Notes |
+| --- | --- |
+| `writerId` + `locale` | **@@unique**; cascade delete |
+| `fullName`, `major` | Localized name + professional specialization |
+| `biography` | Markdown `@db.Text` default `""` (legacy-safe); required on admin create/save |
 
 #### `PublicationCategory`
 
@@ -627,11 +663,11 @@ Admin-managed bilingual categories (replaces former Prisma enum).
 | `categoryId` | FK → `PublicationCategory` `onDelete: Restrict` |
 | `status` | default `DRAFT` |
 | `publishedAt` | DateTime? — visitor-facing date |
-| `authorFounderId` | String? FK Founder `onDelete: Restrict` — optional for every category (including Blogs); only required to publish when category.`requiresAuthor` |
+| `authorWriterId` | String? FK Writer `onDelete: Restrict` — optional for every category; required to publish when category.`requiresAuthor` |
 | `mainImageId` | FK MediaAsset SetNull |
 | `pdfEnId` / `pdfArId` | String? **unique** FKs MediaAsset SetNull — optional locale PDFs; public `pdfUrl` resolves to the active locale only (no cross-language fallback) |
 | `youtubeUrl` | String? — optional canonical YouTube watch URL (not counted toward image limits) |
-| Indexes | `[status, publishedAt]`, `[categoryId, status]`, `[authorFounderId]` |
+| Indexes | `[status, publishedAt]`, `[categoryId, status]`, `[authorWriterId]` |
 
 Relations: category, translations, gallery, optional `FeaturedPublication`.
 
@@ -674,8 +710,6 @@ AdminUser
 
 Founder 1──* FounderTranslation
 Founder 1──0..1 MediaAsset (profile)
-Founder 1──* Publication (author)
-
 PublicationCategory 1──* Publication
 Publication 1──* PublicationTranslation
 Publication *──0..1 MediaAsset (main)
@@ -813,7 +847,9 @@ Content (still unimplemented after auth):
 - `/api/admin/founders` (GET list, POST create)
 - `/api/admin/founders/[id]` (GET, PATCH, DELETE)
 - `/api/admin/founders/reorder` (PUT complete ordered IDs)
-- `/api/admin/media/upload` (POST multipart; publication + event + founder purposes)
+- `/api/admin/writers` (GET paginated list, POST create)
+- `/api/admin/writers/[id]` (GET, PATCH, DELETE)
+- `/api/admin/media/upload` (POST multipart; publication + event + founder + writer purposes, including `publication-inline` / `event-inline`)
 - `/api/admin/homepage` (GET both sections; PUT patch — omitted section preserved)
 - `/api/media/[...key]` (GET access-checked file delivery)
 - `/api/admin/events` (GET, POST)
@@ -835,8 +871,9 @@ Content (still unimplemented after auth):
 | `publications` | list + getBySlug (published) | create/update/delete/listAdmin |
 | `events` | list + getBySlug (published); creation-date filter in query | create/update/delete/listAdmin |
 | `homepage` | getFeaturedPublications/Events; admin selection state (titles AR/EN, category, dates); sectioned `setFeaturedPublications` / `setFeaturedEvents` / patch | — |
-| `founders` | list/get/create/update/delete; `listAllAdminFoundersOrdered`; reorder (complete IDs); About bios | — |
-| `media` | upload (MIME sniff), access checks, orphan delete, `resolvePublicMediaUrl` | — |
+| `founders` | list/get/create/update/delete (no publication link checks); `listAllAdminFoundersOrdered`; reorder (complete IDs); About bios only | — |
+| `writers` | list/get/create/update/delete (admin); `listWriters` / `getWriterBySlug` (public read); slug allocation; delete blocked when publications linked | public writers listing page |
+| `media` | upload (MIME sniff), access checks (FK refs + Markdown description/biography URL contains), orphan delete (FK + Markdown refs), `resolvePublicMediaUrl` | — |
 
 ### Layers still thin / not production-complete
 
@@ -858,7 +895,7 @@ Categories are enum values; UI labels from dictionaries. Public catalogue and AP
 
 ### Publication details
 
-Reading order: breadcrumbs → category + `publishedAt` → title → **optional subtitle** (omitted when empty) → **optional founder author** (any category; image/area/`AuthorLink` when assigned) → share + **locale-matched** PDF actions (hidden when that language has no PDF) → `MediaGallery` → optional `YouTubeEmbed` → Markdown. DTO `pdfUrl` is EN-only or AR-only per request locale. Markdown uses sanitized `ArticleMarkdown` below gallery/video. No embedded PDF iframe. SEO description prefers subtitle, else Markdown excerpt, else title.
+Reading order: breadcrumbs → category + `publishedAt` → title → **optional subtitle** (omitted when empty) → **optional writer author** (any category; image/major/`AuthorLink` → `/writers/{slug}` when assigned) → share + **locale-matched** PDF actions (hidden when that language has no PDF) → `MediaGallery` → optional `YouTubeEmbed` → Markdown. DTO `pdfUrl` is EN-only or AR-only per request locale. Markdown uses sanitized `ArticleMarkdown` below gallery/video. No embedded PDF iframe. SEO description prefers subtitle, else Markdown excerpt, else title.
 
 ### Events and event details
 
@@ -866,9 +903,10 @@ Same editorial pattern without author/PDF. Visitor-facing date is `eventDate`. P
 
 ### Founders / authors / biographies
 
-- Schema links `Publication.authorFounderId` → `Founder` (`onDelete: Restrict`); admin delete returns 409 with publication count when linked.
-- List/detail map `authorName` / `authorBioKey` from founder translation.
-- `AuthorLink` → `/about#founder-{bioKey}`; `FounderBiography` sets matching `id` with `scroll-mt` under the site header. Immutable `bioKey` after create.
+- **Founders** are About Us biographies only (`/about#founder-{bioKey}`); admin delete always allowed (portrait orphan cleanup). No `publications` relation on `Founder`.
+- **Writers** are publication authors (`authorWriterId`); admin delete blocked (409) when publications reference the writer.
+- Publication list/detail map writer author fields; `AuthorLink` may still point at writer public pages (see writers module).
+- `FounderBiography` sets `id=founder-{bioKey}` with `scroll-mt` under the site header. Immutable `bioKey` after create.
 - About lists founders via `listFounderBiographies` in admin `sortOrder`; biographies are plain text with preserved paragraph breaks (not Markdown). Empty list → localized EmptyState.
 - Admin reorder requires the **complete** ordered ID list (`listAllAdminFoundersOrdered` / `GET ?forOrder=1`); profile image required on create/update (Replace only, no clear).
 - Org vision/mission/intro/missionSummary from `src/content/about.ts` (outside admin), localized `en`/`ar`.
@@ -912,7 +950,8 @@ Same editorial pattern without author/PDF. Visitor-facing date is `eventDate`. P
 | Manually selected homepage content | **Implemented** (admin homepage selection + public reads) |
 | Max three featured homepage events | **Zod + service read `take: 3` + write validation** |
 | Event filter by record creation date (≠ event date) | **Service/API + admin yes**; **public Events page no** (title search only; cards show `eventDate`) |
-| Founders as publication authors | **Implemented** for all categories including Blogs as optional (admin assignment + `AuthorLink` to `#founder-{bioKey}`; `requiresAuthor` can still gate publish if set) |
+| Writers as publication authors | **Implemented** (`authorWriterId`; admin writers module; `requiresAuthor` gates publish when set) |
+| Founders on About Us | **Implemented** (admin CRUD + reorder; not publication authors) |
 | About Us org copy outside admin | **Followed** (`content/about.ts`); founders are admin-managed (scope update) |
 | Brand header + full-bleed hero | **Implemented** (fixed glass capsule overlay; hero photography shows through glass; no white band) |
 | Public catalogue search/filter/pagination | **Implemented** (live debounced search; publications also immediate category; both pages Sort by Date on admin dates; Reset/chips/summaries; EN/AR) |
@@ -1047,7 +1086,7 @@ Open `http://localhost:3000`.
 
 ### Next.js config highlights
 
-`cacheComponents: true`, `partialPrefetching: true`, Turbopack CSS rule for Tailwind, `images.remotePatterns` derived from `R2_PUBLIC_BASE_URL` hostname when set.
+`cacheComponents: true`, `partialPrefetching: true`, Turbopack CSS rule for Tailwind, `images.remotePatterns` derived from `R2_PUBLIC_BASE_URL` hostname when set. Public pages that read `params`/`searchParams` must await them inside `<Suspense>` (or `instant = false`) so Partial Prefetching can share an App Shell across links.
 
 ---
 
@@ -1103,6 +1142,48 @@ Open `http://localhost:3000`.
 ---
 
 ## K. Change history
+
+### 2026-11-18 — Inline images in Publication/Event Markdown
+
+- Media purposes `publication-inline` / `event-inline` → `agenda/publications/inline` / `agenda/events/inline` (same upload API, MIME/size limits; **not** counted toward main+gallery 10-image cap).
+- Admin `MarkdownImageDialog`: Upload (dropzone + progress) or Image URL; alt + optional caption (`![alt](url "caption")`); Insert disabled until upload finishes; selection snapshotted so images insert at the cursor.
+- `MarkdownEditor`: optional `imageUpload` on Publication/Event forms; paste/drop image files upload + insert at caret; Writers editor remains URL-only.
+- Public/admin rendering: allow `/api/media/…` src; lazy images; `.article-prose` block image spacing / max-height; title → figure caption.
+- Access + orphan cleanup treat Markdown description/biography references as live usages (no schema migration).
+- Files: `media` validation/keys/service, `MarkdownEditor` / `MarkdownImageDialog`, `MarkdownContent`, `globals.css`, Publication/Event forms, EN/AR `admin.markdown` labels, `lib/markdown-media.ts`, tests.
+- Validated: `tsc --noEmit`; `vitest` 102 pass / 1 skip; eslint on changed files clean; `next build` pass. Full `npm run lint` still fails on pre-existing `AddCategoryModal` setState-in-effect. Live browser upload/R2 QA not claimed here.
+
+### 2026-11-18 — Instant shell URL-data fix + Next.js 16.4.6
+
+- Upgraded `next` / `eslint-config-next` **16.4.2 → 16.4.6** (security nudge / patch).
+- Public detail pages (`/writers/[slug]`, `/publications/[slug]`, `/events/[slug]`): await `params` only inside Suspense-wrapped content; shared `DetailSkeleton` fallback; added writers `loading.tsx`.
+- Public catalogues (`/publications`, `/events`): await `searchParams` only inside Suspense-wrapped catalogue body (filters + results), so Partial Prefetching App Shell is not tied to one URL.
+- Fixes dev/browser route error (`instant-shell-url-data`, digest logged from `error.tsx`) when loading home and prefetching/navigating to writer/detail links.
+- Validated: `typecheck` pass; `test` 99 pass / 1 skip; `build` pass on Next 16.4.6. `lint` still fails on pre-existing `AddCategoryModal` setState-in-effect (unrelated).
+
+### 2026-11-18 — Writer biography + profile redesign
+
+- Schema: `WriterTranslation.biography` Markdown text default `""` (migration `20261118210000_writer_biography`); legacy writers remain readable with empty bios.
+- Admin Writer form: required AR/EN Markdown biography via shared `MarkdownEditor`; create/update Zod + service require non-empty bios.
+- Public `/writers/[slug]`: compact max-w-4xl profile header (portrait beside name/major/contact); “About the Writer” / «نبذة عن الكاتب» with `ArticleMarkdown` when present; SEO meta/JSON-LD prefer biography.
+- Validated: `prisma migrate deploy`; `typecheck` pass; `test` 99 pass / 1 skip; `build` pass (after security-nudge retry).
+
+### 2026-11-18 — Founders About Us only
+
+- Removed `publications` counts/includes from `founders` service; delete no longer 409 on publication links; `AdminFounderListItem` / `AdminFounderDetail` drop `publicationCount`.
+- `FoundersTable`: removed Publications column and delete-blocked UI; simplified delete confirm (EN/AR i18n).
+- `revalidateFounderPaths`: `/about` + `/admin/founders` + founders tag only (no publications/homepage paths).
+- `media`: `isAssetPubliclyReferenced` + `deleteMediaAssetIfOrphaned` include writer `writerProfile` / `profileImageId`.
+- Validated: `npm run typecheck`.
+
+### 2026-11-18 — Writers module + founder→writer author migration
+
+- Schema: `Writer` / `WriterTranslation` (slug, email?, socialLinks JSON, profile image); `Publication.authorWriterId` replaces `authorFounderId`. Migration `20261118200000_writers_module` copies distinct founder authors → writers (same id remapping, bioKey→slug, professionalArea→major, shared portrait MediaAsset) then drops founder author FK. Founders remain for About Us only.
+- Admin: `/admin/writers` CRUD (sidebar after Founders); Publication Create/Edit author dropdown uses Writers; delete writer blocked (409) while publications reference them.
+- Public: `/writers/[slug]` profile (no directory/nav); `AuthorLink` → writer profile; cards/detail/slider/hero use `authorSlug` / `authorMajor`.
+- Media: `writer-profile` purpose; orphan + public access checks include writer portraits.
+- SEO: writer metadata + Person JSON-LD; sitemap includes writer slugs.
+- Validated: `prisma migrate deploy` + `generate`; `typecheck` pass; `test` 98 pass / 1 skip; `build` pass (after security-nudge retry).
 
 ### 2026-11-18 — Blog author optional
 

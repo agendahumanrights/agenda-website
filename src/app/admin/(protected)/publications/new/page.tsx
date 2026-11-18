@@ -2,7 +2,7 @@ import { PublicationForm } from "@/components/admin/PublicationForm";
 import { getDictionary } from "@/i18n/get-dictionary";
 import { getRequestLocale } from "@/i18n/get-locale";
 import { listPublicationCategories } from "@/server/services/categories";
-import { listFounders } from "@/server/services/founders";
+import { listWriters } from "@/server/services/writers";
 import { MEDIA_LIMITS } from "@/server/storage/limits";
 
 
@@ -12,8 +12,8 @@ export const instant = false;
 export default async function AdminNewPublicationPage() {
   const locale = await getRequestLocale();
   const dict = await getDictionary(locale);
-  const [founders, categories] = await Promise.all([
-    listFounders(locale),
+  const [writers, categories] = await Promise.all([
+    listWriters(locale),
     listPublicationCategories(locale),
   ]);
 
@@ -23,7 +23,7 @@ export default async function AdminNewPublicationPage() {
       locale={locale}
       labels={dict.admin.pub}
       markdownLabels={dict.admin.markdown}
-      founders={founders.map((f) => ({ id: f.id, fullName: f.fullName }))}
+      writers={writers.map((f) => ({ id: f.id, fullName: f.fullName }))}
       categories={categories}
       mediaLimits={{
         maxImageBytes: MEDIA_LIMITS.maxImageBytes,

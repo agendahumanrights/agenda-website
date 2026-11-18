@@ -50,7 +50,7 @@ import type {
   PublicationCategorySummary,
 } from "@/types/publication";
 
-type FounderOption = { id: string; fullName: string };
+type WriterOption = { id: string; fullName: string };
 
 type Labels = Dictionary["admin"]["pub"];
 
@@ -66,7 +66,7 @@ type Props = {
   locale: Locale;
   labels: Labels;
   markdownLabels: MarkdownEditorLabels;
-  founders: FounderOption[];
+  writers: WriterOption[];
   categories: PublicationCategorySummary[];
   mediaLimits: MediaLimits;
   initial?: AdminPublicationDetail | null;
@@ -100,7 +100,7 @@ export function PublicationForm({
   locale,
   labels,
   markdownLabels,
-  founders,
+  writers,
   categories: initialCategories,
   mediaLimits,
   initial,
@@ -124,8 +124,8 @@ export function PublicationForm({
   const [publishedAt, setPublishedAt] = useState(
     toDateInput(initial?.publishedAt ?? null),
   );
-  const [authorFounderId, setAuthorFounderId] = useState(
-    initial?.authorFounderId ?? "",
+  const [authorWriterId, setAuthorWriterId] = useState(
+    initial?.authorWriterId ?? "",
   );
   const [slugPreview, setSlugPreview] = useState(initial?.slug ?? "");
   const [ar, setAr] = useState<TranslationState>(() => {
@@ -188,7 +188,7 @@ export function PublicationForm({
     return {
       categoryId,
       publishedAt: publishedAt ? new Date(publishedAt).toISOString() : null,
-      authorFounderId: authorFounderId || null,
+      authorWriterId: authorWriterId || null,
       mainImageId: mainImage?.id ?? null,
       pdfEnId: pdfEn?.id ?? null,
       pdfArId: pdfAr?.id ?? null,
@@ -219,7 +219,7 @@ export function PublicationForm({
     if (!mainImage) next.mainImage = labels.errorValidation;
     if (!publishedAt) next.publishedAt = labels.errorValidation;
     if (!categoryId) next.category = labels.errorValidation;
-    if (requiresAuthor && !authorFounderId) {
+    if (requiresAuthor && !authorWriterId) {
       next.author = labels.authorRequired;
     }
     return next;
@@ -621,6 +621,10 @@ export function PublicationForm({
                     value={active.description}
                     disabled={busy}
                     labels={markdownLabels}
+                    imageUpload={{
+                      purpose: "publication-inline",
+                      maxImageBytes: mediaLimits.maxImageBytes,
+                    }}
                     onChange={(value) => {
                       markDirty();
                       setActive((s) => ({ ...s, description: value }));
@@ -1118,23 +1122,23 @@ export function PublicationForm({
                 optionalLabel={labels.optional}
                 error={fieldErrors.author}
               >
-                {founders.length === 0 ? (
+                {writers.length === 0 ? (
                   <p className="text-sm text-amber-800">{labels.authorEmpty}</p>
                 ) : (
                   <Select
                     id="author"
                     className="admin-control"
-                    value={authorFounderId}
+                    value={authorWriterId}
                     disabled={busy}
                     required={requiresAuthor || undefined}
                     aria-required={requiresAuthor || undefined}
                     onChange={(e) => {
                       markDirty();
-                      setAuthorFounderId(e.target.value);
+                      setAuthorWriterId(e.target.value);
                     }}
                   >
                     <option value="">{labels.authorNone}</option>
-                    {founders.map((f) => (
+                    {writers.map((f) => (
                       <option key={f.id} value={f.id}>
                         {f.fullName}
                       </option>

@@ -25,7 +25,6 @@ export type AdminFounderListItem = {
   fullNameEn: string | null;
   professionalArea: string;
   profileImageUrl: string | null;
-  publicationCount: number;
 };
 
 export type AdminFounderDetail = {
@@ -35,7 +34,6 @@ export type AdminFounderDetail = {
   sortOrder: number;
   createdAt: string;
   updatedAt: string;
-  publicationCount: number;
   translations: {
     locale: "ar" | "en";
     fullName: string;

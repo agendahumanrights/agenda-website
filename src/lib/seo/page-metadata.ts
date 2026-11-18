@@ -13,6 +13,7 @@ import {
 import type { CatalogueDateSort } from "@/lib/catalogue-query";
 import type { EventDetail } from "@/types/event";
 import type { PublicationDetail } from "@/types/publication";
+import type { WriterPublicProfile } from "@/types/writer";
 
 export async function homePageMetadata(locale: Locale): Promise<Metadata> {
   const dict = await getDictionary(locale);
@@ -73,6 +74,28 @@ export async function aboutPageMetadata(locale: Locale): Promise<Metadata> {
     }),
     availableLocales: LOCALES,
     siteName: dict.meta.siteName,
+  });
+}
+
+export function writerProfileMetadata(input: {
+  locale: Locale;
+  siteName: string;
+  writer: WriterPublicProfile;
+}): Metadata {
+  const description = buildMetaDescription({
+    subtitle: input.writer.major,
+    descriptionMarkdown: input.writer.biography.trim() || input.writer.major,
+    fallback: input.writer.fullName,
+  });
+  return buildPageMetadata({
+    locale: input.locale,
+    pathname: `/writers/${input.writer.slug}`,
+    title: titleWithSite(input.writer.fullName, input.siteName),
+    description,
+    availableLocales: LOCALES,
+    siteName: input.siteName,
+    ogType: "website",
+    ogImage: input.writer.profileImageUrl,
   });
 }
 

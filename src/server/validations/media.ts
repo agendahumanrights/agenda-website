@@ -6,9 +6,12 @@ export const mediaPurposeSchema = z.enum([
   "publication-main",
   "publication-gallery",
   "publication-pdf",
+  "publication-inline",
   "event-main",
   "event-gallery",
+  "event-inline",
   "founder-profile",
+  "writer-profile",
 ]);
 
 export const mediaAltTextsSchema = z.object({

@@ -6,10 +6,16 @@ import {
   useRef,
   useState,
   useSyncExternalStore,
+  type ClipboardEvent,
+  type DragEvent,
   type KeyboardEvent,
 } from "react";
 
 import type { MarkdownEditorLabels } from "@/components/admin/markdown/labels";
+import {
+  MarkdownImageDialog,
+  type MarkdownImageUploadConfig,
+} from "@/components/admin/markdown/MarkdownImageDialog";
 import { MarkdownPromptDialog } from "@/components/admin/markdown/MarkdownPromptDialog";
 import { MarkdownToolbar } from "@/components/admin/markdown/MarkdownToolbar";
 import { MarkdownContent } from "@/components/shared/MarkdownContent";
@@ -26,6 +32,7 @@ import {
   type EditorSelection,
   type EditorUpdate,
 } from "@/lib/markdown-editor";
+import type { AdminMediaRef } from "@/types/publication";
 
 type Mode = "write" | "preview" | "split";
 
@@ -39,9 +46,17 @@ type Props = {
   disabled?: boolean;
   rows?: number;
   labels: MarkdownEditorLabels;
+  /** When set, the Image dialog supports direct uploads for this purpose. */
+  imageUpload?: MarkdownImageUploadConfig | null;
 };
 
 const HISTORY_LIMIT = 100;
+const IMAGE_ACCEPT = new Set([
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "image/gif",
+]);
 
 function subscribeNarrow(onStoreChange: () => void) {
   const mq = window.matchMedia("(max-width: 767px)");
@@ -57,6 +72,10 @@ function getNarrowServerSnapshot() {
   return false;
 }
 
+function isImageFile(file: File | null | undefined): file is File {
+  return Boolean(file && IMAGE_ACCEPT.has(file.type));
+}
+
 export function MarkdownEditor({
   id,
   value,
@@ -65,6 +84,7 @@ export function MarkdownEditor({
   disabled,
   rows = 14,
   labels,
+  imageUpload = null,
 }: Props) {
   const [mode, setMode] = useState<Mode>("write");
   const [expanded, setExpanded] = useState(false);
@@ -72,11 +92,11 @@ export function MarkdownEditor({
   const [dialog, setDialog] = useState<DialogKind>(null);
   const [linkText, setLinkText] = useState("");
   const [linkUrl, setLinkUrl] = useState("https://");
-  const [imageAlt, setImageAlt] = useState("");
-  const [imageUrl, setImageUrl] = useState("https://");
+  const [imageAltSeed, setImageAltSeed] = useState("");
   const [codeLang, setCodeLang] = useState("");
   const [past, setPast] = useState<string[]>([]);
   const [future, setFuture] = useState<string[]>([]);
+  const [inlineUploading, setInlineUploading] = useState(false);
   const narrow = useSyncExternalStore(
     subscribeNarrow,
     getNarrowSnapshot,
@@ -85,6 +105,8 @@ export function MarkdownEditor({
 
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const skipHistoryRef = useRef(false);
+  const pendingSelectionRef = useRef<EditorSelection | null>(null);
+  const inlineUploadLockRef = useRef(false);
 
   const pushHistory = useCallback((previous: string) => {
     if (skipHistoryRef.current) return;
@@ -95,7 +117,7 @@ export function MarkdownEditor({
     setFuture([]);
   }, []);
 
-  const getSelection = useCallback((): EditorSelection => {
+  const snapshotSelection = useCallback((): EditorSelection => {
     const el = textareaRef.current;
     if (!el) {
       return { value, selectionStart: value.length, selectionEnd: value.length };
@@ -107,11 +129,16 @@ export function MarkdownEditor({
     };
   }, [value]);
 
+  const getSelection = useCallback((): EditorSelection => {
+    return pendingSelectionRef.current ?? snapshotSelection();
+  }, [snapshotSelection]);
+
   const applyUpdate = useCallback(
     (update: EditorUpdate) => {
       const el = textareaRef.current;
       pushHistory(value);
       onChange(update.value);
+      pendingSelectionRef.current = null;
       requestAnimationFrame(() => {
         const target = textareaRef.current ?? el;
         if (!target) return;
@@ -173,7 +200,8 @@ export function MarkdownEditor({
   );
 
   const openLinkDialog = () => {
-    const sel = getSelection();
+    const sel = snapshotSelection();
+    pendingSelectionRef.current = sel;
     const selected = sel.value.slice(sel.selectionStart, sel.selectionEnd);
     setLinkText(selected);
     setLinkUrl("https://");
@@ -181,25 +209,80 @@ export function MarkdownEditor({
   };
 
   const openImageDialog = () => {
-    setImageAlt("");
-    setImageUrl("https://");
+    const sel = snapshotSelection();
+    pendingSelectionRef.current = sel;
+    const selected = sel.value.slice(sel.selectionStart, sel.selectionEnd).trim();
+    setImageAltSeed(selected);
     setDialog("image");
   };
 
   const openCodeDialog = () => {
+    pendingSelectionRef.current = snapshotSelection();
     setCodeLang("");
     setDialog("code");
   };
 
   const confirmDialog = () => {
     if (dialog === "link") {
-      run((sel) => insertLink(sel, linkUrl, linkText));
-    } else if (dialog === "image") {
-      run((sel) => insertImage(sel, imageUrl, imageAlt));
+      const sel = pendingSelectionRef.current ?? snapshotSelection();
+      applyUpdate(insertLink(sel, linkUrl, linkText));
     } else if (dialog === "code") {
-      run((sel) => insertFencedCode(sel, codeLang));
+      const sel = pendingSelectionRef.current ?? snapshotSelection();
+      applyUpdate(insertFencedCode(sel, codeLang));
     }
     setDialog(null);
+  };
+
+  const insertUploadedImageAtSelection = useCallback(
+    async (file: File, selection?: EditorSelection) => {
+      if (!imageUpload || disabled || inlineUploadLockRef.current) return;
+      inlineUploadLockRef.current = true;
+      setInlineUploading(true);
+      const sel = selection ?? snapshotSelection();
+      pendingSelectionRef.current = sel;
+      try {
+        const form = new FormData();
+        form.set("file", file);
+        form.set("purpose", imageUpload.purpose);
+        const res = await fetch("/api/admin/media/upload", {
+          method: "POST",
+          body: form,
+          credentials: "same-origin",
+        });
+        const data = (await res.json().catch(() => null)) as {
+          media?: AdminMediaRef;
+        } | null;
+        if (!res.ok || !data?.media?.url) return;
+        const alt =
+          sel.value.slice(sel.selectionStart, sel.selectionEnd).trim() ||
+          "image";
+        applyUpdate(insertImage(sel, data.media.url, alt));
+      } finally {
+        inlineUploadLockRef.current = false;
+        setInlineUploading(false);
+      }
+    },
+    [applyUpdate, disabled, imageUpload, snapshotSelection],
+  );
+
+  const onPaste = (e: ClipboardEvent<HTMLTextAreaElement>) => {
+    if (!imageUpload || disabled) return;
+    const items = Array.from(e.clipboardData?.items ?? []);
+    const imageItem = items.find(
+      (item) => item.kind === "file" && item.type.startsWith("image/"),
+    );
+    const file = imageItem?.getAsFile();
+    if (!isImageFile(file)) return;
+    e.preventDefault();
+    void insertUploadedImageAtSelection(file, snapshotSelection());
+  };
+
+  const onDrop = (e: DragEvent<HTMLTextAreaElement>) => {
+    if (!imageUpload || disabled) return;
+    const file = Array.from(e.dataTransfer?.files ?? []).find(isImageFile);
+    if (!file) return;
+    e.preventDefault();
+    void insertUploadedImageAtSelection(file, snapshotSelection());
   };
 
   const onKeyDown = (e: KeyboardEvent<HTMLTextAreaElement>) => {
@@ -224,6 +307,7 @@ export function MarkdownEditor({
   const effectiveMode: Mode = narrow && mode === "split" ? "write" : mode;
   const showEditor = effectiveMode === "write" || effectiveMode === "split";
   const showPreview = effectiveMode === "preview" || effectiveMode === "split";
+  const editorDisabled = disabled || inlineUploading;
 
   const modeButtons: Array<{ key: Mode; label: string }> = useMemo(() => {
     const buttons: Array<{ key: Mode; label: string }> = [
@@ -247,7 +331,7 @@ export function MarkdownEditor({
             <button
               key={key}
               type="button"
-              disabled={disabled}
+              disabled={editorDisabled}
               onClick={() => setMode(key)}
               className={cn(
                 "rounded border px-2.5 py-1 text-xs font-medium",
@@ -263,7 +347,7 @@ export function MarkdownEditor({
         <div className="flex gap-1">
           <button
             type="button"
-            disabled={disabled}
+            disabled={editorDisabled}
             onClick={() => setHelpOpen((v) => !v)}
             className="rounded border border-zinc-300 bg-white px-2 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-100"
             aria-expanded={helpOpen}
@@ -272,7 +356,7 @@ export function MarkdownEditor({
           </button>
           <button
             type="button"
-            disabled={disabled}
+            disabled={editorDisabled}
             onClick={() => setExpanded((v) => !v)}
             className="rounded border border-zinc-300 bg-white px-2 py-1 text-xs font-medium text-zinc-700 hover:bg-zinc-100"
           >
@@ -291,7 +375,7 @@ export function MarkdownEditor({
       {showEditor ? (
         <MarkdownToolbar
           labels={labels}
-          disabled={disabled}
+          disabled={editorDisabled}
           canUndo={past.length > 0}
           canRedo={future.length > 0}
           onUndo={undo}
@@ -329,10 +413,18 @@ export function MarkdownEditor({
             id={id}
             value={value}
             dir={dir}
-            disabled={disabled}
+            disabled={editorDisabled}
             rows={expanded ? undefined : rows}
             onChange={(e) => onTextChange(e.target.value)}
             onKeyDown={onKeyDown}
+            onPaste={onPaste}
+            onDragOver={(e) => {
+              if (!imageUpload || disabled) return;
+              if (Array.from(e.dataTransfer?.types ?? []).includes("Files")) {
+                e.preventDefault();
+              }
+            }}
+            onDrop={onDrop}
             spellCheck
             className={cn(
               "w-full resize-y border-0 bg-white px-3 py-2 font-mono text-sm text-zinc-900 outline-none",
@@ -382,7 +474,10 @@ export function MarkdownEditor({
         title={labels.linkDialogTitle}
         confirmLabel={labels.insert}
         cancelLabel={labels.cancel}
-        onCancel={() => setDialog(null)}
+        onCancel={() => {
+          pendingSelectionRef.current = null;
+          setDialog(null);
+        }}
         onConfirm={confirmDialog}
         fields={[
           {
@@ -400,35 +495,46 @@ export function MarkdownEditor({
           },
         ]}
       />
-      <MarkdownPromptDialog
+      <MarkdownImageDialog
+        key={dialog === "image" ? `image-open-${imageAltSeed}` : "image-closed"}
         open={dialog === "image"}
-        title={labels.imageDialogTitle}
-        confirmLabel={labels.insert}
-        cancelLabel={labels.cancel}
-        onCancel={() => setDialog(null)}
-        onConfirm={confirmDialog}
-        fields={[
-          {
-            id: `${id}-image-alt`,
-            label: labels.imageAlt,
-            value: imageAlt,
-            onChange: setImageAlt,
-          },
-          {
-            id: `${id}-image-url`,
-            label: labels.imageUrl,
-            value: imageUrl,
-            onChange: setImageUrl,
-            placeholder: "https://",
-          },
-        ]}
+        upload={imageUpload}
+        initialAlt={imageAltSeed}
+        disabled={editorDisabled}
+        labels={{
+          title: labels.imageDialogTitle,
+          alt: labels.imageAlt,
+          url: labels.imageUrl,
+          captionOptional: labels.imageCaptionOptional,
+          tabUpload: labels.imageTabUpload,
+          tabUrl: labels.imageTabUrl,
+          dropHint: labels.imageDropHint,
+          fileHint: labels.imageFileHint,
+          uploading: labels.imageUploading,
+          uploadFailed: labels.imageUploadFailed,
+          insert: labels.insert,
+          cancel: labels.cancel,
+          previewAlt: labels.imagePreviewAlt,
+        }}
+        onCancel={() => {
+          pendingSelectionRef.current = null;
+          setDialog(null);
+        }}
+        onInsert={({ url, alt, title }) => {
+          const sel = pendingSelectionRef.current ?? snapshotSelection();
+          applyUpdate(insertImage(sel, url, alt, title));
+          setDialog(null);
+        }}
       />
       <MarkdownPromptDialog
         open={dialog === "code"}
         title={labels.codeBlock}
         confirmLabel={labels.insert}
         cancelLabel={labels.cancel}
-        onCancel={() => setDialog(null)}
+        onCancel={() => {
+          pendingSelectionRef.current = null;
+          setDialog(null);
+        }}
         onConfirm={confirmDialog}
         fields={[
           {

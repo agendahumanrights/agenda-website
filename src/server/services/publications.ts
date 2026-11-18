@@ -52,7 +52,7 @@ import type {
 /**
  * Business rules (service-enforced unless noted):
  * - Public queries only return PUBLISHED items.
- * - Any category may have a founder author; categories with requiresAuthor=true need one to publish (none seeded that way by default).
+ * - Any category may have a writer author; categories with requiresAuthor=true need one to publish (none seeded that way by default).
  * - Publishing requires both ar + en titles/descriptions, main image, category, publishedAt (subtitle optional).
  * - Drafts need at least one non-empty title.
  * - Slug is immutable after creation.
@@ -79,8 +79,8 @@ function mapListItem(
       requiresAuthor: boolean;
     };
     mainImage: { storageKey: string } | null;
-    authorFounder: {
-      bioKey: string;
+    authorWriter: {
+      slug: string;
       translations: { fullName: string }[];
     } | null;
     translations: {
@@ -102,8 +102,8 @@ function mapListItem(
     mainImageUrl: row.mainImage
       ? storage.getPublicUrl(row.mainImage.storageKey)
       : null,
-    authorName: row.authorFounder?.translations[0]?.fullName ?? null,
-    authorBioKey: row.authorFounder?.bioKey ?? null,
+    authorName: row.authorWriter?.translations[0]?.fullName ?? null,
+    authorSlug: row.authorWriter?.slug ?? null,
   };
 }
 
@@ -157,9 +157,9 @@ export async function getNewestPublishedPublication(
         },
       },
       mainImage: { select: { storageKey: true } },
-      authorFounder: {
+      authorWriter: {
         select: {
-          bioKey: true,
+          slug: true,
           translations: {
             where: { locale },
             take: 1,
@@ -239,9 +239,9 @@ export async function listPublishedPublications(
           },
         },
         mainImage: { select: { storageKey: true } },
-        authorFounder: {
+        authorWriter: {
           select: {
-            bioKey: true,
+            slug: true,
             translations: {
               where: { locale: query.locale },
               take: 1,
@@ -292,7 +292,7 @@ export async function getPublishedPublicationBySlug(
         orderBy: { sortOrder: "asc" },
         include: { mediaAsset: { include: { altTexts: true } } },
       },
-      authorFounder: {
+      authorWriter: {
         include: {
           profileImage: true,
           translations: { where: { locale }, take: 1 },
@@ -332,10 +332,9 @@ export async function getPublishedPublicationBySlug(
       .filter((img) => img.id !== row.mainImage?.id)
       .map((img) => img.url),
     images,
-    authorProfessionalArea:
-      row.authorFounder?.translations[0]?.professionalArea ?? null,
-    authorImageUrl: row.authorFounder?.profileImage
-      ? storage.getPublicUrl(row.authorFounder.profileImage.storageKey)
+    authorMajor: row.authorWriter?.translations[0]?.major ?? null,
+    authorImageUrl: row.authorWriter?.profileImage
+      ? storage.getPublicUrl(row.authorWriter.profileImage.storageKey)
       : null,
   };
 }
@@ -353,7 +352,7 @@ function assertPublishable(input: {
   requiresAuthor: boolean;
   publishedAt: Date | null | undefined;
   mainImageId: string | null | undefined;
-  authorFounderId: string | null | undefined;
+  authorWriterId: string | null | undefined;
   translations: {
     locale: string;
     title: string;
@@ -379,15 +378,15 @@ function assertPublishable(input: {
   if (!input.categoryId) {
     throw badRequest("Publishing requires a category.");
   }
-  assertAuthorRules(input.requiresAuthor, input.authorFounderId ?? null);
+  assertAuthorRules(input.requiresAuthor, input.authorWriterId ?? null);
 }
 
 function assertAuthorRules(
   requiresAuthor: boolean,
-  authorFounderId: string | null,
+  authorWriterId: string | null,
 ): void {
-  if (requiresAuthor && !authorFounderId) {
-    throw badRequest("This category requires a founder author.");
+  if (requiresAuthor && !authorWriterId) {
+    throw badRequest("This category requires a writer author.");
   }
 }
 
@@ -444,13 +443,13 @@ async function validateMediaRefs(input: {
   }
 }
 
-async function assertFounderExists(id: string): Promise<void> {
+async function assertWriterExists(id: string): Promise<void> {
   const prisma = getPrisma();
-  const founder = await prisma.founder.findUnique({
+  const writer = await prisma.writer.findUnique({
     where: { id },
     select: { id: true },
   });
-  if (!founder) throw badRequest("Selected founder author does not exist.");
+  if (!writer) throw badRequest("Selected writer author does not exist.");
 }
 
 const adminInclude = {
@@ -462,7 +461,7 @@ const adminInclude = {
     orderBy: { sortOrder: "asc" as const },
     include: { mediaAsset: { include: { altTexts: true } } },
   },
-  authorFounder: {
+  authorWriter: {
     include: {
       translations: true,
     },
@@ -476,8 +475,8 @@ function mapAdminDetail(
   locale: "ar" | "en" = "ar",
 ): AdminPublicationDetail {
   const authorLocale =
-    row.authorFounder?.translations.find((t) => t.locale === "ar") ??
-    row.authorFounder?.translations[0];
+    row.authorWriter?.translations.find((t) => t.locale === "ar") ??
+    row.authorWriter?.translations[0];
   return {
     id: row.id,
     slug: row.slug,
@@ -487,9 +486,9 @@ function mapAdminDetail(
     publishedAt: row.publishedAt?.toISOString() ?? null,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
-    authorFounderId: row.authorFounderId,
+    authorWriterId: row.authorWriterId,
     authorName: authorLocale?.fullName ?? null,
-    authorBioKey: row.authorFounder?.bioKey ?? null,
+    authorSlug: row.authorWriter?.slug ?? null,
     translations: row.translations.map((t) => ({
       locale: t.locale,
       title: t.title,
@@ -603,7 +602,7 @@ export async function createPublication(
   requireDb();
   assertDraftHasTitle(input.translations);
   const category = await assertCategoryExists(input.categoryId);
-  assertAuthorRules(category.requiresAuthor, input.authorFounderId ?? null);
+  assertAuthorRules(category.requiresAuthor, input.authorWriterId ?? null);
 
   if (input.status === "PUBLISHED") {
     assertPublishable({
@@ -611,13 +610,13 @@ export async function createPublication(
       requiresAuthor: category.requiresAuthor,
       publishedAt: input.publishedAt,
       mainImageId: input.mainImageId,
-      authorFounderId: input.authorFounderId,
+      authorWriterId: input.authorWriterId,
       translations: input.translations,
     });
   }
 
-  if (input.authorFounderId) {
-    await assertFounderExists(input.authorFounderId);
+  if (input.authorWriterId) {
+    await assertWriterExists(input.authorWriterId);
   }
   await validateMediaRefs({
     mainImageId: input.mainImageId,
@@ -656,7 +655,7 @@ export async function createPublication(
         categoryId: input.categoryId,
         status: input.status,
         publishedAt: input.publishedAt ?? null,
-        authorFounderId: input.authorFounderId ?? null,
+        authorWriterId: input.authorWriterId ?? null,
         mainImageId: input.mainImageId ?? null,
         pdfEnId: input.pdfEnId ?? null,
         pdfArId: input.pdfArId ?? null,
@@ -725,9 +724,9 @@ export async function updatePublication(
   const nextPublishedAt =
     input.publishedAt !== undefined ? input.publishedAt : existing.publishedAt;
   const nextAuthor =
-    input.authorFounderId !== undefined
-      ? input.authorFounderId
-      : existing.authorFounderId;
+    input.authorWriterId !== undefined
+      ? input.authorWriterId
+      : existing.authorWriterId;
   const nextMainImage =
     input.mainImageId !== undefined ? input.mainImageId : existing.mainImageId;
   const nextPdfEn =
@@ -761,12 +760,12 @@ export async function updatePublication(
       requiresAuthor: nextCategory.requiresAuthor,
       publishedAt: nextPublishedAt,
       mainImageId: nextMainImage,
-      authorFounderId: nextAuthor,
+      authorWriterId: nextAuthor,
       translations: nextTranslations,
     });
   }
 
-  if (nextAuthor) await assertFounderExists(nextAuthor);
+  if (nextAuthor) await assertWriterExists(nextAuthor);
   const previousImageCount = countContentImages(
     Boolean(existing.mainImageId),
     existing.gallery.length,
@@ -845,7 +844,7 @@ export async function updatePublication(
         categoryId: nextCategoryId,
         status: nextStatus,
         publishedAt: nextPublishedAt,
-        authorFounderId: nextAuthor,
+        authorWriterId: nextAuthor,
         mainImageId: nextMainImage,
         pdfEnId: nextPdfEn,
         pdfArId: nextPdfAr,

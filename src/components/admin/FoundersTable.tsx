@@ -105,10 +105,6 @@ export function FoundersTable({
   const [message, setMessage] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] =
     useState<AdminFounderListItem | null>(null);
-  const [blocked, setBlocked] = useState<{
-    name: string;
-    count: number;
-  } | null>(null);
   const [reorderOpen, setReorderOpen] = useState(false);
   const [reorderSession, setReorderSession] = useState(0);
   const requestGen = useRef(0);
@@ -147,8 +143,6 @@ export function FoundersTable({
   function confirmDelete() {
     if (!deleteTarget) return;
     const id = deleteTarget.id;
-    const name = deleteTarget.fullName || deleteTarget.bioKey;
-    const count = deleteTarget.publicationCount;
     setDeleteTarget(null);
     startTransition(async () => {
       const result = await adminJson<{ ok?: boolean }>(
@@ -156,16 +150,6 @@ export function FoundersTable({
         { method: "DELETE" },
       );
       if (!result.ok) {
-        if (result.status === 409) {
-          const details = result.payload.error?.details as
-            | { publicationCount?: number }
-            | undefined;
-          setBlocked({
-            name,
-            count: details?.publicationCount ?? count,
-          });
-          return;
-        }
         setError(labels.errorGeneric);
         return;
       }
@@ -307,9 +291,6 @@ export function FoundersTable({
                 </th>
                 <th className="px-3 py-3 font-semibold">{labels.colEmail}</th>
                 <th className="px-3 py-3 font-semibold">
-                  {labels.colPublications}
-                </th>
-                <th className="px-3 py-3 font-semibold">
                   {labels.colPosition}
                 </th>
                 <th className="px-4 py-3 font-semibold">
@@ -320,7 +301,7 @@ export function FoundersTable({
             <tbody>
               {data.items.length === 0 ? (
                 <tr>
-                  <td colSpan={5} className="px-4 py-10">
+                  <td colSpan={4} className="px-4 py-10">
                     <EmptyState
                       title={hasFilters ? labels.emptyFiltered : labels.empty}
                       description={
@@ -422,15 +403,10 @@ export function FoundersTable({
         title={labels.deleteConfirmTitle}
         body={
           deleteTarget
-            ? labels.deleteConfirmBody
-                .replace(
-                  "{name}",
-                  deleteTarget.fullName || deleteTarget.bioKey,
-                )
-                .replace(
-                  "{count}",
-                  String(deleteTarget.publicationCount),
-                )
+            ? labels.deleteConfirmBody.replace(
+                "{name}",
+                deleteTarget.fullName || deleteTarget.bioKey,
+              )
             : ""
         }
         confirmLabel={labels.deleteConfirm}
@@ -439,23 +415,6 @@ export function FoundersTable({
         pending={pending}
         onConfirm={confirmDelete}
         onCancel={() => setDeleteTarget(null)}
-      />
-
-      <AdminConfirmDialog
-        open={Boolean(blocked)}
-        title={labels.deleteBlockedTitle}
-        body={
-          blocked
-            ? labels.deleteBlockedBody.replace(
-                "{count}",
-                String(blocked.count),
-              )
-            : ""
-        }
-        confirmLabel={labels.cancel}
-        cancelLabel={labels.cancel}
-        onConfirm={() => setBlocked(null)}
-        onCancel={() => setBlocked(null)}
       />
     </div>
   );
@@ -492,9 +451,6 @@ function FounderRow({
         <span className="block truncate text-zinc-700" dir="ltr">
           {item.email || "—"}
         </span>
-      </td>
-      <td className="px-3 py-3 tabular-nums text-zinc-700">
-        {item.publicationCount}
       </td>
       <td className="px-3 py-3 tabular-nums text-zinc-700">
         {labels.positionN.replace("{n}", String(position))}
@@ -562,18 +518,12 @@ function FounderCard({
           <p className="mt-1 truncate text-sm text-zinc-700" dir="ltr">
             {item.email || "—"}
           </p>
-          <dl className="mt-2 grid grid-cols-2 gap-2 text-xs text-[var(--admin-muted)]">
-            <div>
-              <dt className="font-medium">{labels.colPublications}</dt>
-              <dd className="text-zinc-800">{item.publicationCount}</dd>
-            </div>
-            <div>
-              <dt className="font-medium">{labels.colPosition}</dt>
-              <dd className="text-zinc-800">
-                {labels.positionN.replace("{n}", String(position))}
-              </dd>
-            </div>
-          </dl>
+          <p className="mt-2 text-xs text-[var(--admin-muted)]">
+            <span className="font-medium">{labels.colPosition}: </span>
+            <span className="text-zinc-800">
+              {labels.positionN.replace("{n}", String(position))}
+            </span>
+          </p>
         </div>
       </div>
       <div className="mt-3 flex flex-wrap items-center gap-2 border-t border-[var(--admin-border)] pt-3">

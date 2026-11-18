@@ -209,11 +209,92 @@ export async function assertMediaAccess(
   return { mimeType: asset.mimeType, filename: asset.filename };
 }
 
+function markdownReferenceContainsFilters(storageKey: string, publicUrl: string) {
+  const encoded = storageKey
+    .split("/")
+    .map((segment) => encodeURIComponent(segment))
+    .join("/");
+  const needles = Array.from(
+    new Set(
+      [
+        storageKey,
+        encoded,
+        `/api/media/${storageKey}`,
+        `/api/media/${encoded}`,
+        publicUrl,
+      ].filter(Boolean),
+    ),
+  );
+  return needles.map((needle) => ({ contains: needle }));
+}
+
+async function isAssetReferencedInPublishedMarkdown(
+  storageKey: string,
+  publicUrl: string,
+): Promise<boolean> {
+  const prisma = getPrisma();
+  const contains = markdownReferenceContainsFilters(storageKey, publicUrl);
+  const [pubHit, eventHit, writerHit] = await Promise.all([
+    prisma.publicationTranslation.findFirst({
+      where: {
+        publication: { status: "PUBLISHED" },
+        OR: contains.map((c) => ({ description: c })),
+      },
+      select: { id: true },
+    }),
+    prisma.eventTranslation.findFirst({
+      where: {
+        event: { status: "PUBLISHED" },
+        OR: contains.map((c) => ({ description: c })),
+      },
+      select: { id: true },
+    }),
+    prisma.writerTranslation.findFirst({
+      where: {
+        OR: contains.map((c) => ({ biography: c })),
+      },
+      select: { id: true },
+    }),
+  ]);
+  return Boolean(pubHit || eventHit || writerHit);
+}
+
+async function isAssetReferencedInAnyMarkdown(
+  storageKey: string,
+  publicUrl: string,
+): Promise<boolean> {
+  const prisma = getPrisma();
+  const contains = markdownReferenceContainsFilters(storageKey, publicUrl);
+  const [pubHit, eventHit, writerHit] = await Promise.all([
+    prisma.publicationTranslation.findFirst({
+      where: { OR: contains.map((c) => ({ description: c })) },
+      select: { id: true },
+    }),
+    prisma.eventTranslation.findFirst({
+      where: { OR: contains.map((c) => ({ description: c })) },
+      select: { id: true },
+    }),
+    prisma.writerTranslation.findFirst({
+      where: { OR: contains.map((c) => ({ biography: c })) },
+      select: { id: true },
+    }),
+  ]);
+  return Boolean(pubHit || eventHit || writerHit);
+}
+
 async function isAssetPubliclyReferenced(mediaAssetId: string): Promise<boolean> {
   const prisma = getPrisma();
   // findFirst + select id is cheaper than count; run in parallel and short-circuit.
-  const [asMain, asPdfEn, asPdfAr, asGallery, asEventMain, asEventGallery, asFounder] =
-    await Promise.all([
+  const [
+    asMain,
+    asPdfEn,
+    asPdfAr,
+    asGallery,
+    asEventMain,
+    asEventGallery,
+    asFounder,
+    asWriter,
+  ] = await Promise.all([
       prisma.publication.findFirst({
         where: { mainImageId: mediaAssetId, status: "PUBLISHED" },
         select: { id: true },
@@ -248,17 +329,32 @@ async function isAssetPubliclyReferenced(mediaAssetId: string): Promise<boolean>
         where: { profileImageId: mediaAssetId },
         select: { id: true },
       }),
+      prisma.writer.findFirst({
+        where: { profileImageId: mediaAssetId },
+        select: { id: true },
+      }),
     ]);
 
-  return Boolean(
+  if (
     asMain ||
-      asPdfEn ||
-      asPdfAr ||
-      asGallery ||
-      asEventMain ||
-      asEventGallery ||
-      asFounder,
-  );
+    asPdfEn ||
+    asPdfAr ||
+    asGallery ||
+    asEventMain ||
+    asEventGallery ||
+    asFounder ||
+    asWriter
+  ) {
+    return true;
+  }
+
+  const asset = await prisma.mediaAsset.findUnique({
+    where: { id: mediaAssetId },
+    select: { storageKey: true },
+  });
+  if (!asset) return false;
+  const publicUrl = getStorage().getPublicUrl(asset.storageKey);
+  return isAssetReferencedInPublishedMarkdown(asset.storageKey, publicUrl);
 }
 
 /** Delete physical file only when no DB rows still reference the asset. */
@@ -275,6 +371,7 @@ export async function deleteMediaAssetIfOrphaned(mediaAssetId: string): Promise<
       eventMainImages: { select: { id: true }, take: 1 },
       eventGallery: { select: { id: true }, take: 1 },
       founderProfile: { select: { id: true } },
+      writerProfile: { select: { id: true } },
     },
   });
   if (!asset) return;
@@ -286,11 +383,17 @@ export async function deleteMediaAssetIfOrphaned(mediaAssetId: string): Promise<
     asset.publicationGallery.length > 0 ||
     asset.eventMainImages.length > 0 ||
     asset.eventGallery.length > 0 ||
-    asset.founderProfile != null;
+    asset.founderProfile != null ||
+    asset.writerProfile != null;
 
   if (stillReferenced) return;
 
   const storage = getStorage();
+  const publicUrl = storage.getPublicUrl(asset.storageKey);
+  if (await isAssetReferencedInAnyMarkdown(asset.storageKey, publicUrl)) {
+    return;
+  }
+
   try {
     await storage.delete(asset.storageKey);
   } catch (error) {

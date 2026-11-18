@@ -231,11 +231,11 @@ export function FeaturedPublicationsSlider({
             {dateLabel && current.publishedAt ? (
               <time dateTime={current.publishedAt}>{dateLabel}</time>
             ) : null}
-            {current.authorName && current.authorBioKey ? (
+            {current.authorName && current.authorSlug ? (
               <>
                 {dateLabel ? <span aria-hidden>·</span> : null}
                 <AuthorLink
-                  bioKey={current.authorBioKey}
+                  slug={current.authorSlug}
                   name={current.authorName}
                   locale={locale}
                   className="normal-case tracking-normal text-white underline decoration-white/50 underline-offset-4 hover:decoration-white"

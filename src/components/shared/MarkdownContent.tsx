@@ -23,6 +23,13 @@ const schema = {
       "title",
       "width",
       "height",
+      "loading",
+      "decoding",
+    ],
+    figure: [...(defaultSchema.attributes?.figure ?? []), ["className"]],
+    figcaption: [
+      ...(defaultSchema.attributes?.figcaption ?? []),
+      ["className"],
     ],
     input: [
       ["type", "checkbox"],
@@ -33,10 +40,15 @@ const schema = {
     ul: [...(defaultSchema.attributes?.ul ?? []), ["className"]],
     ol: [...(defaultSchema.attributes?.ol ?? []), ["className"]],
   },
+  tagNames: [
+    ...(defaultSchema.tagNames ?? []),
+    "figure",
+    "figcaption",
+  ],
 };
 
 const SAFE_HREF = /^(https?:|mailto:)/i;
-const SAFE_SRC = /^https?:/i;
+const SAFE_REMOTE_SRC = /^https?:/i;
 
 type Props = {
   source: string;
@@ -61,9 +73,17 @@ function headingComponents(shift: boolean): Partial<Components> {
   };
 }
 
+/** Allow http(s) images and same-origin media served via `/api/media/...`. */
+export function isSafeMarkdownImageSrc(src: string): boolean {
+  if (SAFE_REMOTE_SRC.test(src)) return true;
+  if (src.startsWith("/api/media/")) return true;
+  return false;
+}
+
 /**
  * Safe GFM Markdown renderer for admin preview and public detail bodies.
- * Raw HTML is sanitized away; only http(s)/mailto links and http(s) images.
+ * Raw HTML is sanitized away; only http(s)/mailto links and http(s) or
+ * `/api/media/...` images.
  */
 export function MarkdownContent({
   source,
@@ -95,12 +115,26 @@ export function MarkdownContent({
               </a>
             );
           },
-          img: ({ src, alt, title, ...props }) => {
-            const safe = typeof src === "string" && SAFE_SRC.test(src);
-            if (!safe) return null;
-            return (
+          img: ({ src, alt, title }) => {
+            if (typeof src !== "string" || !isSafeMarkdownImageSrc(src)) {
+              return null;
+            }
+            const image = (
               // eslint-disable-next-line @next/next/no-img-element -- Markdown image URLs
-              <img src={src} alt={alt ?? ""} title={title} {...props} />
+              <img
+                src={src}
+                alt={alt ?? ""}
+                title={title}
+                loading="lazy"
+                decoding="async"
+              />
+            );
+            if (!title?.trim()) return image;
+            return (
+              <figure className="article-prose-figure">
+                {image}
+                <figcaption>{title}</figcaption>
+              </figure>
             );
           },
           input: (props) => {

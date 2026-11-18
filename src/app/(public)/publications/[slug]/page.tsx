@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
+import { Suspense } from "react";
 
 import { Container } from "@/components/layout/Container";
 import { PublicationDetails } from "@/components/publications/PublicationDetails";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { EmptyState } from "@/components/ui/EmptyState";
+import { DetailSkeleton } from "@/components/ui/Skeleton";
 import { getDictionary } from "@/i18n/get-dictionary";
 import { getRequestLocale } from "@/i18n/get-locale";
 import {
@@ -50,11 +52,7 @@ export async function generateMetadata({
   }
 }
 
-export default async function PublicationDetailPage({
-  params,
-}: {
-  params: Params;
-}) {
+async function PublicationDetailContent({ params }: { params: Params }) {
   const { slug } = await params;
   const locale = await getRequestLocale();
   const dict = await getDictionary(locale);
@@ -128,5 +126,19 @@ export default async function PublicationDetailPage({
         />
       </Container>
     </div>
+  );
+}
+
+export default function PublicationDetailPage({ params }: { params: Params }) {
+  return (
+    <Suspense
+      fallback={
+        <div className="public-main-offset pb-16">
+          <DetailSkeleton />
+        </div>
+      }
+    >
+      <PublicationDetailContent params={params} />
+    </Suspense>
   );
 }

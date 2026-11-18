@@ -34,6 +34,14 @@ export type MarkdownEditorLabels = {
   imageDialogTitle: string;
   imageAlt: string;
   imageUrl: string;
+  imageCaptionOptional: string;
+  imageTabUpload: string;
+  imageTabUrl: string;
+  imageDropHint: string;
+  imageFileHint: string;
+  imageUploading: string;
+  imageUploadFailed: string;
+  imagePreviewAlt: string;
   codeLanguage: string;
   codeLanguageHint: string;
   insert: string;

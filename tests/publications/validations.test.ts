@@ -30,19 +30,19 @@ describe("publication validations", () => {
   it("omits slug from update schema", () => {
     const parsed = updatePublicationBodySchema.parse({
       categoryId: "cpubcat000000000000000002",
-      authorFounderId: null,
+      authorWriterId: null,
     });
     expect("slug" in parsed).toBe(false);
   });
 
-  it("allows an optional founder author on create for any category", () => {
+  it("allows an optional writer author on create for any category", () => {
     const parsed = createPublicationBodySchema.parse({
       categoryId: "cpubcat000000000000000001",
       status: "DRAFT",
-      authorFounderId: "clxxxxxxxxxxxxxxxxxxxxxx9",
+      authorWriterId: "clxxxxxxxxxxxxxxxxxxxxxx9",
       translations: [{ locale: "en", title: "Report", subtitle: "", description: "" }],
     });
-    expect(parsed.authorFounderId).toBe("clxxxxxxxxxxxxxxxxxxxxxx9");
+    expect(parsed.authorWriterId).toBe("clxxxxxxxxxxxxxxxxxxxxxx9");
   });
 
   it("rejects duplicate featured publication ids", () => {

@@ -4,8 +4,8 @@ import { cn } from "@/lib/utils";
 
 type Props = {
   name: string;
-  bioKey: string;
-  professionalArea: string | null;
+  slug: string;
+  major: string | null;
   imageUrl: string | null;
   locale?: Locale;
   className?: string;
@@ -13,8 +13,8 @@ type Props = {
 
 export function PublicationAuthor({
   name,
-  bioKey,
-  professionalArea,
+  slug,
+  major,
   imageUrl,
   locale,
   className,
@@ -48,13 +48,13 @@ export function PublicationAuthor({
       </div>
       <div className="min-w-0">
         <AuthorLink
-          bioKey={bioKey}
+          slug={slug}
           name={name}
           locale={locale}
           className="font-medium text-[var(--brand-blue)] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-blue)]"
         />
-        {professionalArea ? (
-          <p className="mt-0.5 text-sm text-[var(--brand-gray)]">{professionalArea}</p>
+        {major ? (
+          <p className="mt-0.5 text-sm text-[var(--brand-gray)]">{major}</p>
         ) : null}
       </div>
     </div>

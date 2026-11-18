@@ -66,11 +66,15 @@ agenda/
 ├── publications/
 │   ├── main/{uuid}-{safeName}.ext
 │   ├── gallery/{uuid}-{safeName}.ext
+│   ├── inline/{uuid}-{safeName}.ext
 │   └── documents/{uuid}-{safeName}.pdf
 ├── events/
 │   ├── main/{uuid}-{safeName}.ext
-│   └── gallery/{uuid}-{safeName}.ext
+│   ├── gallery/{uuid}-{safeName}.ext
+│   └── inline/{uuid}-{safeName}.ext
 ├── founders/
+│   └── profile/{uuid}-{safeName}.ext
+├── writers/
 │   └── profile/{uuid}-{safeName}.ext
 └── other/
 ```
@@ -85,10 +89,10 @@ Legacy local keys (e.g. `publications/publication-main/2025/...`) remain valid. 
 ## Upload process
 
 1. Admin session required (`requireAdminSession` + same-origin CSRF).
-2. Validate purpose (`publication-main`, `publication-gallery`, `publication-pdf`, `event-main`, `event-gallery`, `founder-profile`).
+2. Validate purpose (`publication-main`, `publication-gallery`, `publication-pdf`, `publication-inline`, `event-main`, `event-gallery`, `event-inline`, `founder-profile`, `writer-profile`).
 3. Sniff MIME; enforce allow-lists and size limits.
 4. Upload to R2; on DB insert failure, delete the orphaned object.
-5. Attach media ids on publication/event/founder save; image cap remains **10** total (main + gallery).
+5. Attach media ids on publication/event/founder/writer save for gallery/main/profile assets; image cap remains **10** total (main + gallery only). Inline Markdown images are referenced by URL inside description/biography text and are **not** counted in that cap.
 
 ## Replacement and deletion
 

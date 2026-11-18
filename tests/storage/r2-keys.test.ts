@@ -24,6 +24,12 @@ describe("storage keys", () => {
     expect(folderForMediaPurpose("event-gallery")).toBe(
       "agenda/events/gallery",
     );
+    expect(folderForMediaPurpose("publication-inline")).toBe(
+      "agenda/publications/inline",
+    );
+    expect(folderForMediaPurpose("event-inline")).toBe(
+      "agenda/events/inline",
+    );
     expect(folderForMediaPurpose("founder-profile")).toBe(
       "agenda/founders/profile",
     );
