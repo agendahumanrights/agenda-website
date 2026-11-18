@@ -109,6 +109,7 @@ export function EventDetails({
       <ArticleMarkdown
         source={event.description}
         locale={locale}
+        arabicArticleFont
         className="w-full max-w-[80ch] me-auto"
       />
     </article>

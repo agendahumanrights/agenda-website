@@ -1,5 +1,11 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Noto_Sans_Arabic, Source_Serif_4 } from "next/font/google";
+import {
+  Geist,
+  Geist_Mono,
+  IBM_Plex_Sans_Arabic,
+  Noto_Sans_Arabic,
+  Source_Serif_4,
+} from "next/font/google";
 
 import { getDictionary } from "@/i18n/get-dictionary";
 import { getRequestLocale } from "@/i18n/get-locale";
@@ -34,6 +40,14 @@ const sourceSerif = Source_Serif_4({
 const notoArabic = Noto_Sans_Arabic({
   variable: "--font-noto-arabic",
   subsets: ["arabic"],
+  display: "swap",
+});
+
+/** Scoped to Arabic publication/event Markdown bodies via `.article-prose--arabic`. */
+const ibmPlexSansArabic = IBM_Plex_Sans_Arabic({
+  variable: "--font-arabic-article",
+  subsets: ["arabic"],
+  weight: ["400", "600", "700"],
   display: "swap",
 });
 
@@ -86,8 +100,9 @@ export default async function RootLayout({
     geistSans.variable,
     geistMono.variable,
     sourceSerif.variable,
-    // Load Arabic face only when needed (English still falls back via CSS stack).
+    // Load Arabic faces only when needed (English still falls back via CSS stack).
     locale === "ar" ? notoArabic.variable : null,
+    locale === "ar" ? ibmPlexSansArabic.variable : null,
   ]
     .filter(Boolean)
     .join(" ");

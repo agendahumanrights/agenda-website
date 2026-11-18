@@ -4,7 +4,7 @@
 > **Source of truth:** application code. Requirements and older docs describe intended or planned behavior; this file describes verified implementation.  
 > **Do not treat scaffolding as completed features.**
 
-**Last updated:** 2026-11-19 (About PageHero tighter text/logo gap)  
+**Last updated:** 2026-11-19 (Arabic article body: IBM Plex Sans Arabic)  
 **Inspection basis:** Checked-in source under the repository root. DB migrate/admin bootstrap depend on local `.env` (gitignored).
 
 ---
@@ -204,7 +204,7 @@ Next.js 16 **Proxy** (replaces deprecated `middleware`). Rewrites `/ar/...` to t
 
 | File | Responsibility |
 | --- | --- |
-| `layout.tsx` | Root layout: `getRequestLocale()` → `lang`/`dir`; fonts (Noto Arabic only when `ar`); site-wide metadata/icons/robots; `export const instant = false` |
+| `layout.tsx` | Root layout: `getRequestLocale()` → `lang`/`dir`; fonts (Noto Arabic + IBM Plex Sans Arabic vars only when `ar`); site-wide metadata/icons/robots; `export const instant = false` |
 | `sitemap.ts` / `robots.ts` | Dynamic sitemap + robots (SEO); see `SEO_IMPLEMENTATION.md` |
 | `opengraph-image.tsx` | Branded 1200×630 social fallback |
 | `globals.css` | Tailwind v4 import; brand + glass tokens (`--glass-*`); skeleton pulse; reduced-motion glass fallback; header offset utilities |
@@ -432,7 +432,7 @@ No logout route or working login form exists.
 
 - **Styling:** Tailwind CSS v4 via `@import "tailwindcss"` in `globals.css`; utility classes in components.
 - **Theme / brand:** Brand blue `#05498C` plus shared glass tokens (`--glass-tint`, 20px blur, border/highlight/shadow, opaque fallback). Fixed header spacing via `--site-header-height` / `--site-header-offset`. Public chrome uses glass; page bodies still largely zinc/white.
-- **Fonts:** `next/font/google` on `<html>`: **Geist** / **Geist Mono** (UI), **Source Serif 4** (editorial titles via `.font-editorial`), **Noto Sans Arabic** (Arabic coverage). Stack: sans → Geist + Noto Arabic; serif → Source Serif + Noto Arabic.
+- **Fonts:** `next/font/google` on `<html>`: **Geist** / **Geist Mono** (UI), **Source Serif 4** (editorial titles via `.font-editorial`), **Noto Sans Arabic** (site Arabic UI), **IBM Plex Sans Arabic** (`--font-arabic-article`, weights 400/600/700) loaded only for `ar`. Stack: sans → Geist + Noto Arabic; serif → Source Serif + Noto Arabic. Arabic **publication/event** Markdown bodies use `.article-prose--arabic` (IBM Plex); titles/subtitles/other Arabic UI stay on existing fonts.
 - **Responsive:** Desktop footer 4-column glass panel (brand · nav · newsletter · social); mobile stacks with horizontal separators and horizontal social icons. Desktop nav from `md:`. Heroes are full viewport under a **fixed** transparent header (no negative-margin pull; clearance via padding / `.public-main-offset`).
 - **RTL/LTR:** `dir` on `<html>` from locale (`ar` → `rtl`, `en` → `ltr`). Hero gradient and slider arrows use logical/`dir`-aware placement. Logical `border-e` used in `AdminSidebar`.
 
@@ -501,7 +501,7 @@ No logout route or working login form exists.
 | `MediaGallery` | Client: main+gallery images (deduped by media id); frame uses full-bleed `object-cover` (lightbox keeps `object-contain`); centered thumb row (`w-max min-w-full justify-center`) with horizontal scroll when needed; prev/next, counter, fullscreen, keyboard/swipe, RTL-aware; omits when empty |
 | `YouTubeEmbed` | Shared responsive 16:9 iframe via `youtube-nocookie.com` from validated video ID; optional heading; lazy by default; omits when URL invalid |
 | `YouTubeUrlField` | Admin Media-card control: URL input (LTR), live preview, remove; used by Publication/Event forms |
-| `ArticleMarkdown` / `MarkdownContent` | Shared safe GFM renderer (sanitize, external links, heading shift); `.article-prose` typography for public details + admin preview; reading measure set by the caller; inline images allow http(s) + `/api/media/…`; optional Markdown title → `<figure>`/`<figcaption>`; lazy-loaded |
+| `ArticleMarkdown` / `MarkdownContent` | Shared safe GFM renderer (sanitize, external links, heading shift); `.article-prose` for public details + admin preview; optional `arabicArticleFont` → `.article-prose--arabic` (IBM Plex) on AR pub/event bodies only; reading measure set by the caller; inline images allow http(s) + `/api/media/…`; optional Markdown title → `<figure>`/`<figcaption>`; lazy-loaded |
 | `MarkdownEditor` | Admin toolbar editor (Write/Preview/Split, expand, help, undo/redo); Publication/Event descriptions support Image **upload** or URL via `MarkdownImageDialog`; cursor selection snapshotted before dialogs; optional paste/drop image upload |
 | `MarkdownImageDialog` | Insert-image dialog: Upload (MediaDropzone + progress) or URL; alt + optional caption; disables Insert until upload completes |
 | `lib/markdown-editor.ts` | Pure Markdown textarea transforms + `markdownToPlainText` for excerpts; `insertImage` places block images on their own lines |
@@ -1163,6 +1163,13 @@ Open `http://localhost:3000`.
 ---
 
 ## K. Change history
+
+### 2026-11-19 — Arabic publication/event descriptions use IBM Plex Sans Arabic
+
+- Root layout: `IBM_Plex_Sans_Arabic` via `next/font/google` → `--font-arabic-article` (weights 400/600/700, `display: swap`, Arabic subset); loaded only when `locale === "ar"` alongside Noto.
+- CSS: `.article-prose--arabic` scopes IBM Plex to body + Markdown headings/captions; keeps mono for `code`/`pre`; slightly taller line-height for Arabic readability.
+- `ArticleMarkdown` opt-in `arabicArticleFont`; enabled on `PublicationDetails` + `EventDetails` only (writer bios / admin preview / English unchanged).
+- Validated: `tsc --noEmit`; `vitest` 114 pass / 1 skip; `next build` pass. Lint still pre-existing `AddCategoryModal` only. Browser visual QA not run in this task.
 
 ### 2026-11-19 — About PageHero tighter text/logo gap
 

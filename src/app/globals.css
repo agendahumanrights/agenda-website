@@ -221,6 +221,47 @@ body {
   max-width: none;
 }
 
+/**
+ * Arabic publication/event description bodies only.
+ * Does not change global Arabic UI font (Noto) or English article typography.
+ */
+.article-prose--arabic {
+  font-family: var(--font-arabic-article), "IBM Plex Sans Arabic",
+    var(--font-noto-arabic), system-ui, sans-serif;
+  font-size: 1rem;
+  line-height: 1.9;
+  text-align: start;
+}
+
+@media (min-width: 640px) {
+  .article-prose--arabic {
+    font-size: 1.0625rem;
+    line-height: 1.95;
+  }
+}
+
+@media (min-width: 1024px) {
+  .article-prose--arabic {
+    font-size: 1.125rem;
+    line-height: 2;
+  }
+}
+
+.article-prose--arabic :where(h2, h3, h4, h5, h6, .article-prose-h6) {
+  font-family: var(--font-arabic-article), "IBM Plex Sans Arabic",
+    var(--font-noto-arabic), system-ui, sans-serif;
+  line-height: 1.45;
+}
+
+.article-prose--arabic :where(p) {
+  margin: 1em 0;
+}
+
+.article-prose--arabic :where(figcaption) {
+  font-family: inherit;
+  line-height: 1.65;
+}
+
 .article-prose :where(h2, h3, h4, h5, h6, .article-prose-h6) {
   color: #18181b;
   font-family: var(--font-serif);

@@ -151,6 +151,7 @@ export function PublicationDetails({
           <ArticleMarkdown
             source={publication.description}
             locale={locale}
+            arabicArticleFont
             className="w-full break-words [overflow-wrap:anywhere]"
           />
         </div>
