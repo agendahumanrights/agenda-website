@@ -4,7 +4,7 @@
 > **Source of truth:** application code. Requirements and older docs describe intended or planned behavior; this file describes verified implementation.  
 > **Do not treat scaffolding as completed features.**
 
-**Last updated:** 2026-11-19 (Arabic article body: IBM Plex Sans Arabic)  
+**Last updated:** 2026-11-19 (Catalogue heroes: remove pub/event CTAs)  
 **Inspection basis:** Checked-in source under the repository root. DB migrate/admin bootstrap depend on local `.env` (gitignored).
 
 ---
@@ -337,7 +337,7 @@ Other query params preserved. `/api` and static-like paths not rewritten.
 | Aspect | Detail |
 | --- | --- |
 | Purpose | Catalogue of published publications |
-| Hero | `getNewestPublishedPublication(locale)` → `LatestContentHero` (full-bleed cover of newest by `publishedAt` desc / `id` desc); empty/unavailable → blue `PageHero` **without** framed image. Independent of homepage featured + catalogue filters |
+| Hero | `getNewestPublishedPublication(locale)` → `LatestContentHero` (full-bleed cover of newest by `publishedAt` desc / `id` desc; no CTA button); empty/unavailable → blue `PageHero` **without** framed image. Independent of homepage featured + catalogue filters |
 | Data | `listPublishedPublications` with URL-derived `q`, `category`, `sort`, `page` (page size 12); server filters + sorts before pagination |
 | Filters | Live toolbar: debounced title search (300ms; clear immediate) **AND** immediate category **AND** Sort by Date (`newest` default / `oldest`); Enter applies now; Reset when search/category/non-default sort active; no Apply button |
 | URL | Applied truth: `q`, `category` (category **slug**, seeded `REPORT`/`BLOG`/`PAPER`/`BRIEFING` plus new slugs), `sort` (omit when `newest`), `page` (omit defaults/empty); typing uses `router.replace` (no history spam) |
@@ -362,7 +362,7 @@ Other query params preserved. `/api` and static-like paths not rewritten.
 | Aspect | Detail |
 | --- | --- |
 | Purpose | Events catalogue |
-| Hero | `getNewestPublishedEvent(locale)` → `LatestContentHero` (newest by `eventDate` desc / `id` desc); empty/unavailable → blue `PageHero` without framed image. Not homepage featured selection |
+| Hero | `getNewestPublishedEvent(locale)` → `LatestContentHero` (newest by `eventDate` desc / `id` desc; no CTA button); empty/unavailable → blue `PageHero` without framed image. Not homepage featured selection |
 | Data | `listPublishedEvents` with URL-derived `q`, `sort`, `page` (page size 12); title search on current locale; order by admin `eventDate` |
 | Filters | Live title search (300ms debounce; clear immediate; Enter applies now) **AND** Sort by Date (`newest`/`oldest`); Reset when search or non-default sort active; no Apply button; no public creation-date controls |
 | URL | Applied truth: `q`, `sort` (omit when `newest`), `page` — legacy `createdFrom`/`createdTo` ignored; typing uses `router.replace` |
@@ -443,7 +443,7 @@ No logout route or working login form exists.
 | `Container` | Full-width padded wrapper (`px-4 sm:px-6 lg:px-8`, no max-width) for below-hero home sections + other public pages |
 | `SiteHeader` | **Fixed** transparent overlay (`fixed inset-x-0 top-0`); full-width glass capsule ~16px from top. No in-flow white band. Heroes/detail pages extend behind it; clearance via padding / `.public-main-offset`. Locale lockup logo · pill nav · language · mobile menu. |
 | `PageHero` | Full-bleed navy→brand-blue intro from viewport top; optional framed media (About logo / omit for empty catalogue fallback); image layout uses capped row + tighter gap (not `justify-between`); breadcrumbs; curved content transition |
-| `LatestContentHero` | Full-bleed single-item cinematic hero for Publications/Events: cover image + `.hero-media-gradient`, bottom-start copy (badge, title, optional subtitle, date, optional author, CTA); branded gradient if image missing/fails; page H1 sr-only; not a carousel |
+| `LatestContentHero` | Full-bleed single-item cinematic hero for Publications/Events: cover image + `.hero-media-gradient`, bottom-start copy (badge, title, optional subtitle, date, optional author; optional CTA unused by both catalogues); title remains linked; branded gradient if image missing/fails; page H1 sr-only; not a carousel |
 | `SiteFooter` | Full-width glass rounded panel over blue/gray wash: brand · primary nav · **newsletter subscribe** · social icons · copyright row. No Explore heading or Vision/Mission/Founders footer links. |
 | `NewsletterSubscribeForm` | Client footer form: email + Subscribe, honeypot, loading/success/error/already-subscribed states; `POST /api/newsletter/subscribe` |
 | `MainNavigation` | Pill links with brighter active glass surface |
@@ -1163,6 +1163,12 @@ Open `http://localhost:3000`.
 ---
 
 ## K. Change history
+
+### 2026-11-19 — Catalogue heroes: remove pub/event CTAs
+
+- `LatestContentHero` CTA remains optional; publications and events catalogues no longer pass/show a hero button (title links remain).
+- Removed unused `publications.heroCta` and `events.heroCta` from EN/AR dictionaries.
+- Validated: string/prop removal only (no browser visual QA).
 
 ### 2026-11-19 — Arabic publication/event descriptions use IBM Plex Sans Arabic
 

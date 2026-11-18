@@ -336,7 +336,6 @@ export default async function PublicationsPage({
                 }
               : null
           }
-          ctaLabel={dict.publications.heroCta}
         />
       ) : (
         <PageHero

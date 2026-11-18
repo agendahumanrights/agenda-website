@@ -291,7 +291,6 @@ export default async function EventsPage({
           imageAlt={newest.title}
           dateTime={newest.eventDate}
           dateLabel={dateLabel}
-          ctaLabel={dict.events.heroCta}
         />
       ) : (
         <PageHero

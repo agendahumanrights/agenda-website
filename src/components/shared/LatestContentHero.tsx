@@ -34,7 +34,8 @@ export type LatestContentHeroProps = {
   dateTime?: string | null;
   dateLabel?: string | null;
   author?: LatestContentHeroAuthor | null;
-  ctaLabel: string;
+  /** Optional CTA under meta (e.g. events). Omit for publications. */
+  ctaLabel?: string | null;
   className?: string;
 };
 
@@ -57,12 +58,13 @@ export function LatestContentHero({
   dateTime = null,
   dateLabel = null,
   author = null,
-  ctaLabel,
+  ctaLabel = null,
   className,
 }: LatestContentHeroProps) {
   const headingId = useId();
   const [imageFailed, setImageFailed] = useState(false);
   const trimmedSubtitle = subtitle?.trim() || null;
+  const trimmedCta = ctaLabel?.trim() || null;
   const showImage = Boolean(imageUrl) && !imageFailed;
   const showMeta = Boolean((dateTime && dateLabel) || author);
 
@@ -97,7 +99,6 @@ export function LatestContentHero({
           />
         )}
         <div className="hero-media-gradient absolute inset-0" />
-        {/* Extra bottom weight for CTA readability */}
         <div
           className="pointer-events-none absolute inset-0 bg-[linear-gradient(to_top,rgba(0,0,0,0.55)_0%,rgba(0,15,35,0.2)_38%,transparent_70%)]"
           aria-hidden
@@ -180,18 +181,20 @@ export function LatestContentHero({
               </div>
             ) : null}
 
-            <Link
-              href={href}
-              className={cn(
-                "mt-5 inline-flex min-h-11 items-center justify-center rounded-lg border border-white/75",
-                "bg-white/12 px-4 text-sm font-semibold text-white backdrop-blur-[2px]",
-                "transition-colors hover:bg-white/22",
-                "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white",
-                "sm:mt-6",
-              )}
-            >
-              {ctaLabel}
-            </Link>
+            {trimmedCta ? (
+              <Link
+                href={href}
+                className={cn(
+                  "mt-5 inline-flex min-h-11 items-center justify-center rounded-lg border border-white/75",
+                  "bg-white/12 px-4 text-sm font-semibold text-white backdrop-blur-[2px]",
+                  "transition-colors hover:bg-white/22",
+                  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white",
+                  "sm:mt-6",
+                )}
+              >
+                {trimmedCta}
+              </Link>
+            ) : null}
           </div>
         </div>
       </div>
