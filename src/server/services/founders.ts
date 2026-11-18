@@ -566,7 +566,6 @@ export async function reorderFounders(
   input: ReorderFoundersBody,
 ): Promise<void> {
   requireDb();
-  const prisma = getPrisma();
   const ids = input.founderIds;
 
   await withInteractiveTransaction(async (tx) => {

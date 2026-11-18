@@ -5,6 +5,7 @@ import {
   getSiteUrl,
   PRODUCTION_SITE_URL,
 } from "@/lib/seo/site-url";
+import { organizationLogoPath } from "@/lib/brand/logo";
 import { ORGANIZATION_LOGO_PATH } from "@/lib/seo/metadata";
 
 /** Social profiles already linked from the public footer. */
@@ -14,14 +15,20 @@ export const ORGANIZATION_SAME_AS = [
   "https://www.youtube.com/@Agenda4hr",
 ] as const;
 
-export function organizationJsonLd(siteName: string) {
+function organizationLogoUrl(locale?: Locale) {
+  return absoluteUrl(
+    locale ? organizationLogoPath(locale) : ORGANIZATION_LOGO_PATH,
+  );
+}
+
+export function organizationJsonLd(siteName: string, locale?: Locale) {
   return {
     "@context": "https://schema.org",
     "@type": "Organization",
     name: siteName,
     alternateName: ["Agenda", "Human Rights Agenda", "مفكرة"],
     url: getSiteUrl() || PRODUCTION_SITE_URL,
-    logo: absoluteUrl(ORGANIZATION_LOGO_PATH),
+    logo: organizationLogoUrl(locale),
     sameAs: [...ORGANIZATION_SAME_AS],
   };
 }
@@ -41,7 +48,7 @@ export function websiteJsonLd(input: {
     publisher: {
       "@type": "Organization",
       name: input.siteName,
-      logo: absoluteUrl(ORGANIZATION_LOGO_PATH),
+      logo: organizationLogoUrl(input.locale),
     },
   };
 }
@@ -71,7 +78,7 @@ export function articleJsonLd(input: {
   datePublished?: string | null;
   dateModified?: string | null;
   authorName?: string | null;
-  /** Use BlogPosting when category requires author (blogs); else Article. */
+  /** Use BlogPosting for BLOG category slug; else Article. */
   type: "Article" | "BlogPosting";
 }) {
   return {
@@ -98,7 +105,7 @@ export function articleJsonLd(input: {
       name: input.siteName,
       logo: {
         "@type": "ImageObject",
-        url: absoluteUrl(ORGANIZATION_LOGO_PATH),
+        url: organizationLogoUrl(input.locale),
       },
     },
   };

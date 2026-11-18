@@ -31,6 +31,7 @@ import {
   youtubeUrlForPayload,
 } from "@/components/admin/YouTubeUrlField";
 import { Button } from "@/components/ui/Button";
+import { FieldLabel } from "@/components/ui/FieldLabel";
 import { FormField } from "@/components/ui/FormField";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
@@ -145,7 +146,12 @@ export function PublicationForm({
   const [gallery, setGallery] = useState<AdminMediaRef[]>(
     initial?.gallery ?? [],
   );
-  const [pdf, setPdf] = useState<AdminMediaRef | null>(initial?.pdf ?? null);
+  const [pdfEn, setPdfEn] = useState<AdminMediaRef | null>(
+    initial?.pdfEn ?? null,
+  );
+  const [pdfAr, setPdfAr] = useState<AdminMediaRef | null>(
+    initial?.pdfAr ?? null,
+  );
   const [youtubeUrl, setYoutubeUrl] = useState(initial?.youtubeUrl ?? "");
   const [featureOnHomepage, setFeatureOnHomepage] = useState(
     initial?.isFeatured ?? false,
@@ -182,9 +188,10 @@ export function PublicationForm({
     return {
       categoryId,
       publishedAt: publishedAt ? new Date(publishedAt).toISOString() : null,
-      authorFounderId: requiresAuthor ? authorFounderId || null : null,
+      authorFounderId: authorFounderId || null,
       mainImageId: mainImage?.id ?? null,
-      pdfId: pdf?.id ?? null,
+      pdfEnId: pdfEn?.id ?? null,
+      pdfArId: pdfAr?.id ?? null,
       youtubeUrl: nextYoutubeUrl,
       galleryImageIds: gallery.map((g) => g.id),
       translations: [
@@ -203,10 +210,10 @@ export function PublicationForm({
 
   function validateForPublish(): Record<string, string> {
     const next: Record<string, string> = {};
-    if (!ar.title.trim() || !ar.subtitle.trim() || !ar.description.trim()) {
+    if (!ar.title.trim() || !ar.description.trim()) {
       next.ar = labels.errorValidation;
     }
-    if (!en.title.trim() || !en.subtitle.trim() || !en.description.trim()) {
+    if (!en.title.trim() || !en.description.trim()) {
       next.en = labels.errorValidation;
     }
     if (!mainImage) next.mainImage = labels.errorValidation;
@@ -556,6 +563,8 @@ export function PublicationForm({
                 <FormField
                   id={`title-${contentLocale}`}
                   label={labels.title}
+                  required
+                  requiredLabel={labels.requiredAria}
                   error={
                     fieldErrors[contentLocale] && !active.title.trim()
                       ? labels.errorValidation
@@ -569,13 +578,20 @@ export function PublicationForm({
                     className="admin-control"
                     value={active.title}
                     disabled={busy}
+                    required
+                    aria-required
                     onChange={(e) => {
                       markDirty();
                       setActive((s) => ({ ...s, title: e.target.value }));
                     }}
                   />
                 </FormField>
-                <FormField id={`subtitle-${contentLocale}`} label={labels.subtitle}>
+                <FormField
+                  id={`subtitle-${contentLocale}`}
+                  label={labels.subtitle}
+                  optional
+                  optionalLabel={labels.optional}
+                >
                   <Input
                     id={`subtitle-${contentLocale}`}
                     dir={contentLocale === "ar" ? "rtl" : "ltr"}
@@ -591,6 +607,13 @@ export function PublicationForm({
                 <FormField
                   id={`desc-${contentLocale}`}
                   label={labels.description}
+                  required
+                  requiredLabel={labels.requiredAria}
+                  error={
+                    fieldErrors[contentLocale] && !active.description.trim()
+                      ? labels.errorValidation
+                      : undefined
+                  }
                 >
                   <MarkdownEditor
                     id={`desc-${contentLocale}`}
@@ -615,7 +638,11 @@ export function PublicationForm({
 
               <div className="flex flex-col gap-3">
                 <h3 className="text-sm font-semibold text-zinc-800">
-                  {labels.mainImage}
+                  <FieldLabel
+                    label={labels.mainImage}
+                    required
+                    requiredLabel={labels.requiredAria}
+                  />
                 </h3>
                 {mainImage ? (
                   <div className="overflow-hidden rounded-xl border border-[var(--admin-border)]">
@@ -876,92 +903,121 @@ export function PublicationForm({
                 }}
               />
 
-              <div className="flex flex-col gap-3">
-                <h3 className="text-sm font-semibold text-zinc-800">
-                  {labels.pdf}{" "}
-                  <span className="font-normal text-zinc-500">
-                    ({labels.pdfOptional})
-                  </span>
-                </h3>
-                {pdf ? (
-                  <div className="flex flex-wrap items-center gap-3 rounded-xl border border-[var(--admin-border)] bg-zinc-50 px-4 py-3 text-sm">
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate font-medium text-zinc-900">
-                        {pdf.filename}
-                      </p>
-                      <p className="text-xs text-zinc-500">
-                        {formatBytes(pdf.sizeBytes)}
-                      </p>
+              {(
+                [
+                  {
+                    key: "en" as const,
+                    label: labels.pdfEn,
+                    value: pdfEn,
+                    setValue: setPdfEn,
+                  },
+                  {
+                    key: "ar" as const,
+                    label: labels.pdfAr,
+                    value: pdfAr,
+                    setValue: setPdfAr,
+                  },
+                ] as const
+              ).map((slot) => (
+                <div key={slot.key} className="flex flex-col gap-3">
+                  <h3 className="text-sm font-semibold text-zinc-800">
+                    <FieldLabel
+                      label={slot.label}
+                      optional
+                      optionalLabel={labels.pdfOptional}
+                    />
+                  </h3>
+                  {slot.value ? (
+                    <div className="flex flex-wrap items-center gap-3 rounded-xl border border-[var(--admin-border)] bg-zinc-50 px-4 py-3 text-sm">
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-medium text-zinc-900">
+                          {slot.value.filename}
+                        </p>
+                        <p className="text-xs text-zinc-500">
+                          {formatBytes(slot.value.sizeBytes)}
+                        </p>
+                      </div>
+                      <a
+                        href={slot.value.url}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="text-[var(--brand-blue)] underline-offset-2 hover:underline"
+                      >
+                        {labels.pdfView}
+                      </a>
+                      <Button
+                        type="button"
+                        variant="secondary"
+                        className="min-h-9"
+                        disabled={busy}
+                        onClick={() =>
+                          document
+                            .getElementById(`pdf-${slot.key}-replace`)
+                            ?.click()
+                        }
+                      >
+                        {labels.replace}
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        className="min-h-9"
+                        disabled={busy}
+                        onClick={() => {
+                          markDirty();
+                          slot.setValue(null);
+                        }}
+                      >
+                        {labels.remove}
+                      </Button>
+                      <input
+                        id={`pdf-${slot.key}-replace`}
+                        type="file"
+                        accept="application/pdf"
+                        className="sr-only"
+                        disabled={busy}
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          e.target.value = "";
+                          if (!file) return;
+                          const prev = slot.value;
+                          const asset = await uploadFile(
+                            file,
+                            "publication-pdf",
+                          );
+                          if (asset) {
+                            markDirty();
+                            slot.setValue(asset);
+                          } else if (prev) {
+                            slot.setValue(prev);
+                          }
+                        }}
+                      />
                     </div>
-                    <a
-                      href={pdf.url}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="text-[var(--brand-blue)] underline-offset-2 hover:underline"
-                    >
-                      {labels.pdfView}
-                    </a>
-                    <Button
-                      type="button"
-                      variant="secondary"
-                      className="min-h-9"
-                      disabled={busy}
-                      onClick={() =>
-                        document.getElementById("pdf-replace")?.click()
-                      }
-                    >
-                      {labels.replace}
-                    </Button>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      className="min-h-9"
-                      disabled={busy}
-                      onClick={() => {
-                        markDirty();
-                        setPdf(null);
-                      }}
-                    >
-                      {labels.remove}
-                    </Button>
-                    <input
-                      id="pdf-replace"
-                      type="file"
+                  ) : (
+                    <MediaDropzone
+                      id={`pdf-${slot.key}-upload`}
                       accept="application/pdf"
-                      className="sr-only"
                       disabled={busy}
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        e.target.value = "";
-                        if (!file) return;
-                        const prev = pdf;
-                        const asset = await uploadFile(file, "publication-pdf");
+                      dropHint={labels.pdfEmpty}
+                      hint={labels.pdfHint.replace(
+                        "{maxMb}",
+                        String(pdfMaxMb),
+                      )}
+                      onFile={async (file) => {
+                        const asset = await uploadFile(
+                          file,
+                          "publication-pdf",
+                        );
                         if (asset) {
                           markDirty();
-                          setPdf(asset);
-                        } else if (prev) {
-                          setPdf(prev);
+                          slot.setValue(asset);
                         }
                       }}
                     />
-                  </div>
-                ) : (
-                  <MediaDropzone
-                    id="pdf-upload"
-                    accept="application/pdf"
-                    disabled={busy}
-                    dropHint={labels.pdfEmpty}
-                    hint={labels.pdfHint.replace("{maxMb}", String(pdfMaxMb))}
-                    onFile={async (file) => {
-                      const asset = await uploadFile(file, "publication-pdf");
-                      if (asset) {
-                        markDirty();
-                        setPdf(asset);
-                      }
-                    }}
-                  />
-                )}
-              </div>
+                  )}
+                </div>
+              ))}
             </section>
           </div>
 
@@ -991,6 +1047,8 @@ export function PublicationForm({
               <FormField
                 id="category"
                 label={labels.category}
+                required
+                requiredLabel={labels.requiredAria}
                 error={fieldErrors.category}
               >
                 {categories.length === 0 ? (
@@ -1028,6 +1086,8 @@ export function PublicationForm({
               <FormField
                 id="publishedAt"
                 label={labels.publicationDate}
+                required
+                requiredLabel={labels.requiredAria}
                 error={fieldErrors.publishedAt}
               >
                 <Input
@@ -1036,6 +1096,8 @@ export function PublicationForm({
                   className="admin-control"
                   value={publishedAt}
                   disabled={busy}
+                  required
+                  aria-required
                   onChange={(e) => {
                     markDirty();
                     setPublishedAt(e.target.value);
@@ -1043,37 +1105,43 @@ export function PublicationForm({
                 />
               </FormField>
 
-              {requiresAuthor ? (
-                <FormField
-                  id="author"
-                  label={`${labels.author} (${labels.authorRequired})`}
-                  error={fieldErrors.author}
-                >
-                  {founders.length === 0 ? (
-                    <p className="text-sm text-amber-800">{labels.authorEmpty}</p>
-                  ) : (
-                    <Select
-                      id="author"
-                      className="admin-control"
-                      value={authorFounderId}
-                      disabled={busy}
-                      onChange={(e) => {
-                        markDirty();
-                        setAuthorFounderId(e.target.value);
-                      }}
-                    >
-                      <option value="">{labels.authorNone}</option>
-                      {founders.map((f) => (
-                        <option key={f.id} value={f.id}>
-                          {f.fullName}
-                        </option>
-                      ))}
-                    </Select>
-                  )}
-                </FormField>
-              ) : authorFounderId ? (
-                <p className="text-xs text-zinc-500">{labels.authorHiddenHint}</p>
-              ) : null}
+              <FormField
+                id="author"
+                label={
+                  requiresAuthor
+                    ? `${labels.author} (${labels.authorRequired})`
+                    : labels.author
+                }
+                required={requiresAuthor}
+                requiredLabel={labels.requiredAria}
+                optional={!requiresAuthor}
+                optionalLabel={labels.optional}
+                error={fieldErrors.author}
+              >
+                {founders.length === 0 ? (
+                  <p className="text-sm text-amber-800">{labels.authorEmpty}</p>
+                ) : (
+                  <Select
+                    id="author"
+                    className="admin-control"
+                    value={authorFounderId}
+                    disabled={busy}
+                    required={requiresAuthor || undefined}
+                    aria-required={requiresAuthor || undefined}
+                    onChange={(e) => {
+                      markDirty();
+                      setAuthorFounderId(e.target.value);
+                    }}
+                  >
+                    <option value="">{labels.authorNone}</option>
+                    {founders.map((f) => (
+                      <option key={f.id} value={f.id}>
+                        {f.fullName}
+                      </option>
+                    ))}
+                  </Select>
+                )}
+              </FormField>
 
               <label className="flex items-start gap-2.5 text-sm">
                 <input

@@ -141,20 +141,24 @@ model Publication {
   status          PublicationStatus @default(DRAFT)
   /// Date shown to visitors
   publishedAt     DateTime?
-  /// Required when category.requiresAuthor; must be null otherwise (service-enforced)
+  /// Optional founder author for any category; required to publish when category.requiresAuthor
   authorFounderId String?
   createdAt       DateTime          @default(now())
   updatedAt       DateTime          @updatedAt
 
   mainImageId String?
-  pdfId       String? @unique
+  /// Optional English PDF attachment (locale-matched on public EN pages).
+  pdfEnId     String? @unique
+  /// Optional Arabic PDF attachment (locale-matched on public AR pages).
+  pdfArId     String? @unique
   /// Optional single YouTube watch URL (canonical https://www.youtube.com/watch?v=…). Not counted toward image limits.
   youtubeUrl  String?
 
   category      PublicationCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
   authorFounder Founder?            @relation(fields: [authorFounderId], references: [id], onDelete: Restrict)
   mainImage     MediaAsset?         @relation("PublicationMainImage", fields: [mainImageId], references: [id], onDelete: SetNull)
-  pdf           MediaAsset?         @relation("PublicationPdf", fields: [pdfId], references: [id], onDelete: SetNull)
+  pdfEn         MediaAsset?         @relation("PublicationPdfEn", fields: [pdfEnId], references: [id], onDelete: SetNull)
+  pdfAr         MediaAsset?         @relation("PublicationPdfAr", fields: [pdfArId], references: [id], onDelete: SetNull)
   translations  PublicationTranslation[]
   gallery       PublicationGalleryImage[]
   featured      FeaturedPublication?
@@ -163,7 +167,8 @@ model Publication {
   @@index([categoryId, status])
   @@index([authorFounderId])
   @@index([mainImageId])
-  @@index([pdfId])
+  @@index([pdfEnId])
+  @@index([pdfArId])
 }
 
 model PublicationTranslation {
@@ -263,7 +268,8 @@ model MediaAsset {
 
   founderProfile         Founder?                   @relation("FounderProfileImage")
   publicationMainImages  Publication[]              @relation("PublicationMainImage")
-  publicationPdfs        Publication[]              @relation("PublicationPdf")
+  publicationPdfsEn      Publication[]              @relation("PublicationPdfEn")
+  publicationPdfsAr      Publication[]              @relation("PublicationPdfAr")
   publicationGallery     PublicationGalleryImage[]
   eventMainImages        Event[]                    @relation("EventMainImage")
   eventGallery           EventGalleryImage[]

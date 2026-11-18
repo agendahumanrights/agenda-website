@@ -21,7 +21,7 @@ export function PublicationCard({ locale, item, categoryLabels }: Props) {
     : null;
 
   const author =
-    item.category.requiresAuthor && item.authorName && item.authorBioKey
+    item.authorName && item.authorBioKey
       ? {
           name: item.authorName,
           bioKey: item.authorBioKey,

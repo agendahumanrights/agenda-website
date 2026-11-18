@@ -11,9 +11,9 @@ import { EventDateFilter } from "@/components/events/EventDateFilter";
 import { EventGrid } from "@/components/events/EventGrid";
 import { Container } from "@/components/layout/Container";
 import { PageHero } from "@/components/layout/PageHero";
+import { LatestContentHero } from "@/components/shared/LatestContentHero";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { Pagination } from "@/components/ui/Pagination";
-import { PAGE_HEROES } from "@/content/page-heroes";
 import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/dictionaries";
 import { getDictionary } from "@/i18n/get-dictionary";
@@ -29,7 +29,10 @@ import { breadcrumbJsonLd } from "@/lib/seo/json-ld";
 import { absoluteLocalizedUrl } from "@/lib/seo/locale-url";
 import { eventsListingMetadata } from "@/lib/seo/page-metadata";
 import { isDatabaseConfigured } from "@/server/db";
-import { listPublishedEvents } from "@/server/services/events";
+import {
+  getNewestPublishedEvent,
+  listPublishedEvents,
+} from "@/server/services/events";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
@@ -208,6 +211,28 @@ export default async function EventsPage({
   const raw = await searchParams;
   const applied = parseEventCatalogueParams(raw);
 
+  const breadcrumbs = [
+    { label: dict.nav.home, href: sitePath("/", locale) },
+    { label: dict.events.title },
+  ];
+
+  let newest: Awaited<ReturnType<typeof getNewestPublishedEvent>> = null;
+  if (isDatabaseConfigured()) {
+    try {
+      newest = await getNewestPublishedEvent(locale);
+    } catch {
+      newest = null;
+    }
+  }
+
+  const dateLabel = newest
+    ? new Date(newest.eventDate).toLocaleDateString(locale, {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })
+    : null;
+
   return (
     <>
       <JsonLd
@@ -222,16 +247,30 @@ export default async function EventsPage({
           },
         ])}
       />
-      <PageHero
-        title={dict.events.title}
-        description={dict.events.heroDescription}
-        image={PAGE_HEROES.events}
-        breadcrumbLabel={dict.shared.breadcrumbNav}
-        breadcrumbs={[
-          { label: dict.nav.home, href: sitePath("/", locale) },
-          { label: dict.events.title },
-        ]}
-      />
+      {newest ? (
+        <LatestContentHero
+          locale={locale}
+          pageTitle={dict.events.title}
+          breadcrumbs={breadcrumbs}
+          breadcrumbLabel={dict.shared.breadcrumbNav}
+          badge={dict.events.categoryEvent}
+          title={newest.title}
+          subtitle={newest.subtitle}
+          href={sitePath(`/events/${newest.slug}`, locale)}
+          imageUrl={newest.mainImageUrl}
+          imageAlt={newest.title}
+          dateTime={newest.eventDate}
+          dateLabel={dateLabel}
+          ctaLabel={dict.events.heroCta}
+        />
+      ) : (
+        <PageHero
+          title={dict.events.title}
+          description={dict.events.heroDescription}
+          breadcrumbLabel={dict.shared.breadcrumbNav}
+          breadcrumbs={breadcrumbs}
+        />
+      )}
       <Container className="flex flex-col gap-6 pt-10 pb-10 sm:gap-7 sm:pt-12 sm:pb-12 lg:pt-14">
         <CatalogueLiveProvider>
           <div className="flex flex-col gap-6">

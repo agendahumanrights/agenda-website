@@ -5,6 +5,10 @@ import { LanguageSwitcher } from "@/components/layout/LanguageSwitcher";
 import { LogoutButton } from "@/components/admin/LogoutButton";
 import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/dictionaries";
+import {
+  ORGANIZATION_LOGO_SIZE,
+  organizationLogoPath,
+} from "@/lib/brand/logo";
 import type { AdminSession } from "@/server/auth/types";
 
 type Props = {
@@ -51,10 +55,10 @@ export function AdminHeader({
           >
             <span className="inline-flex size-10 shrink-0 items-center justify-center overflow-hidden rounded-full bg-white ring-1 ring-[var(--admin-border)]">
               <Image
-                src="/images/agenda-logo.png"
+                src={organizationLogoPath(locale)}
                 alt={dict.nav.logoAlt}
-                width={1149}
-                height={1604}
+                width={ORGANIZATION_LOGO_SIZE.width}
+                height={ORGANIZATION_LOGO_SIZE.height}
                 className="h-7 w-auto"
                 priority
               />

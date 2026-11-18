@@ -19,15 +19,17 @@ export function Skeleton({ className, ...rest }: SkeletonProps) {
 export function CardSkeleton({ className }: { className?: string }) {
   return (
     <article
-      className={cn("flex flex-col overflow-hidden", className)}
+      className={cn(
+        "relative aspect-[5/4] overflow-hidden rounded-xl bg-zinc-200/80 sm:aspect-[4/3]",
+        className,
+      )}
       aria-hidden
     >
-      <Skeleton className="aspect-[4/3] w-full rounded-none" />
-      <div className="flex flex-1 flex-col gap-2 px-0.5 pt-3">
-        <Skeleton className="h-3 w-20" />
-        <Skeleton className="h-5 w-[92%]" />
-        <Skeleton className="h-5 w-[70%]" />
-        <Skeleton className="mt-2 h-3 w-28" />
+      <Skeleton className="absolute inset-0 rounded-none" />
+      <div className="absolute inset-x-0 bottom-0 flex flex-col gap-1.5 p-3.5 sm:p-4">
+        <Skeleton className="h-4 w-[88%] bg-white/35" />
+        <Skeleton className="h-3.5 w-[70%] bg-white/25" />
+        <Skeleton className="mt-0.5 h-3 w-24 bg-white/20" />
       </div>
     </article>
   );

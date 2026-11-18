@@ -10,7 +10,11 @@ import { cn } from "@/lib/utils";
 type Props = {
   title: string;
   description: string;
-  image: PageHeroImageConfig;
+  /**
+   * Optional framed media. Omit / pass `null` for the empty-catalogue
+   * fallback (blue gradient + copy only, no right-side image).
+   */
+  image?: PageHeroImageConfig | null;
   breadcrumbs: BreadcrumbItem[];
   breadcrumbLabel: string;
   /** Wave / content surface under the hero curve. */
@@ -21,17 +25,19 @@ type Props = {
 /**
  * Full-bleed catalogue/About introduction. Starts at the viewport top so the
  * fixed glass header overlays the gradient; content padding clears the nav.
+ * About keeps framed media; Publications/Events empty states omit `image`.
  */
 export function PageHero({
   title,
   description,
-  image,
+  image = null,
   breadcrumbs,
   breadcrumbLabel,
   contentBackgroundClassName = "bg-white",
   className,
 }: Props) {
-  const decorative = !image.alt.trim();
+  const showImage = Boolean(image?.src);
+  const decorative = showImage ? !image!.alt.trim() : true;
 
   return (
     <section
@@ -73,12 +79,20 @@ export function PageHero({
       <div
         className={cn(
           "relative mx-auto flex w-full flex-col gap-8 px-4",
-          "pb-16 pt-[var(--site-header-offset)]",
-          "sm:gap-10 sm:px-6 sm:pb-20",
-          "lg:min-h-[min(34rem,70vh)] lg:flex-row lg:items-center lg:gap-12 lg:px-8 lg:pb-24",
+          "pb-14 pt-[var(--site-header-offset)]",
+          "sm:gap-10 sm:px-6 sm:pb-16",
+          "lg:px-8 lg:pb-20",
+          showImage
+            ? "lg:min-h-[min(34rem,70vh)] lg:flex-row lg:items-center lg:justify-between lg:gap-12"
+            : "lg:min-h-[min(22rem,48vh)] lg:max-w-3xl",
         )}
       >
-        <div className="flex min-w-0 flex-1 flex-col gap-4 lg:max-w-xl lg:gap-5">
+        <div
+          className={cn(
+            "flex min-w-0 flex-col gap-4 lg:gap-5",
+            showImage ? "flex-1 lg:max-w-xl" : "w-full",
+          )}
+        >
           <Breadcrumbs
             items={breadcrumbs}
             label={breadcrumbLabel}
@@ -96,34 +110,57 @@ export function PageHero({
           </p>
         </div>
 
-        <div className="relative mx-auto w-full max-w-md shrink-0 lg:mx-0 lg:max-w-none lg:basis-[44%]">
-          <div
-            className="pointer-events-none absolute -inset-3 rounded-[1.35rem] bg-white/10 blur-md sm:-inset-4"
-            aria-hidden
-          />
-          <div
-            className={cn(
-              "relative overflow-hidden rounded-2xl border border-white/35 bg-white/10 shadow-[0_18px_40px_rgba(2,24,48,0.35)]",
-              "aspect-[4/3] backdrop-blur-[2px]",
-            )}
-          >
-            <Image
-              src={image.src}
-              alt={decorative ? "" : image.alt}
-              fill
-              sizes="(max-width: 1024px) 90vw, 42vw"
-              className="object-cover"
-              style={{ objectPosition: image.objectPosition }}
-              priority
-              unoptimized={image.src.endsWith(".svg")}
+        {showImage && image ? (
+          <div className="relative mx-auto w-full max-w-md shrink-0 lg:mx-0 lg:w-[min(100%,28rem)] lg:max-w-none xl:w-[min(100%,32rem)]">
+            <div
+              className="pointer-events-none absolute -inset-3 rounded-[1.35rem] bg-white/10 blur-md sm:-inset-4"
+              aria-hidden
             />
+            <div
+              className={cn(
+                "relative overflow-hidden rounded-2xl border border-white/35 shadow-[0_18px_40px_rgba(2,24,48,0.35)]",
+                "aspect-[4/3]",
+                image.fit === "contain"
+                  ? "bg-white"
+                  : "bg-white/10 backdrop-blur-[2px]",
+              )}
+            >
+              {image.fit === "contain" ? (
+                <div className="flex h-full w-full items-center justify-center p-8 sm:p-10 lg:p-12">
+                  <Image
+                    src={image.src}
+                    alt={decorative ? "" : image.alt}
+                    width={480}
+                    height={452}
+                    sizes="(max-width: 1024px) 70vw, 28vw"
+                    className="h-auto max-h-full w-auto max-w-full object-contain"
+                    priority
+                    unoptimized={image.src.endsWith(".svg")}
+                  />
+                </div>
+              ) : (
+                <Image
+                  src={image.src}
+                  alt={decorative ? "" : image.alt}
+                  fill
+                  sizes="(max-width: 1024px) 90vw, 42vw"
+                  className="object-cover"
+                  style={{ objectPosition: image.objectPosition }}
+                  priority
+                  unoptimized={image.src.endsWith(".svg")}
+                />
+              )}
+            </div>
           </div>
-        </div>
+        ) : null}
       </div>
 
       {/* Gentle curve into page content */}
       <div
-        className={cn("pointer-events-none relative -mb-px h-10 sm:h-12", contentBackgroundClassName)}
+        className={cn(
+          "pointer-events-none relative -mb-px h-10 sm:h-12",
+          contentBackgroundClassName,
+        )}
         aria-hidden
         style={{
           clipPath: "ellipse(115% 100% at 50% 100%)",

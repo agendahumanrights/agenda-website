@@ -360,7 +360,6 @@ export async function setFeaturedPublications(
 ): Promise<void> {
   requireDb();
   const ids = input.publicationIds;
-  const prisma = getPrisma();
 
   await withInteractiveTransaction(async (tx) => {
     if (ids.length > 0) {
@@ -405,8 +404,6 @@ export async function setFeaturedEvents(
       `At most ${MAX_FEATURED_EVENTS} events can be featured on the homepage.`,
     );
   }
-
-  const prisma = getPrisma();
 
   await withInteractiveTransaction(async (tx) => {
     if (ids.length > 0) {

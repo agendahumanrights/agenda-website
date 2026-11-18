@@ -12,6 +12,7 @@ import { getOrganizationCopy } from "@/content/about";
 import { getDictionary } from "@/i18n/get-dictionary";
 import { getRequestLocale } from "@/i18n/get-locale";
 import { sitePath } from "@/i18n/pathnames";
+import { organizationLogoPath } from "@/lib/brand/logo";
 import { breadcrumbJsonLd, organizationJsonLd } from "@/lib/seo/json-ld";
 import { absoluteLocalizedUrl } from "@/lib/seo/locale-url";
 import { aboutPageMetadata } from "@/lib/seo/page-metadata";
@@ -32,7 +33,7 @@ export default async function AboutPage() {
     <>
       <JsonLd
         data={[
-          organizationJsonLd(dict.meta.siteName),
+          organizationJsonLd(dict.meta.siteName, locale),
           breadcrumbJsonLd([
             {
               name: dict.nav.home,
@@ -48,7 +49,11 @@ export default async function AboutPage() {
       <PageHero
         title={dict.about.title}
         description={dict.about.heroDescription}
-        image={PAGE_HEROES.about}
+        image={{
+          ...PAGE_HEROES.about,
+          src: organizationLogoPath(locale),
+          alt: dict.nav.logoAlt,
+        }}
         breadcrumbLabel={dict.shared.breadcrumbNav}
         breadcrumbs={[
           { label: dict.nav.home, href: sitePath("/", locale) },

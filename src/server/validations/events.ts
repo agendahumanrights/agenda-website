@@ -47,7 +47,10 @@ export const publicEventBySlugSchema = z.object({
   slug: z.string().min(1).max(160),
 });
 
-/** Draft translations may be incomplete; publish rules enforced in the service. */
+/**
+ * Draft translations may be incomplete; publish rules enforced in the service.
+ * Subtitle is always optional (empty string stored when omitted).
+ */
 export const eventTranslationInputSchema = z.object({
   locale: localeSchema,
   title: z.string().max(300).default(""),

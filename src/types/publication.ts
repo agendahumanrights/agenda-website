@@ -105,7 +105,10 @@ export type AdminPublicationDetail = {
     description: string;
   }[];
   mainImage: AdminMediaRef | null;
-  pdf: AdminMediaRef | null;
+  /** Optional English PDF; null when unset. */
+  pdfEn: AdminMediaRef | null;
+  /** Optional Arabic PDF; null when unset. */
+  pdfAr: AdminMediaRef | null;
   youtubeUrl: string | null;
   gallery: AdminMediaRef[];
   isFeatured: boolean;

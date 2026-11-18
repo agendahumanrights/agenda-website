@@ -14,7 +14,8 @@ type Props = {
 };
 
 /**
- * 4:3 media with branded fallback when the URL is missing or fails to load.
+ * Cover media with branded fallback when the URL is missing or fails to load.
+ * Parent (`ContentCard`) owns aspect ratio; pass absolute inset classes to fill.
  */
 export function CardMedia({ src, alt, className, priority = false }: Props) {
   const [failed, setFailed] = useState(false);
@@ -23,7 +24,7 @@ export function CardMedia({ src, alt, className, priority = false }: Props) {
   return (
     <div
       className={cn(
-        "relative aspect-[4/3] overflow-hidden bg-[color-mix(in_srgb,var(--brand-blue)_88%,#021a33)]",
+        "relative overflow-hidden bg-[color-mix(in_srgb,var(--brand-blue)_88%,#021a33)]",
         className,
       )}
     >

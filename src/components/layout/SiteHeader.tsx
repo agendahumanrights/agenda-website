@@ -8,6 +8,10 @@ import { MobileNavigation } from "@/components/layout/MobileNavigation";
 import { sitePath } from "@/i18n/pathnames";
 import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/dictionaries";
+import {
+  ORGANIZATION_LOGO_SIZE,
+  organizationLogoPath,
+} from "@/lib/brand/logo";
 
 type Props = {
   locale: Locale;
@@ -38,10 +42,10 @@ export function SiteHeader({ locale, dict }: Props) {
           >
             <span className="inline-flex items-center justify-center rounded-full bg-white p-1 shadow-sm ring-1 ring-white/70 sm:p-1.5">
               <Image
-                src="/images/agenda-logo.png"
+                src={organizationLogoPath(locale)}
                 alt={dict.nav.logoAlt}
-                width={1149}
-                height={1604}
+                width={ORGANIZATION_LOGO_SIZE.width}
+                height={ORGANIZATION_LOGO_SIZE.height}
                 sizes="36px"
                 className="h-8 w-auto sm:h-9"
                 priority

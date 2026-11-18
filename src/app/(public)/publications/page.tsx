@@ -11,9 +11,9 @@ import { PublicationGrid } from "@/components/home/PublicationGrid";
 import { Container } from "@/components/layout/Container";
 import { PageHero } from "@/components/layout/PageHero";
 import { PublicationFilters } from "@/components/publications/PublicationFilters";
+import { LatestContentHero } from "@/components/shared/LatestContentHero";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { Pagination } from "@/components/ui/Pagination";
-import { PAGE_HEROES } from "@/content/page-heroes";
 import { getDictionary } from "@/i18n/get-dictionary";
 import { getRequestLocale } from "@/i18n/get-locale";
 import type { Locale } from "@/i18n/config";
@@ -30,7 +30,10 @@ import { breadcrumbJsonLd } from "@/lib/seo/json-ld";
 import { publicationsListingMetadata } from "@/lib/seo/page-metadata";
 import { isDatabaseConfigured } from "@/server/db";
 import { listPublicationCategories } from "@/server/services/categories";
-import { listPublishedPublications } from "@/server/services/publications";
+import {
+  getNewestPublishedPublication,
+  listPublishedPublications,
+} from "@/server/services/publications";
 import type { PublicationCategorySummary } from "@/types/publication";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
@@ -234,6 +237,28 @@ export default async function PublicationsPage({
   const applied = parsePublicationCatalogueParams(raw);
   const categories = await listPublicationCategories(locale);
 
+  const breadcrumbs = [
+    { label: dict.nav.home, href: sitePath("/", locale) },
+    { label: dict.publications.title },
+  ];
+
+  let newest: Awaited<ReturnType<typeof getNewestPublishedPublication>> = null;
+  if (isDatabaseConfigured()) {
+    try {
+      newest = await getNewestPublishedPublication(locale);
+    } catch {
+      newest = null;
+    }
+  }
+
+  const dateLabel = newest?.publishedAt
+    ? new Date(newest.publishedAt).toLocaleDateString(locale, {
+        day: "numeric",
+        month: "long",
+        year: "numeric",
+      })
+    : null;
+
   return (
     <>
       <JsonLd
@@ -248,16 +273,39 @@ export default async function PublicationsPage({
           },
         ])}
       />
-      <PageHero
-        title={dict.publications.title}
-        description={dict.publications.heroDescription}
-        image={PAGE_HEROES.publications}
-        breadcrumbLabel={dict.shared.breadcrumbNav}
-        breadcrumbs={[
-          { label: dict.nav.home, href: sitePath("/", locale) },
-          { label: dict.publications.title },
-        ]}
-      />
+      {newest ? (
+        <LatestContentHero
+          locale={locale}
+          pageTitle={dict.publications.title}
+          breadcrumbs={breadcrumbs}
+          breadcrumbLabel={dict.shared.breadcrumbNav}
+          badge={newest.category.name}
+          title={newest.title}
+          subtitle={newest.subtitle}
+          href={sitePath(`/publications/${newest.slug}`, locale)}
+          imageUrl={newest.mainImageUrl}
+          imageAlt={newest.title}
+          dateTime={newest.publishedAt}
+          dateLabel={dateLabel}
+          author={
+            newest.authorName && newest.authorBioKey
+              ? {
+                  name: newest.authorName,
+                  bioKey: newest.authorBioKey,
+                  byLabel: dict.publications.authorBy,
+                }
+              : null
+          }
+          ctaLabel={dict.publications.heroCta}
+        />
+      ) : (
+        <PageHero
+          title={dict.publications.title}
+          description={dict.publications.heroDescription}
+          breadcrumbLabel={dict.shared.breadcrumbNav}
+          breadcrumbs={breadcrumbs}
+        />
+      )}
       <Container className="flex flex-col gap-6 pt-10 pb-10 sm:gap-7 sm:pt-12 sm:pb-12 lg:pt-14">
         <CatalogueLiveProvider>
           <div className="flex flex-col gap-6">

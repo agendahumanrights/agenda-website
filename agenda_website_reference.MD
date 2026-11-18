@@ -4,7 +4,7 @@
 > **Source of truth:** application code. Requirements and older docs describe intended or planned behavior; this file describes verified implementation.  
 > **Do not treat scaffolding as completed features.**
 
-**Last updated:** 2026-11-17 (Sticky Share fix + gallery alignment)  
+**Last updated:** 2026-11-18 (Blog author optional)  
 **Inspection basis:** Checked-in source under the repository root. DB migrate/admin bootstrap depend on local `.env` (gitignored).
 
 ---
@@ -35,7 +35,7 @@
 | --- | --- |
 | Public site | Home, publications catalogue + detail, events catalogue + detail, About Us |
 | Admin dashboard | Login/logout, publications CRUD, events CRUD, homepage featured selection |
-| Shared backend | Localized records, founder–blog author links, media/PDF storage, auth, homepage ordering |
+| Shared backend | Localized records, founder–publication author links, media/PDF storage, auth, homepage ordering |
 
 ### Public website and admin dashboard
 
@@ -147,7 +147,10 @@ agenda/
 ├── public/
 │   ├── file.svg, globe.svg, next.svg, vercel.svg, window.svg
 │   ├── web-app-manifest-192x192.png, web-app-manifest-512x512.png (PWA icons)
-│   └── images/brand/agenda-logo.png (transparent cropped brand lockup)
+│   └── images/
+│       ├── agenda-logo-en.png / agenda-logo-ar.png (locale lockups)
+│       ├── agenda-logo.png (EN copy, legacy fallback)
+│       └── brand/ (EN/AR copies for SEO/legacy paths)
 ├── README.md
 ├── tsconfig.json
 └── src/
@@ -178,7 +181,7 @@ agenda/
 | `next.config.ts` | `cacheComponents`, `partialPrefetching`, Tailwind Turbopack CSS loader, `images.remotePatterns` from `R2_PUBLIC_BASE_URL` |
 | `CLOUDFLARE_R2_STORAGE.md` | R2 architecture, env, migration, CORS, deployment checklist |
 | `eslint.config.mjs` | `eslint-config-next` vitals + TS; ignores `src/generated/**` |
-| `prisma.config.ts` | Prisma 7 config: schema path, migrations path, CLI datasource `DIRECT_URL` via `env()` |
+| `prisma.config.ts` | Prisma 7 config: schema path, migrations path, CLI datasource from `DIRECT_URL` (fallback `DATABASE_URL`, then placeholder so `prisma generate` / postinstall works without `.env`) |
 | `prisma/schema.prisma` | Full data model (see §E) |
 | `.env.example` | Safe env placeholders (see §I) |
 | `.gitignore` | Ignores `.env`, `.next`, `node_modules`, `src/generated/prisma`, etc. |
@@ -220,23 +223,24 @@ Next.js 16 **Proxy** (replaces deprecated `middleware`). Rewrites `/ar/...` to t
 | --- | --- |
 | `layout.tsx` | Suspense + `SiteHeader` / `main` / `SiteFooter` |
 | `page.tsx` | Home: full-bleed featured pubs slider (outside `Container`), then publications catalogue + featured events inside `Container` (no About teaser) |
-| `publications/page.tsx` | Publications catalogue with `PageHero` + live filters (`q`, `category`, `sort`, `page`) |
+| `publications/page.tsx` | Publications catalogue: `LatestContentHero` (newest) or empty `PageHero`; live filters (`q`, `category`, `sort`, `page`) |
 | `publications/[slug]/page.tsx` | Publication detail by canonical slug |
-| `events/page.tsx` | Events catalogue with `PageHero` + live title search + date sort (`q`, `sort`, `page`) |
+| `events/page.tsx` | Events catalogue: `LatestContentHero` (newest by `eventDate`) or empty `PageHero`; live title search + date sort |
 | `events/[slug]/page.tsx` | Event detail |
-| `about/page.tsx` | About Us with `PageHero`; vision/mission/founders (anchors preserved) |
+| `about/page.tsx` | About Us with `PageHero` (locale Agenda lockup in framed panel); vision/mission/founders (anchors preserved) |
 
 ### `src/app/admin/`
 
 | File | Role |
 | --- | --- |
-| `(auth)/login/page.tsx` | Functional bilingual `LoginForm`; redirects if already authenticated |
-| `(protected)/layout.tsx` | Session required → redirect `/admin/login?next=…`; `AdminShell` (header + sidebar + mobile drawer) |
-| `(protected)/page.tsx` | Dashboard welcome (authenticated) |
-| `(protected)/publications/**` | List / new / edit — **implemented** |
-| `(protected)/events/**` | List / new / edit — **implemented** |
-| `(protected)/founders/**` | List / new / edit + reorder dialog — **implemented** |
-| `(protected)/homepage/page.tsx` | Homepage selection — dual-panel curation UI |
+| `layout.tsx` | `export const instant = false` — admin is request-time (session/redirects); opts admin tree out of instant-navigation validation |
+| `(auth)/login/page.tsx` | Functional bilingual `LoginForm`; Suspense + `instant = false`; redirects if already authenticated |
+| `(protected)/layout.tsx` | Suspense + auth gate → redirect `/admin/login?next=…`; `AdminShell`; `instant = false` |
+| `(protected)/page.tsx` | Dashboard welcome (authenticated); `instant = false` |
+| `(protected)/publications/**` | List / new / edit — **implemented** (`instant = false` on each page) |
+| `(protected)/events/**` | List / new / edit — **implemented** (`instant = false` on each page) |
+| `(protected)/founders/**` | List / new / edit + reorder dialog — **implemented** (`instant = false` on each page) |
+| `(protected)/homepage/page.tsx` | Homepage selection — dual-panel curation UI (`instant = false`) |
 
 ### `src/app/api/`
 
@@ -251,7 +255,7 @@ Organized by domain: `about/`, `admin/`, `events/`, `home/`, `layout/`, `publica
 | Folder | Role |
 | --- | --- |
 | `auth/` | Argon2id passwords, opaque sessions, CSRF, throttle, login/logout |
-| `db/` | Lazy Prisma client + `isDatabaseConfigured()` |
+| `db/` | Lazy Prisma client + `isDatabaseConfigured()` + `withInteractiveTransaction` (30s timeout for remote pooler) |
 | `http/` | `AppError`, JSON helpers, Zod parse helpers |
 | `services/` | Publications, events, founders, homepage, media |
 | `storage/` | `StorageProvider`; local + Cloudflare R2 adapters; key helpers; `MEDIA_LIMITS` (`maxImagesPerItem` default 10); content-image count helpers |
@@ -264,6 +268,7 @@ Organized by domain: `about/`, `admin/`, `events/`, `home/`, `layout/`, `publica
 | `i18n/config.ts` | Re-exports locale helpers; documents UI vs content fallback |
 | `i18n/locale-cookie.ts` | Cookie name/max-age/parse + `LOCALE_HEADER_NAME` |
 | `i18n/get-locale.ts` | Server: `x-agenda-lang` header → cookie → English unmarked default |
+| `lib/brand/logo.ts` | Locale lockup paths (`agenda-logo-en.png` / `agenda-logo-ar.png`) + intrinsic size helper |
 | `lib/seo/*` | Site URL, locale hrefs, excerpts, metadata, JSON-LD builders |
 | `i18n/get-dictionary.ts` | Load `messages/{locale}.json` |
 | `i18n/dictionaries.ts` | `Dictionary` type from `en.json` |
@@ -275,7 +280,7 @@ Organized by domain: `about/`, `admin/`, `events/`, `home/`, `layout/`, `publica
 | `lib/slugs.ts` | `slugify` helper (not wired into mutations yet) |
 | `lib/catalogue-query.ts` | Parse/build public catalogue URL params (`q`, `category`, `sort=newest|oldest`, `page`); page size 12; default sort omitted from URLs |
 | `lib/catalogue-summary.ts` | Results summary + chip label helpers |
-| `content/page-heroes.ts` | Temporary hero image paths + `objectPosition` / `alt` for publications, events, about |
+| `content/page-heroes.ts` | About `PageHero` framed media only (`fit: "contain"` + locale lockup override). Publications/Events use `LatestContentHero` when content exists. |
 | `types/*` | Shared DTOs for publications, events, founders, API, locale |
 
 ### Placeholders / unused / incomplete (verified)
@@ -319,7 +324,7 @@ Other query params preserved. `/api` and static-like paths not rewritten.
 | Layout | Sticky glass header; full-bleed hero under header; shared full-width `Container` (padding only, no max-width) for Publications / Events / About; Events on subtle gray wash; editorial `SectionHeader` on Pubs/Events |
 | Data | `getFeaturedPublications`, `getFeaturedEvents` (DB or `[]`); `getOrganizationCopy` (static nulls); dictionaries |
 | Rendering | Async Server Component |
-| Actions | Publication detail + blog author bio links; manual slider prev/next/dots/keyboard/swipe (client); nav links |
+| Actions | Publication detail + author bio links (any category with founder); manual slider prev/next/dots/keyboard/swipe (client); nav links |
 | States | Localized empty hero when no featured pubs; branded image fallback when media missing/fails |
 | Auth | None |
 | Status | Header + hero **implemented** (brand UI). Content depends on DB + featured rows. Catalogue reuses **same** featured publication list as slider. |
@@ -329,6 +334,7 @@ Other query params preserved. `/api` and static-like paths not rewritten.
 | Aspect | Detail |
 | --- | --- |
 | Purpose | Catalogue of published publications |
+| Hero | `getNewestPublishedPublication(locale)` → `LatestContentHero` (full-bleed cover of newest by `publishedAt` desc / `id` desc); empty/unavailable → blue `PageHero` **without** framed image. Independent of homepage featured + catalogue filters |
 | Data | `listPublishedPublications` with URL-derived `q`, `category`, `sort`, `page` (page size 12); server filters + sorts before pagination |
 | Filters | Live toolbar: debounced title search (300ms; clear immediate) **AND** immediate category **AND** Sort by Date (`newest` default / `oldest`); Enter applies now; Reset when search/category/non-default sort active; no Apply button |
 | URL | Applied truth: `q`, `category` (category **slug**, seeded `REPORT`/`BLOG`/`PAPER`/`BRIEFING` plus new slugs), `sort` (omit when `newest`), `page` (omit defaults/empty); typing uses `router.replace` (no history spam) |
@@ -352,6 +358,7 @@ Other query params preserved. `/api` and static-like paths not rewritten.
 | Aspect | Detail |
 | --- | --- |
 | Purpose | Events catalogue |
+| Hero | `getNewestPublishedEvent(locale)` → `LatestContentHero` (newest by `eventDate` desc / `id` desc); empty/unavailable → blue `PageHero` without framed image. Not homepage featured selection |
 | Data | `listPublishedEvents` with URL-derived `q`, `sort`, `page` (page size 12); title search on current locale; order by admin `eventDate` |
 | Filters | Live title search (300ms debounce; clear immediate; Enter applies now) **AND** Sort by Date (`newest`/`oldest`); Reset when search or non-default sort active; no Apply button; no public creation-date controls |
 | URL | Applied truth: `q`, `sort` (omit when `newest`), `page` — legacy `createdFrom`/`createdTo` ignored; typing uses `router.replace` |
@@ -422,9 +429,10 @@ No logout route or working login form exists.
 | Component | Notes |
 | --- | --- |
 | `Container` | Full-width padded wrapper (`px-4 sm:px-6 lg:px-8`, no max-width) for below-hero home sections + other public pages |
-| `SiteHeader` | **Fixed** transparent overlay (`fixed inset-x-0 top-0`); full-width glass capsule ~16px from top. No in-flow white band. Heroes/detail pages extend behind it; clearance via padding / `.public-main-offset`. Logo · pill nav · language · mobile menu. |
-| `PageHero` | Full-bleed navy→brand-blue intro from viewport top; internal top padding clears fixed header; content row matches `Container` padding (no max-width); breadcrumbs; 4:3 framed image; curved content transition |
-| `SiteFooter` | Full-width glass rounded panel over blue/gray wash: brand + mission summary · single primary nav column (Home / Publications / Events / About) · circular social icons (Facebook/LinkedIn/YouTube) · copyright row. No Explore heading or Vision/Mission/Founders footer links. No newsletter. |
+| `SiteHeader` | **Fixed** transparent overlay (`fixed inset-x-0 top-0`); full-width glass capsule ~16px from top. No in-flow white band. Heroes/detail pages extend behind it; clearance via padding / `.public-main-offset`. Locale lockup logo · pill nav · language · mobile menu. |
+| `PageHero` | Full-bleed navy→brand-blue intro from viewport top; optional framed media (About logo / omit for empty catalogue fallback); breadcrumbs; curved content transition |
+| `LatestContentHero` | Full-bleed single-item cinematic hero for Publications/Events: cover image + `.hero-media-gradient`, bottom-start copy (badge, title, optional subtitle, date, optional author, CTA); branded gradient if image missing/fails; page H1 sr-only; not a carousel |
+| `SiteFooter` | Full-width glass rounded panel over blue/gray wash: locale lockup + mission summary · single primary nav column (Home / Publications / Events / About) · circular social icons (Facebook/LinkedIn/YouTube) · copyright row. No Explore heading or Vision/Mission/Founders footer links. No newsletter. |
 | `MainNavigation` | Pill links with brighter active glass surface |
 | `MobileNavigation` | Glass panel under fixed header; Escape/focus trap/overlay preserved |
 | `nav-items.ts` | Shared nav href/label helpers + active-path matching |
@@ -436,8 +444,8 @@ No logout route or working login form exists.
 
 | Component | Status |
 | --- | --- |
-| `ContentCard` | Compact 4:3 card (`rounded-xl` ~12px): badge inset on image; blue panel order title → excerpt → optional “By/بقلم” author → date. **Title** (and image) are the detail links — no separate Read more CTA. Desktop reserves 2-line title / 2-line excerpt for row alignment; title has subtle hover + focus ring; card hover lift. |
-| `CardMedia` | Client: lazy `<img>` with `object-cover`, branded gradient fallback when URL missing/fails; restrained hover zoom via `.card-media-image` (disabled under `prefers-reduced-motion`). |
+| `ContentCard` | Compact full-bleed landscape card (`aspect-[5/4]` mobile → `aspect-[4/3]` `sm+`, `rounded-xl`): cover image fills the card; white overlay copy at the bottom (title → optional subtitle/excerpt → optional “By/بقلم” author → date) with `.card-overlay-text` shadow; empty excerpts are omitted (no blank gap). Bottom `.content-card-gradient` (black/navy → transparent by ~65%; no blue info panel). Category/event badge top-`end`. Title stretched link for navigation; author `AuthorLink` above it (`z-index`). Hover: subtle lift + image zoom + slight darken; respects `prefers-reduced-motion`. |
+| `CardMedia` | Client cover media (`SoftImage` / branded gradient fallback); parent owns aspect ratio. Hover zoom via `.card-media-image` (disabled under `prefers-reduced-motion`). |
 
 ### Home
 
@@ -453,12 +461,12 @@ No logout route or working login form exists.
 
 | Component | Status |
 | --- | --- |
-| `PublicationCard` | Uses `ContentCard`; localized category badge (no forced uppercase); `publishedAt`; blog author with `authorBy` + bio link; subtitle as excerpt |
+| `PublicationCard` | Uses `ContentCard`; localized category badge; `publishedAt`; author shown whenever assigned (`authorBy` + bio link), any category; subtitle as excerpt |
 | `PublicationCategoryBadge` | Localized category label (list cards / legacy) |
 | `AuthorLink` | `/about#founder-{bioKey}` |
 | `PublicationAuthor` | Circular portrait, name link, professional area (blogs) |
 | `PublicationDetails` | Wide editorial layout: breadcrumbs → header (+ PDF) → gallery → body grid with sticky Share in the trailing column (`lg+`). Sticky requires a stretched Share column (not `items-start`/`self-start`). |
-| `PublicationPdfActions` | Client: View PDF (new tab) + Download PDF under share controls; no iframe preview. Download fetches `/api/media/...?download=1` as a blob |
+| `PublicationPdfActions` | Client: View/Download for the locale-matched `pdfUrl` only; hidden when that locale has no PDF. Download via `/api/media/...?download=1` blob |
 | `PdfPreview` / `PdfDownloadLink` | Legacy helpers (unused on public detail page after PDF action move) |
 | `PublicationFilters` | **Implemented** live search + category + date sort (debounced `q`, immediate category/sort, Reset); URL replace; IME-safe |
 
@@ -507,10 +515,10 @@ No logout route or working login form exists.
 | `AdminPageHeader` | Title/description helper |
 | `AdminConfirmDialog` / `AdminOverflowMenu` | Accessible confirm + overflow actions |
 | `MediaDropzone` | Click + drag-and-drop upload surface; optional `multiple` / `onFiles` for gallery batches |
-| `PublicationForm` | Two-column New/Edit: AR/EN content tabs, DB category dropdown + Add category modal, media panel with live `{n} / 10` image counter, sticky publishing actions |
+| `PublicationForm` | Two-column New/Edit: AR/EN content tabs; required `*`; author selector **always visible** (required vs optional from `requiresAuthor`); optional subtitle / YouTube / EN+AR PDFs; publish no longer requires subtitle |
 | `AddCategoryModal` / `CategoriesTable` | Create bilingual categories from the form or `/admin/publications/categories` |
 | `PublicationsTable` | Debounced search, filters, desktop table + mobile cards, overflow delete/view |
-| `EventForm` / `EventsTable` | **Redesigned** to match Publications (list filters/table/cards; two-column form + tabs + media with same 10-image counter/cap + publish) |
+| `EventForm` / `EventsTable` | Matches Publications chrome; required `*` on title, description, main image, event date; subtitle / YouTube optional; publish without subtitle allowed |
 | `FounderForm` / `FoundersTable` | **Redesigned** to match admin chrome: debounced name search, founder cards/table, overflow View/Delete, reorder dialog (DnD + keyboard, complete ID list), two-column form with AR/EN tabs, circular MediaDropzone portrait, sticky actions |
 | `HomepageSelection` | **Redesigned** dual-panel curation: selected cards (thumb, order, DnD + keyboard move, remove), available browser with bilingual title search + load-more, independent dirty/save/reset per section, brand-blue saves, accurate empty/error states, beforeunload when unsaved |
 
@@ -518,7 +526,8 @@ No logout route or working login form exists.
 
 | Component | Notes |
 | --- | --- |
-| `Button`, `Input`, `Select`, `Textarea`, `FormField` | Basic primitives |
+| `Button`, `Input`, `Select`, `Textarea` | Basic primitives |
+| `FormField` / `FieldLabel` | Label + hint/error; shared `FieldLabel` adds red `*` (+ sr-only required) or muted `(Optional)` after the name (DOM order works in RTL) |
 | `PageHeading`, `EmptyState`, `ErrorState`, `LoadingState` | Status/chrome |
 | `Pagination` | Link-based prev/next; used by public publications/events catalogues |
 | `catalogue/CatalogueToolbar` | Shared filter shell (neutral panel, control heights, brand focus) |
@@ -542,8 +551,9 @@ No logout route or working login form exists.
 ### Provider and setup
 
 - **Provider:** PostgreSQL (`datasource db { provider = "postgresql" }` — no `url`/`directUrl` in schema; Prisma 7).
-- **CLI datasource:** `prisma.config.ts` uses `DIRECT_URL` (Supabase session pooler / direct, port 5432) for migrate and other Prisma CLI commands.
+- **CLI datasource:** `prisma.config.ts` prefers `DIRECT_URL` (Supabase session pooler / direct, port 5432), then `DATABASE_URL`, then a non-connecting placeholder so `prisma generate` / `npm install` postinstall succeed before `.env` exists. Migrate/studio still need a real URL.
 - **Runtime datasource:** `src/server/db/client.ts` uses `DATABASE_URL` (Supabase transaction pooler, port 6543, `pgbouncer=true`) via `@prisma/adapter-pg`.
+- **Interactive transactions:** `withInteractiveTransaction` (`src/server/db/transaction.ts`) uses `maxWait: 10s` / `timeout: 30s` — default Prisma 5s was too low for multi-query admin mutations over the remote pooler (P2028). Publication/event **creates** prefer a single nested `create` (no interactive tx) when featuring.
 - **Client:** `generator` outputs to `../src/generated/prisma`.
 - **Migrations directory:** `prisma/migrations` (`20251018100000_init`, `20261107120000_add_youtube_url`, `20261107180000_publication_categories`).
 - **Seed scripts:** **None**.
@@ -588,7 +598,7 @@ No logout route or working login form exists.
 | `profileImageId` | String? **unique** FK → `MediaAsset` | `onDelete: SetNull` |
 | timestamps | | |
 
-Relations: `translations`, `publications` (as blog authors).
+Relations: `translations`, `publications` (as optional/required founder authors by category).
 
 #### `FounderTranslation`
 
@@ -606,7 +616,7 @@ Admin-managed bilingual categories (replaces former Prisma enum).
 | --- | --- |
 | `slug` | unique filter key; seeded `REPORT`/`BLOG`/`PAPER`/`BRIEFING` preserve public `?category=` URLs |
 | `nameEn` / `nameAr` | unique display names |
-| `requiresAuthor` | when true, publications need a founder author (seeded for `BLOG`) |
+| `requiresAuthor` | when true, publications need a founder author to publish (all seeded categories, including `BLOG`, are `false`) |
 | `sortOrder` | dropdown/table ordering |
 
 #### `Publication`
@@ -617,9 +627,9 @@ Admin-managed bilingual categories (replaces former Prisma enum).
 | `categoryId` | FK → `PublicationCategory` `onDelete: Restrict` |
 | `status` | default `DRAFT` |
 | `publishedAt` | DateTime? — visitor-facing date |
-| `authorFounderId` | String? FK Founder `onDelete: Restrict` — **service rule:** required when category.`requiresAuthor`, null otherwise |
+| `authorFounderId` | String? FK Founder `onDelete: Restrict` — optional for every category (including Blogs); only required to publish when category.`requiresAuthor` |
 | `mainImageId` | FK MediaAsset SetNull |
-| `pdfId` | String? **unique** FK MediaAsset SetNull |
+| `pdfEnId` / `pdfArId` | String? **unique** FKs MediaAsset SetNull — optional locale PDFs; public `pdfUrl` resolves to the active locale only (no cross-language fallback) |
 | `youtubeUrl` | String? — optional canonical YouTube watch URL (not counted toward image limits) |
 | Indexes | `[status, publishedAt]`, `[categoryId, status]`, `[authorFounderId]` |
 
@@ -627,7 +637,7 @@ Relations: category, translations, gallery, optional `FeaturedPublication`.
 
 #### `PublicationTranslation`
 
-`title`, `subtitle`, `description` (Text, Markdown-intended); **@@unique([publicationId, locale])**; index `[locale, title]`; cascade on publication delete.
+`title`, `subtitle` (non-null String; empty string when omitted — optional at app layer), `description` (Text, Markdown-intended); **@@unique([publicationId, locale])**; index `[locale, title]`; cascade on publication delete.
 
 #### `PublicationGalleryImage`
 
@@ -742,8 +752,9 @@ Endpoints: `POST /api/admin/auth/login`, `POST /api/admin/auth/logout`.
 ### Caching / revalidation
 
 - Root layout `instant = false` for cookie `lang`/`dir`.
+- Admin `layout.tsx` + all admin pages + protected layout: `instant = false` so session/`connection()`/auth redirects are allowed to block (Cache Components instant-navigation validation). Protected layout and login wrap request-time work in `<Suspense>`.
 - `setLocaleAction` calls `revalidatePath("/", "layout")`.
-- Public pages use `cookies()` via `getRequestLocale` (dynamic). No `revalidateTag` content cache strategy yet.
+- Public pages use `cookies()` via `getRequestLocale` (dynamic). Public list/featured reads also use `"use cache"` + tags (see change history).
 
 ### Storage
 
@@ -847,7 +858,7 @@ Categories are enum values; UI labels from dictionaries. Public catalogue and AP
 
 ### Publication details
 
-Reading order: breadcrumbs → category + `publishedAt` → title → subtitle → blog author (image/area/`AuthorLink`) → share + optional PDF actions → `MediaGallery` → optional `YouTubeEmbed` → Markdown. DTO includes `images[]`, `youtubeUrl`, `authorImageUrl`, `authorProfessionalArea` (main+gallery alt texts; founder profile via relation). Markdown uses sanitized `ArticleMarkdown` below gallery/video. No embedded PDF iframe.
+Reading order: breadcrumbs → category + `publishedAt` → title → **optional subtitle** (omitted when empty) → **optional founder author** (any category; image/area/`AuthorLink` when assigned) → share + **locale-matched** PDF actions (hidden when that language has no PDF) → `MediaGallery` → optional `YouTubeEmbed` → Markdown. DTO `pdfUrl` is EN-only or AR-only per request locale. Markdown uses sanitized `ArticleMarkdown` below gallery/video. No embedded PDF iframe. SEO description prefers subtitle, else Markdown excerpt, else title.
 
 ### Events and event details
 
@@ -901,7 +912,7 @@ Same editorial pattern without author/PDF. Visitor-facing date is `eventDate`. P
 | Manually selected homepage content | **Implemented** (admin homepage selection + public reads) |
 | Max three featured homepage events | **Zod + service read `take: 3` + write validation** |
 | Event filter by record creation date (≠ event date) | **Service/API + admin yes**; **public Events page no** (title search only; cards show `eventDate`) |
-| Founders as blog authors | **Implemented** (admin assignment + `AuthorLink` to `#founder-{bioKey}`) |
+| Founders as publication authors | **Implemented** for all categories including Blogs as optional (admin assignment + `AuthorLink` to `#founder-{bioKey}`; `requiresAuthor` can still gate publish if set) |
 | About Us org copy outside admin | **Followed** (`content/about.ts`); founders are admin-managed (scope update) |
 | Brand header + full-bleed hero | **Implemented** (fixed glass capsule overlay; hero photography shows through glass; no white band) |
 | Public catalogue search/filter/pagination | **Implemented** (live debounced search; publications also immediate category; both pages Sort by Date on admin dates; Reset/chips/summaries; EN/AR) |
@@ -1002,10 +1013,9 @@ Root + page `generateMetadata` emit localized titles/descriptions, absolute cano
 ### Local setup
 
 ```bash
+npm install   # postinstall → prisma generate (works without .env; uses placeholder URL)
 cp .env.example .env
-# edit DATABASE_URL + DIRECT_URL (Supabase) and optional public vars
-# (required before npm install — postinstall runs prisma generate)
-npm install
+# edit DATABASE_URL + DIRECT_URL (Supabase) and optional public vars before migrate/dev DB features
 npm run prisma:generate
 # when DB available:
 npx prisma migrate deploy   # apply existing migrations (preferred for remote/Supabase)
@@ -1020,7 +1030,7 @@ Open `http://localhost:3000`.
 | Name | Required? | Purpose | Used in code? |
 | --- | --- | --- | --- |
 | `DATABASE_URL` | For DB features (runtime) | PostgreSQL via transaction pooler (Supabase `:6543?pgbouncer=true`) | Yes — `src/server/db/client.ts` |
-| `DIRECT_URL` | For Prisma CLI | PostgreSQL session/direct (Supabase `:5432`) | Yes — `prisma.config.ts` |
+| `DIRECT_URL` | For Prisma CLI migrate/studio (generate falls back) | PostgreSQL session/direct (Supabase `:5432`) | Yes — `prisma.config.ts` |
 | `NEXT_PUBLIC_SITE_URL` | Optional (documented) | Intended site URL | **Not referenced in `src/`** |
 | `NEXT_PUBLIC_DEFAULT_LOCALE` | Optional (documented) | Documented default locale | **Not referenced in `src/`** (code defaults to `ar`) |
 | `AUTH_SECRET` | Future | Auth | Commented example only |
@@ -1088,11 +1098,81 @@ Open `http://localhost:3000`.
 ### Suggested next development steps (not done)
 
 1. Configure production host `R2_*` secrets + custom media domain; run local→R2 migration if needed.
-2. Optional Arabic logo lockup; browser QA of catalogue filters against a live DB.
+2. Browser QA of catalogue filters against a live DB.
 
 ---
 
 ## K. Change history
+
+### 2026-11-18 — Blog author optional
+
+- Migration `20261118190000_blog_author_optional`: sets `PublicationCategory.requiresAuthor=false` for slug `BLOG`.
+- Admin form and publish validation treat Blogs like other categories (Author optional).
+- JSON-LD `BlogPosting` vs `Article` now keys off category slug `BLOG`, not `requiresAuthor`.
+- Validated: `prisma migrate deploy` applied; `typecheck` pass; `test` 95 pass / 1 skip; `build` pass (after security-nudge retry).
+
+### 2026-11-18 — Authors for all publication categories
+
+- Removed service rule that forced `authorFounderId` null when `requiresAuthor=false`; any category may store a founder author. Publish still requires author only when `requiresAuthor=true` (e.g. Blogs).
+- Admin `PublicationForm`: author dropdown always visible; required `*` vs `(Optional)` from category setting; selection kept when switching categories.
+- Public cards, detail, homepage slider, and catalogue hero show author whenever assigned (not gated on `requiresAuthor`).
+- No schema migration (existing nullable FK). Validated: `typecheck` pass; `lint` fail only pre-existing `AddCategoryModal` setState-in-effect; `test` 95 pass / 1 skip; `build` succeed after security-nudge retry.
+
+### 2026-11-18 — Locale-specific publication PDFs (EN / AR)
+
+- Schema: replaced unique `pdfId` with nullable unique `pdfEnId` / `pdfArId` (`PublicationPdfEn` / `PublicationPdfAr`). Migration `20261118120000_publication_locale_pdfs` copies legacy `pdfId` → `pdfEnId` (preserves EN public links); Arabic PDFs need admin attach/verify.
+- Admin form: two optional PDF slots (English / Arabic) with independent upload/replace/remove; payload `pdfEnId` / `pdfArId`.
+- Public `pdfUrl` via `resolveLocalePdfUrl` — current locale only, no cross-fallback; actions hide when missing.
+- Media access + orphan cleanup check both PDF FKs. Zod create/update updated; tests for locale resolution + validation fields.
+- Validation: `prisma migrate deploy` applied (`20261118120000_publication_locale_pdfs`); `typecheck` pass; `test` 94 passed / 1 skipped; `build` pass. Pre-existing `AddCategoryModal` lint only.
+
+### 2026-11-18 — Dynamic Publications / Events heroes
+
+- Added `getNewestPublishedPublication` / `getNewestPublishedEvent` (cached, `CACHE_TAGS.publications` / `events`; same newest-first ordering as catalogues; not homepage featured).
+- New `LatestContentHero`: full-bleed cover + bottom editorial copy + CTA; optional subtitle/author; image-fail → brand gradient.
+- Empty / DB-unavailable catalogues keep blue `PageHero` **without** the former static right-side image. About `PageHero` + logo unchanged.
+- i18n: `publications.heroCta` / `events.heroCta`. Catalogue filters/cards unchanged. Revalidation still via existing publication/event path tags.
+- Validation: `typecheck` pass; `test` 89 passed / 1 skipped; `build` pass (retry after Next.js security nudge). `lint` still has pre-existing `AddCategoryModal` issue. Browser: `/publications` shows newest cover hero + CTA; `/events` empty → blue `PageHero` without right image.
+
+### 2026-11-18 — Optional subtitle + required field indicators
+
+- Subtitle is optional for publication/event create, update, draft, and publish (Zod already allowed empty; client `validateForPublish` + service `assertPublishable` no longer require it). DB keeps non-null `String` with `""` when empty — no migration.
+- Admin `FormField` / new `FieldLabel`: red asterisk for required fields; `(Optional)` for subtitle, YouTube, PDF. Applied on New/Edit Publication and Event forms (AR/EN tabs).
+- Public cards/details/slider/SEO already omit empty subtitles / fall back to Markdown excerpt or title.
+- Validation: `typecheck` pass; `test` 89 passed / 1 skipped; `build` pass (retry after Next.js security nudge). `lint` still reports pre-existing `AddCategoryModal` `set-state-in-effect` (unchanged by this work).
+
+### 2026-11-18 — Locale-specific Agenda logos (EN / AR)
+
+- Added `public/images/agenda-logo-en.png` and `agenda-logo-ar.png` (plus `brand/` copies); `src/lib/brand/logo.ts` exposes `organizationLogoPath(locale)`.
+- Public header/footer, admin header, About `PageHero`, and JSON-LD organization logo switch with the active locale; default OG image uses the English lockup.
+- Validation: browser check `/about` (EN lockup) and `/ar/about` (Arabic lockup) in header + hero.
+
+### 2026-11-18 — PageHero balances LTR/RTL side gutters
+
+- `PageHero` content row uses `lg:justify-between` so title copy stays on the inline-start and framed media on the inline-end.
+- Media column width capped (`~28rem` / `xl:~32rem`) instead of `basis-[44%]`.
+- Validation: layout metrics on `/about` and `/ar/about`.
+
+### 2026-11-18 — About hero uses Agenda logo
+
+- Replaced About `PageHero` photo (`about-hero.jpg`) with the Agenda lockup (same mark as header; later localized — see entry above).
+- `PageHeroImageConfig.fit`: `contain` renders logo centered on a white framed panel; catalogue heroes keep `cover` photography.
+- About page passes `dict.nav.logoAlt` for accessibility.
+- Validation: visual check `/about`; publications/events heroes unchanged.
+
+### 2026-11-18 — Compact landscape cards + overlay readability
+
+- Shortened full-image cards from tall 3:4 posters to landscape `aspect-[5/4]` (mobile) / `aspect-[4/3]` (`sm+`); tightened overlay typography and spacing for the shorter face.
+- Readability: `.card-overlay-text` soft black/navy `text-shadow`; refined `.content-card-gradient` (darkest at bottom → transparent by ~65%, preserves upper photo).
+- Shared `ContentCard` / `CardMedia` / `CardSkeleton` still drive home + catalogue grids; homepage featured slider unchanged. Author links and badges preserved.
+- Validation: `tsc --noEmit` pass; `npm test` 89 passed / 1 skipped; browser cards measure ~4:3 landscape (`ratio≈1.33`) with overlay `text-shadow` applied.
+
+### 2026-11-18 — Full-image publication & event cards
+
+- Replaced the split image + solid blue info panel with full-bleed cover cards and bottom white overlay (later compacted to landscape — see entry above).
+- Shared `ContentCard` / `CardMedia` (and matching `CardSkeleton`) drive homepage publication/event grids and catalogue listing pages. Homepage featured slider unchanged.
+- Spacing is a single bottom group (no `justify-between` / `mt-auto` gaps); author row omitted when absent; founder author links remain separately clickable above the stretched title link.
+- Hover: restrained image zoom + slight darken + lift; keyboard focus ring preserved; reduced-motion respected.
 
 ### 2026-11-17 — Sticky Share fix + align under gallery
 
@@ -1168,6 +1248,27 @@ Open `http://localhost:3000`.
 - English `en.json` still uses **Publications**; no route, schema, API, or DB content changes.
 - Preserved publish-status wording (`منشور` / `منشورة` / `النشر` / `إلغاء النشر`).
 - Validation: repo-wide grep found no remaining `المنشورات` / `منشورات`; `tsc --noEmit` pass; ESLint still reports pre-existing unrelated issues (1 error / 4 warnings).
+
+### 2026-11-13 — Publication create/save P2028 transaction timeout
+
+- Symptom: `POST /api/admin/publications` 500 — Prisma `P2028` interactive transaction expired (default 5s; create took ~6.5s+ over Supabase pooler) while featuring / aggregating `FeaturedPublication`.
+- `createPublication` / `createEvent`: single nested `create` (optional `featured.create`) instead of multi-step `$transaction`.
+- Admin update/delete (publications, events, founders, homepage): `withInteractiveTransaction` with 30s timeout / 10s maxWait (`src/server/db/transaction.ts`).
+- Validation: `tsc --noEmit` clean. Re-try Save draft / Publish on `/admin/publications/new` in the running dev server.
+
+### 2026-11-13 — Admin instant-navigation / Cache Components auth errors
+
+- Dev overlay errors on `/admin/login` and `/admin`: uncached `connection()` in `getAdminSession`, and `NEXT_REDIRECT` from the protected auth gate during instant-navigation validation.
+- Added `src/app/admin/layout.tsx` with `instant = false`; set `instant = false` on protected layout and all admin pages.
+- Protected layout: session gate + shell behind `<Suspense>` with table-skeleton fallback; login page: content behind Suspense with form skeleton.
+- Login `401` with `admin@gmail.com` was invalid credentials (DB has `admin2@gmail.com` only) — not a code defect.
+- Validation: code + reference updated; refresh `/admin/login` to confirm overlay cleared. Live login with bootstrap email left to local QA.
+
+### 2026-11-13 — Prisma postinstall without required DIRECT_URL
+
+- `prisma.config.ts`: stop using `env("DIRECT_URL")` (throws when unset). Resolve `DIRECT_URL` → `DATABASE_URL` → placeholder so `postinstall` → `prisma generate` succeeds on a fresh clone without `.env`.
+- Local setup: copied `.env.example` → `.env` (gitignored placeholders); ran `npm i` successfully.
+- Validation: `npm i` completed with `prisma generate` in postinstall.
 
 ### 2026-11-10 — Founder create validation UX + admin session Date prerender
 
@@ -1323,7 +1424,7 @@ Open `http://localhost:3000`.
 | --- | --- | --- |
 | Publications | `public/images/heroes/publications-hero.svg` | `PAGE_HEROES.publications` |
 | Events | `public/images/heroes/events-hero.svg` | `PAGE_HEROES.events` |
-| About | `public/images/heroes/about-hero.svg` | `PAGE_HEROES.about` |
+| About | `organizationLogoPath(locale)` → `agenda-logo-en.png` / `agenda-logo-ar.png` (`fit: "contain"`) | `PAGE_HEROES.about` (+ page override) |
 
 Swap in PNG/JPEG/WebP at the same path (or update `src`), set non-empty `alt` when the image is meaningful, and tune `objectPosition` (e.g. `center top`).
 
@@ -1332,7 +1433,7 @@ Swap in PNG/JPEG/WebP at the same path (or update `src`), set non-empty `alt` wh
 - Added shared `SectionHeader` (pill label, fluid editorial title, description, outlined action) for Publications and Events; About teaser reuses the same label/title/action styling.
 - Localized section intros (Research & Perspectives / Dialogue & Participation / About Us) in EN/AR dictionaries; no “latest/upcoming” claims.
 - Clearer rhythm: ~40–72px section padding, Events on subtle neutral wash, shared `Container` width; hero text aligned to `max-w-6xl` while arrows stay at edges.
-- Homepage grids center 1–2 featured cards without stretching; listing pages keep full 3-col grids. Tightened card blue-panel padding and excerpt reserve (2 lines).
+- Homepage grids center 1–2 featured cards without stretching; listing pages keep full 3-col grids. (Card chrome later moved to full-image overlays — see 2026-11-18.)
 - About illustration enlarged within its panel; solid CTA replaced with outlined section action.
 - Validation: `lint`, `typecheck`, `build` passed.
 

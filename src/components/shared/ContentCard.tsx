@@ -26,9 +26,9 @@ type Props = {
 };
 
 /**
- * Shared publication/event card: 4:3 media, compact blue panel,
- * aligned title/excerpt/footer row across grid cells.
- * Title (and image) link to the detail page — no separate Read more CTA.
+ * Shared publication/event card: compact full-bleed cover with bottom text overlay.
+ * Title uses a stretched link for card navigation; author links sit above it (z-index)
+ * so founder bios remain reachable without nested anchors.
  */
 export function ContentCard({
   href,
@@ -44,49 +44,77 @@ export function ContentCard({
   className,
 }: Props) {
   const trimmedExcerpt = excerpt?.trim() || null;
+  const showDate = Boolean(dateTime && dateLabel);
+  const showMeta = Boolean(author || showDate);
 
   return (
     <article
       className={cn(
-        "group flex h-full flex-col overflow-hidden rounded-xl bg-white",
+        /* Landscape editorial proportions — taller on small screens for copy room */
+        "group relative aspect-[5/4] overflow-hidden rounded-xl sm:aspect-[4/3]",
+        "bg-[color-mix(in_srgb,var(--brand-blue)_88%,#021a33)]",
         "shadow-[0_6px_18px_rgba(5,73,140,0.1)] ring-1 ring-[color-mix(in_srgb,var(--brand-blue)_10%,transparent)]",
         "motion-safe:transition-[transform,box-shadow] motion-safe:duration-200",
-        "motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-[0_10px_24px_rgba(5,73,140,0.16)]",
+        "motion-safe:hover:-translate-y-0.5 motion-safe:hover:shadow-[0_12px_28px_rgba(5,73,140,0.18)]",
         "motion-reduce:transition-none",
         className,
       )}
     >
-      <div className="relative shrink-0">
-        <Link
-          href={href}
-          className="block focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-blue)]"
-        >
-          <CardMedia src={imageUrl} alt={imageAlt} />
-        </Link>
-        <span
-          className={cn(
-            "pointer-events-none absolute top-3 end-3 z-10 rounded bg-white px-2 py-0.5",
-            "text-[12px] font-semibold leading-none text-[var(--brand-blue)] shadow-sm",
-            "sm:top-4 sm:end-4",
-          )}
-        >
-          {badge}
-        </span>
-      </div>
+      <CardMedia
+        src={imageUrl}
+        alt={imageAlt}
+        className="absolute inset-0 h-full w-full"
+      />
 
-      <div className="flex flex-1 flex-col bg-[var(--brand-blue)] px-4 py-4 text-white sm:px-5 sm:py-5">
+      {/* Readability wash — pointer-events none so clicks pass to the title link */}
+      <div
+        className={cn(
+          "content-card-gradient pointer-events-none absolute inset-0 z-[1]",
+          /* Explicit wash so readability does not depend on globals.css HMR */
+          "bg-[linear-gradient(to_top,rgba(0,0,0,0.78)_0%,rgba(0,16,38,0.45)_28%,rgba(0,16,38,0.14)_48%,transparent_65%)]",
+        )}
+        aria-hidden
+      />
+      <div
+        className={cn(
+          "pointer-events-none absolute inset-0 z-[1] bg-black/0",
+          "motion-safe:transition-colors motion-safe:duration-300",
+          "motion-safe:group-hover:bg-black/10 motion-safe:group-focus-within:bg-black/10",
+        )}
+        aria-hidden
+      />
+
+      <span
+        className={cn(
+          "pointer-events-none absolute top-3 end-3 z-[3] rounded bg-white/95 px-2 py-0.5",
+          "text-[12px] font-semibold leading-none text-[var(--brand-blue)] shadow-sm",
+          "sm:top-3.5 sm:end-3.5",
+        )}
+      >
+        {badge}
+      </span>
+
+      <div
+        className={cn(
+          "card-overlay-text absolute inset-x-0 bottom-0 z-[2] flex flex-col",
+          "px-3.5 pb-3.5 pt-10 text-white sm:px-4 sm:pb-4 sm:pt-12",
+          /* Tailwind arbitrary fallback if globals.css HMR lags */
+          "[text-shadow:0_1px_3px_rgba(0,0,0,0.75),0_2px_8px_rgba(0,20,45,0.35)]",
+        )}
+      >
         <h3
           className={cn(
-            "font-editorial text-[1.2rem] leading-[1.4] font-semibold text-balance sm:text-[1.3rem]",
-            // Reserve two lines on desktop for equal row heights
-            "lg:min-h-[calc(1.4em*2)]",
+            "font-editorial text-[1.05rem] leading-[1.28] font-semibold text-balance",
+            "sm:text-[1.125rem] sm:leading-[1.26]",
           )}
         >
           <Link
             href={href}
             className={cn(
-              "line-clamp-2 rounded-sm no-underline [overflow-wrap:anywhere]",
-              "transition-colors hover:text-white/85",
+              "line-clamp-2 rounded-sm no-underline [overflow-wrap:anywhere] sm:line-clamp-3",
+              "transition-colors hover:text-white/90",
+              /* Stretched hit target for the whole card */
+              "after:absolute after:inset-0 after:z-[1]",
               "focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-white",
             )}
           >
@@ -94,39 +122,35 @@ export function ContentCard({
           </Link>
         </h3>
 
-        <div
-          className={cn(
-            "mt-2.5",
-            // Reserve two excerpt lines on desktop (was three — reduced empty blue)
-            "lg:min-h-[calc(1.55em*2)]",
-          )}
-        >
-          {trimmedExcerpt ? (
-            <p className="line-clamp-2 text-[0.9375rem] leading-[1.55] text-white/92 text-pretty sm:text-[0.975rem]">
-              {trimmedExcerpt}
-            </p>
-          ) : null}
-        </div>
-
-        {author ? (
-          <p className="mt-3 text-[0.8125rem] leading-snug text-white/90 sm:text-sm">
-            <span className="text-white/75">{author.byLabel} </span>
-            <AuthorLink
-              bioKey={author.bioKey}
-              name={author.name}
-              locale={locale}
-              className="font-medium text-white underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-            />
+        {trimmedExcerpt ? (
+          <p className="mt-1.5 line-clamp-2 text-[0.8125rem] leading-[1.4] text-white/95 text-pretty sm:text-[0.875rem] sm:leading-[1.42]">
+            {trimmedExcerpt}
           </p>
         ) : null}
 
-        {dateTime && dateLabel ? (
-          <time
-            dateTime={dateTime}
-            className="mt-auto pt-4 text-[0.8125rem] leading-snug text-white/85 sm:text-sm"
-          >
-            {dateLabel}
-          </time>
+        {showMeta ? (
+          <div className="mt-2 flex flex-col gap-1">
+            {author ? (
+              <p className="relative z-[3] text-[0.75rem] leading-snug text-white/95 sm:text-[0.8125rem]">
+                <span className="text-white/80">{author.byLabel} </span>
+                <AuthorLink
+                  bioKey={author.bioKey}
+                  name={author.name}
+                  locale={locale}
+                  className="font-medium text-white underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                />
+              </p>
+            ) : null}
+
+            {showDate ? (
+              <time
+                dateTime={dateTime!}
+                className="text-[0.75rem] leading-snug text-white/90 sm:text-[0.8125rem]"
+              >
+                {dateLabel}
+              </time>
+            ) : null}
+          </div>
         ) : null}
       </div>
     </article>

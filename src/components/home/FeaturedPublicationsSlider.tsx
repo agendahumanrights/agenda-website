@@ -231,9 +231,7 @@ export function FeaturedPublicationsSlider({
             {dateLabel && current.publishedAt ? (
               <time dateTime={current.publishedAt}>{dateLabel}</time>
             ) : null}
-            {current.category.requiresAuthor &&
-            current.authorName &&
-            current.authorBioKey ? (
+            {current.authorName && current.authorBioKey ? (
               <>
                 {dateLabel ? <span aria-hidden>·</span> : null}
                 <AuthorLink

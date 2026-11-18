@@ -1,13 +1,13 @@
 /**
- * Temporary page-hero images for catalogue / About introductions.
- * Replace the files under `public/images/heroes/` and adjust
- * `objectPosition` / `alt` here when final photography is ready.
+ * Page-hero framed media. Publications/Events catalogues use `LatestContentHero`
+ * when published content exists; empty catalogues omit `PageHero` media entirely.
+ * About still uses the locale lockup via `organizationLogoPath`.
  */
 
-export type PageHeroKey = "publications" | "events" | "about";
+export type PageHeroKey = "about";
 
 export type PageHeroImageConfig = {
-  /** Public path, e.g. `/images/heroes/publications-hero.svg` */
+  /** Public path, e.g. `/images/agenda-logo-en.png` */
   src: string;
   /**
    * Accessible alt text. Empty string = decorative placeholder
@@ -16,22 +16,19 @@ export type PageHeroImageConfig = {
   alt: string;
   /** CSS object-position for photographs (e.g. `center top`). */
   objectPosition: string;
+  /**
+   * How the media fills the framed panel.
+   * `contain` is used for the About logo mark.
+   */
+  fit?: "cover" | "contain";
 };
 
 export const PAGE_HEROES: Record<PageHeroKey, PageHeroImageConfig> = {
-  publications: {
-    src: "/images/heroes/publications-hero.jpg",
-    alt: "",
-    objectPosition: "center",
-  },
-  events: {
-    src: "/images/heroes/events-hero.jpg",
-    alt: "",
-    objectPosition: "center",
-  },
   about: {
-    src: "/images/heroes/about-hero.jpg",
+    /** Overridden per-request with `organizationLogoPath(locale)` on the About page. */
+    src: "/images/agenda-logo-en.png",
     alt: "",
     objectPosition: "center",
+    fit: "contain",
   },
 };

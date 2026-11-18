@@ -212,14 +212,18 @@ export async function assertMediaAccess(
 async function isAssetPubliclyReferenced(mediaAssetId: string): Promise<boolean> {
   const prisma = getPrisma();
   // findFirst + select id is cheaper than count; run in parallel and short-circuit.
-  const [asMain, asPdf, asGallery, asEventMain, asEventGallery, asFounder] =
+  const [asMain, asPdfEn, asPdfAr, asGallery, asEventMain, asEventGallery, asFounder] =
     await Promise.all([
       prisma.publication.findFirst({
         where: { mainImageId: mediaAssetId, status: "PUBLISHED" },
         select: { id: true },
       }),
       prisma.publication.findFirst({
-        where: { pdfId: mediaAssetId, status: "PUBLISHED" },
+        where: { pdfEnId: mediaAssetId, status: "PUBLISHED" },
+        select: { id: true },
+      }),
+      prisma.publication.findFirst({
+        where: { pdfArId: mediaAssetId, status: "PUBLISHED" },
         select: { id: true },
       }),
       prisma.publicationGalleryImage.findFirst({
@@ -247,7 +251,13 @@ async function isAssetPubliclyReferenced(mediaAssetId: string): Promise<boolean>
     ]);
 
   return Boolean(
-    asMain || asPdf || asGallery || asEventMain || asEventGallery || asFounder,
+    asMain ||
+      asPdfEn ||
+      asPdfAr ||
+      asGallery ||
+      asEventMain ||
+      asEventGallery ||
+      asFounder,
   );
 }
 
@@ -259,7 +269,8 @@ export async function deleteMediaAssetIfOrphaned(mediaAssetId: string): Promise<
     where: { id: mediaAssetId },
     include: {
       publicationMainImages: { select: { id: true }, take: 1 },
-      publicationPdfs: { select: { id: true }, take: 1 },
+      publicationPdfsEn: { select: { id: true }, take: 1 },
+      publicationPdfsAr: { select: { id: true }, take: 1 },
       publicationGallery: { select: { id: true }, take: 1 },
       eventMainImages: { select: { id: true }, take: 1 },
       eventGallery: { select: { id: true }, take: 1 },
@@ -270,7 +281,8 @@ export async function deleteMediaAssetIfOrphaned(mediaAssetId: string): Promise<
 
   const stillReferenced =
     asset.publicationMainImages.length > 0 ||
-    asset.publicationPdfs.length > 0 ||
+    asset.publicationPdfsEn.length > 0 ||
+    asset.publicationPdfsAr.length > 0 ||
     asset.publicationGallery.length > 0 ||
     asset.eventMainImages.length > 0 ||
     asset.eventGallery.length > 0 ||

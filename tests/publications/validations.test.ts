@@ -35,6 +35,16 @@ describe("publication validations", () => {
     expect("slug" in parsed).toBe(false);
   });
 
+  it("allows an optional founder author on create for any category", () => {
+    const parsed = createPublicationBodySchema.parse({
+      categoryId: "cpubcat000000000000000001",
+      status: "DRAFT",
+      authorFounderId: "clxxxxxxxxxxxxxxxxxxxxxx9",
+      translations: [{ locale: "en", title: "Report", subtitle: "", description: "" }],
+    });
+    expect(parsed.authorFounderId).toBe("clxxxxxxxxxxxxxxxxxxxxxx9");
+  });
+
   it("rejects duplicate featured publication ids", () => {
     // Valid cuid shape (25 chars after c)
     const a = "clxxxxxxxxxxxxxxxxxxxxxx1";

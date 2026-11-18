@@ -89,9 +89,7 @@ export function PublicationDetails({
             </p>
           ) : null}
 
-          {publication.category.requiresAuthor &&
-          publication.authorName &&
-          publication.authorBioKey ? (
+          {publication.authorName && publication.authorBioKey ? (
             <PublicationAuthor
               className="mt-6"
               name={publication.authorName}

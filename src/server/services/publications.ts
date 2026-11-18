@@ -4,6 +4,7 @@ import { cacheLife, cacheTag } from "next/cache";
 
 import { Prisma } from "@/generated/prisma";
 
+import { resolveLocalePdfUrl } from "@/lib/publications/locale-pdf";
 import { slugify } from "@/lib/slugs";
 import {
   getPrisma,
@@ -51,8 +52,8 @@ import type {
 /**
  * Business rules (service-enforced unless noted):
  * - Public queries only return PUBLISHED items.
- * - Categories with requiresAuthor need authorFounderId; others must not have one.
- * - Publishing requires both ar + en titles/subtitles/descriptions, main image, category, publishedAt.
+ * - Any category may have a founder author; categories with requiresAuthor=true need one to publish (none seeded that way by default).
+ * - Publishing requires both ar + en titles/descriptions, main image, category, publishedAt (subtitle optional).
  * - Drafts need at least one non-empty title.
  * - Slug is immutable after creation.
  * - Unpublish/delete removes FeaturedPublication in the same transaction.
@@ -114,6 +115,67 @@ function pickTitle(
   if (preferredRow?.title.trim()) return preferredRow.title;
   const other = translations.find((t) => t.title.trim());
   return other?.title ?? "";
+}
+
+/**
+ * Newest published publication for the locale (catalogue “Newest First” order).
+ * Independent of homepage featured selection and catalogue filters.
+ */
+export async function getNewestPublishedPublication(
+  locale: "ar" | "en",
+): Promise<PublicationListItem | null> {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag(CACHE_TAGS.publications);
+  cacheTag(CACHE_TAGS.categories);
+
+  if (!isDatabaseConfigured()) {
+    return null;
+  }
+
+  const prisma = getPrisma();
+  const row = await prisma.publication.findFirst({
+    where: {
+      status: "PUBLISHED",
+      translations: { some: { locale } },
+    },
+    orderBy: [
+      { publishedAt: { sort: "desc", nulls: "last" } },
+      { id: "desc" },
+    ],
+    select: {
+      id: true,
+      slug: true,
+      publishedAt: true,
+      category: {
+        select: {
+          id: true,
+          slug: true,
+          nameEn: true,
+          nameAr: true,
+          requiresAuthor: true,
+        },
+      },
+      mainImage: { select: { storageKey: true } },
+      authorFounder: {
+        select: {
+          bioKey: true,
+          translations: {
+            where: { locale },
+            take: 1,
+            select: { fullName: true },
+          },
+        },
+      },
+      translations: {
+        where: { locale },
+        take: 1,
+        select: { title: true, subtitle: true },
+      },
+    },
+  });
+
+  return row ? mapListItem(row, locale) : null;
 }
 
 export async function listPublishedPublications(
@@ -224,7 +286,8 @@ export async function getPublishedPublicationBySlug(
     include: {
       category: true,
       mainImage: { include: { altTexts: true } },
-      pdf: true,
+      pdfEn: true,
+      pdfAr: true,
       gallery: {
         orderBy: { sortOrder: "asc" },
         include: { mediaAsset: { include: { altTexts: true } } },
@@ -255,7 +318,15 @@ export async function getPublishedPublicationBySlug(
   return {
     ...base,
     description: row.translations[0].description,
-    pdfUrl: row.pdf ? storage.getPublicUrl(row.pdf.storageKey) : null,
+    pdfUrl: resolveLocalePdfUrl({
+      locale,
+      pdfEnUrl: row.pdfEn
+        ? storage.getPublicUrl(row.pdfEn.storageKey)
+        : null,
+      pdfArUrl: row.pdfAr
+        ? storage.getPublicUrl(row.pdfAr.storageKey)
+        : null,
+    }),
     youtubeUrl: row.youtubeUrl ?? null,
     galleryImageUrls: images
       .filter((img) => img.id !== row.mainImage?.id)
@@ -293,9 +364,9 @@ function assertPublishable(input: {
   const byLocale = new Map(input.translations.map((t) => [t.locale, t]));
   for (const locale of ["ar", "en"] as const) {
     const t = byLocale.get(locale);
-    if (!t || !t.title.trim() || !t.subtitle.trim() || !t.description.trim()) {
+    if (!t || !t.title.trim() || !t.description.trim()) {
       throw badRequest(
-        `Publishing requires complete ${locale.toUpperCase()} title, subtitle, and description.`,
+        `Publishing requires complete ${locale.toUpperCase()} title and description.`,
       );
     }
   }
@@ -315,12 +386,8 @@ function assertAuthorRules(
   requiresAuthor: boolean,
   authorFounderId: string | null,
 ): void {
-  if (requiresAuthor) {
-    if (!authorFounderId) {
-      throw badRequest("This category requires a founder author.");
-    }
-  } else if (authorFounderId) {
-    throw badRequest("Only author-required categories may have a founder author.");
+  if (requiresAuthor && !authorFounderId) {
+    throw badRequest("This category requires a founder author.");
   }
 }
 
@@ -341,15 +408,26 @@ async function ensureUniqueSlug(base: string, excludeId?: string): Promise<strin
 
 async function validateMediaRefs(input: {
   mainImageId?: string | null;
-  pdfId?: string | null;
+  pdfEnId?: string | null;
+  pdfArId?: string | null;
   galleryImageIds?: string[];
   previousImageCount?: number;
 }): Promise<void> {
   if (input.mainImageId) {
     await assertMediaReady({ id: input.mainImageId, expectedKind: "IMAGE" });
   }
-  if (input.pdfId) {
-    await assertMediaReady({ id: input.pdfId, expectedKind: "PDF" });
+  if (input.pdfEnId) {
+    await assertMediaReady({ id: input.pdfEnId, expectedKind: "PDF" });
+  }
+  if (input.pdfArId) {
+    await assertMediaReady({ id: input.pdfArId, expectedKind: "PDF" });
+  }
+  if (
+    input.pdfEnId &&
+    input.pdfArId &&
+    input.pdfEnId === input.pdfArId
+  ) {
+    throw badRequest("English and Arabic PDFs must be different files.");
   }
   const gallery = input.galleryImageIds ?? [];
   assertContentImageCountAllowed({
@@ -378,7 +456,8 @@ async function assertFounderExists(id: string): Promise<void> {
 const adminInclude = {
   category: true,
   mainImage: { include: { altTexts: true } },
-  pdf: { include: { altTexts: true } },
+  pdfEn: { include: { altTexts: true } },
+  pdfAr: { include: { altTexts: true } },
   gallery: {
     orderBy: { sortOrder: "asc" as const },
     include: { mediaAsset: { include: { altTexts: true } } },
@@ -418,7 +497,8 @@ function mapAdminDetail(
       description: t.description,
     })),
     mainImage: row.mainImage ? mapMediaRef(row.mainImage) : null,
-    pdf: row.pdf ? mapMediaRef(row.pdf) : null,
+    pdfEn: row.pdfEn ? mapMediaRef(row.pdfEn) : null,
+    pdfAr: row.pdfAr ? mapMediaRef(row.pdfAr) : null,
     youtubeUrl: row.youtubeUrl ?? null,
     gallery: row.gallery.map((g) =>
       mapMediaRef({ ...g.mediaAsset, sortOrder: g.sortOrder }),
@@ -541,7 +621,8 @@ export async function createPublication(
   }
   await validateMediaRefs({
     mainImageId: input.mainImageId,
-    pdfId: input.pdfId,
+    pdfEnId: input.pdfEnId,
+    pdfArId: input.pdfArId,
     galleryImageIds: input.galleryImageIds,
   });
 
@@ -575,11 +656,10 @@ export async function createPublication(
         categoryId: input.categoryId,
         status: input.status,
         publishedAt: input.publishedAt ?? null,
-        authorFounderId: category.requiresAuthor
-          ? (input.authorFounderId ?? null)
-          : null,
+        authorFounderId: input.authorFounderId ?? null,
         mainImageId: input.mainImageId ?? null,
-        pdfId: input.pdfId ?? null,
+        pdfEnId: input.pdfEnId ?? null,
+        pdfArId: input.pdfArId ?? null,
         youtubeUrl: input.youtubeUrl ?? null,
         translations: {
           create: input.translations.map((t) => ({
@@ -650,7 +730,10 @@ export async function updatePublication(
       : existing.authorFounderId;
   const nextMainImage =
     input.mainImageId !== undefined ? input.mainImageId : existing.mainImageId;
-  const nextPdf = input.pdfId !== undefined ? input.pdfId : existing.pdfId;
+  const nextPdfEn =
+    input.pdfEnId !== undefined ? input.pdfEnId : existing.pdfEnId;
+  const nextPdfAr =
+    input.pdfArId !== undefined ? input.pdfArId : existing.pdfArId;
   const nextYoutubeUrl =
     input.youtubeUrl !== undefined ? input.youtubeUrl : existing.youtubeUrl;
   const nextGallery =
@@ -690,14 +773,16 @@ export async function updatePublication(
   );
   await validateMediaRefs({
     mainImageId: nextMainImage,
-    pdfId: nextPdf,
+    pdfEnId: nextPdfEn,
+    pdfArId: nextPdfAr,
     galleryImageIds: nextGallery,
     previousImageCount,
   });
 
   const previousMediaIds = [
     existing.mainImageId,
-    existing.pdfId,
+    existing.pdfEnId,
+    existing.pdfArId,
     ...existing.gallery.map((g) => g.mediaAssetId),
   ].filter(Boolean) as string[];
 
@@ -760,9 +845,10 @@ export async function updatePublication(
         categoryId: nextCategoryId,
         status: nextStatus,
         publishedAt: nextPublishedAt,
-        authorFounderId: nextCategory.requiresAuthor ? nextAuthor : null,
+        authorFounderId: nextAuthor,
         mainImageId: nextMainImage,
-        pdfId: nextPdf,
+        pdfEnId: nextPdfEn,
+        pdfArId: nextPdfAr,
         youtubeUrl: nextYoutubeUrl,
       },
     });
@@ -787,7 +873,8 @@ export async function updatePublication(
 
   const nextMediaIds = [
     updated.mainImageId,
-    updated.pdfId,
+    updated.pdfEnId,
+    updated.pdfArId,
     ...updated.gallery.map((g) => g.mediaAssetId),
   ].filter(Boolean) as string[];
   const removed = previousMediaIds.filter((mid) => !nextMediaIds.includes(mid));
@@ -810,7 +897,8 @@ export async function deletePublication(id: string): Promise<void> {
 
   const mediaIds = [
     existing.mainImageId,
-    existing.pdfId,
+    existing.pdfEnId,
+    existing.pdfArId,
     ...existing.gallery.map((g) => g.mediaAssetId),
   ].filter(Boolean) as string[];
 

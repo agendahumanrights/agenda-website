@@ -151,6 +151,24 @@ body {
   );
 }
 
+/* Content cards: bottom-weighted wash — keeps upper photo clear */
+.content-card-gradient {
+  background: linear-gradient(
+    to top,
+    rgba(0, 0, 0, 0.78) 0%,
+    rgba(0, 16, 38, 0.45) 28%,
+    rgba(0, 16, 38, 0.14) 48%,
+    transparent 65%
+  );
+}
+
+/* Soft shadow so white overlay copy stays readable on bright photos */
+.card-overlay-text {
+  text-shadow:
+    0 1px 3px rgba(0, 0, 0, 0.75),
+    0 2px 8px rgba(0, 20, 45, 0.35);
+}
+
 /* Full viewport heroes — header is fixed/overlay, so no negative-margin pull */
 .hero-viewport {
   min-height: 100vh;

@@ -3,14 +3,16 @@ import { join } from "node:path";
 
 import { ImageResponse } from "next/og";
 
+import { organizationLogoFsPath } from "@/lib/brand/logo";
+
 export const alt = "Human Rights Agenda";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-/** Branded social sharing image (logo + site name on brand blue). */
+/** Branded social sharing image (English logo + site name on brand blue). */
 export default async function OpenGraphImage() {
   const logoBytes = await readFile(
-    join(process.cwd(), "public/images/brand/agenda-logo.png"),
+    join(process.cwd(), organizationLogoFsPath("en")),
   );
   const logoSrc = `data:image/png;base64,${logoBytes.toString("base64")}`;
 

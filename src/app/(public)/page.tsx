@@ -38,7 +38,7 @@ async function HomeContent() {
     <>
       <JsonLd
         data={[
-          organizationJsonLd(dict.meta.siteName),
+          organizationJsonLd(dict.meta.siteName, locale),
           websiteJsonLd({
             siteName: dict.meta.siteName,
             description: dict.meta.siteDescription,

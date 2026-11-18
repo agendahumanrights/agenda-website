@@ -113,9 +113,8 @@ export default async function PublicationDetailPage({
             imageUrl: publication.mainImageUrl,
             datePublished: publication.publishedAt,
             authorName: publication.authorName,
-            type: publication.category.requiresAuthor
-              ? "BlogPosting"
-              : "Article",
+            type:
+              publication.category.slug === "BLOG" ? "BlogPosting" : "Article",
           }),
         ]}
       />

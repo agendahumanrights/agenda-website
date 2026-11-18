@@ -50,7 +50,7 @@ import type {
  * - Public queries only return PUBLISHED events.
  * - Public/admin creation-date filters use createdAt, never eventDate.
  * - eventDate is the visitor-facing occurrence date (UTC calendar date).
- * - Drafts need at least one title; publishing requires both locales + main image + eventDate.
+ * - Drafts need at least one title; publishing requires both locales’ titles/descriptions + main image + eventDate (subtitle optional).
  * - Slug is immutable after creation; createdAt is never editable.
  * - Unpublish/delete removes FeaturedEvent in the same transaction.
  * - Max 3 featured events (homepage service).
@@ -101,6 +101,45 @@ function createdAtFilter(from?: Date, to?: Date) {
     ...(from ? { gte: startOfUtcDay(from) } : {}),
     ...(to ? { lte: endOfUtcDay(to) } : {}),
   };
+}
+
+/**
+ * Newest published event for the locale (catalogue “Newest First” by `eventDate`).
+ * Independent of homepage featured selection and catalogue filters.
+ */
+export async function getNewestPublishedEvent(
+  locale: "ar" | "en",
+): Promise<EventListItem | null> {
+  "use cache";
+  cacheLife("minutes");
+  cacheTag(CACHE_TAGS.events);
+
+  if (!isDatabaseConfigured()) {
+    return null;
+  }
+
+  const prisma = getPrisma();
+  const row = await prisma.event.findFirst({
+    where: {
+      status: "PUBLISHED",
+      translations: { some: { locale } },
+    },
+    orderBy: [{ eventDate: "desc" }, { id: "desc" }],
+    select: {
+      id: true,
+      slug: true,
+      eventDate: true,
+      createdAt: true,
+      mainImage: { select: { storageKey: true } },
+      translations: {
+        where: { locale },
+        take: 1,
+        select: { title: true, subtitle: true },
+      },
+    },
+  });
+
+  return row ? mapListItem(row) : null;
 }
 
 export async function listPublishedEvents(
@@ -239,9 +278,9 @@ function assertPublishable(input: {
   const byLocale = new Map(input.translations.map((t) => [t.locale, t]));
   for (const locale of ["ar", "en"] as const) {
     const t = byLocale.get(locale);
-    if (!t || !t.title.trim() || !t.subtitle.trim() || !t.description.trim()) {
+    if (!t || !t.title.trim() || !t.description.trim()) {
       throw badRequest(
-        `Publishing requires complete ${locale.toUpperCase()} title, subtitle, and description.`,
+        `Publishing requires complete ${locale.toUpperCase()} title and description.`,
       );
     }
   }

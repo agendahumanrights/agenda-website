@@ -30,6 +30,7 @@ import {
   youtubeUrlForPayload,
 } from "@/components/admin/YouTubeUrlField";
 import { Button } from "@/components/ui/Button";
+import { FieldLabel } from "@/components/ui/FieldLabel";
 import { FormField } from "@/components/ui/FormField";
 import { Input } from "@/components/ui/Input";
 import { adminJson } from "@/lib/admin-api";
@@ -163,10 +164,10 @@ export function EventForm({
 
   function validateForPublish(): Record<string, string> {
     const next: Record<string, string> = {};
-    if (!ar.title.trim() || !ar.subtitle.trim() || !ar.description.trim()) {
+    if (!ar.title.trim() || !ar.description.trim()) {
       next.ar = labels.errorValidation;
     }
-    if (!en.title.trim() || !en.subtitle.trim() || !en.description.trim()) {
+    if (!en.title.trim() || !en.description.trim()) {
       next.en = labels.errorValidation;
     }
     if (!mainImage) next.mainImage = labels.errorValidation;
@@ -504,6 +505,8 @@ export function EventForm({
                 <FormField
                   id={`title-${contentLocale}`}
                   label={labels.title}
+                  required
+                  requiredLabel={labels.requiredAria}
                   error={
                     fieldErrors[contentLocale] && !active.title.trim()
                       ? labels.errorValidation
@@ -517,6 +520,8 @@ export function EventForm({
                     className="admin-control"
                     value={active.title}
                     disabled={busy}
+                    required
+                    aria-required
                     onChange={(e) => {
                       markDirty();
                       setActive((s) => ({ ...s, title: e.target.value }));
@@ -526,6 +531,8 @@ export function EventForm({
                 <FormField
                   id={`subtitle-${contentLocale}`}
                   label={labels.subtitle}
+                  optional
+                  optionalLabel={labels.optional}
                 >
                   <Input
                     id={`subtitle-${contentLocale}`}
@@ -542,6 +549,13 @@ export function EventForm({
                 <FormField
                   id={`desc-${contentLocale}`}
                   label={labels.description}
+                  required
+                  requiredLabel={labels.requiredAria}
+                  error={
+                    fieldErrors[contentLocale] && !active.description.trim()
+                      ? labels.errorValidation
+                      : undefined
+                  }
                 >
                   <MarkdownEditor
                     id={`desc-${contentLocale}`}
@@ -565,7 +579,11 @@ export function EventForm({
 
               <div className="flex flex-col gap-3">
                 <h3 className="text-sm font-semibold text-zinc-800">
-                  {labels.mainImage}
+                  <FieldLabel
+                    label={labels.mainImage}
+                    required
+                    requiredLabel={labels.requiredAria}
+                  />
                 </h3>
                 {mainImage ? (
                   <div className="overflow-hidden rounded-xl border border-[var(--admin-border)]">
@@ -865,6 +883,8 @@ export function EventForm({
               <FormField
                 id="eventDate"
                 label={labels.eventDate}
+                required
+                requiredLabel={labels.requiredAria}
                 hint={labels.eventDateHint}
                 error={fieldErrors.eventDate}
               >
@@ -875,6 +895,7 @@ export function EventForm({
                   value={eventDate}
                   disabled={busy}
                   required
+                  aria-required
                   onChange={(e) => {
                     markDirty();
                     setEventDate(e.target.value);

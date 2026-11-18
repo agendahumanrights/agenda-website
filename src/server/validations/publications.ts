@@ -47,7 +47,10 @@ export const publicationSlugSchema = z
   .max(160)
   .regex(slugPattern, "Slug must be URL-safe (lowercase letters, numbers, hyphens).");
 
-/** Draft translations may be incomplete; publish rules enforced in the service. */
+/**
+ * Draft translations may be incomplete; publish rules enforced in the service.
+ * Subtitle is always optional (empty string stored when omitted).
+ */
 export const publicationTranslationInputSchema = z.object({
   locale: localeSchema,
   title: z.string().max(300).default(""),
@@ -62,7 +65,8 @@ export const createPublicationBodySchema = z.object({
   publishedAt: z.coerce.date().nullable().optional(),
   authorFounderId: z.string().cuid().nullable().optional(),
   mainImageId: z.string().cuid().nullable().optional(),
-  pdfId: z.string().cuid().nullable().optional(),
+  pdfEnId: z.string().cuid().nullable().optional(),
+  pdfArId: z.string().cuid().nullable().optional(),
   youtubeUrl: optionalYoutubeUrlSchema,
   galleryImageIds: z
     .array(z.string().cuid())
@@ -85,7 +89,8 @@ export const updatePublicationBodySchema = z.object({
   publishedAt: z.coerce.date().nullable().optional(),
   authorFounderId: z.string().cuid().nullable().optional(),
   mainImageId: z.string().cuid().nullable().optional(),
-  pdfId: z.string().cuid().nullable().optional(),
+  pdfEnId: z.string().cuid().nullable().optional(),
+  pdfArId: z.string().cuid().nullable().optional(),
   youtubeUrl: optionalYoutubeUrlSchema,
   galleryImageIds: z
     .array(z.string().cuid())

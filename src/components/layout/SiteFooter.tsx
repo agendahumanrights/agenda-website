@@ -12,6 +12,10 @@ import { getOrganizationCopy } from "@/content/about";
 import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/dictionaries";
 import { sitePath } from "@/i18n/pathnames";
+import {
+  ORGANIZATION_LOGO_SIZE,
+  organizationLogoPath,
+} from "@/lib/brand/logo";
 
 type Props = {
   locale: Locale;
@@ -67,10 +71,10 @@ export function SiteFooter({ locale, dict }: Props) {
               >
                 <span className="inline-flex items-center justify-center rounded-xl bg-white p-1.5 shadow-sm ring-1 ring-white/70">
                   <Image
-                    src="/images/agenda-logo.png"
+                    src={organizationLogoPath(locale)}
                     alt={dict.nav.logoAlt}
-                    width={1149}
-                    height={1604}
+                    width={ORGANIZATION_LOGO_SIZE.width}
+                    height={ORGANIZATION_LOGO_SIZE.height}
                     className="h-10 w-auto"
                   />
                 </span>

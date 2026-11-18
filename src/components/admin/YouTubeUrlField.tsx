@@ -4,6 +4,7 @@ import { useMemo } from "react";
 
 import { YouTubeEmbed } from "@/components/shared/YouTubeEmbed";
 import { Button } from "@/components/ui/Button";
+import { FieldLabel } from "@/components/ui/FieldLabel";
 import { FormField } from "@/components/ui/FormField";
 import { Input } from "@/components/ui/Input";
 import { isValidYouTubeUrl, parseYouTubeUrl } from "@/lib/youtube";
@@ -47,10 +48,11 @@ export function YouTubeUrlField({
   return (
     <div className={cn("flex flex-col gap-3", className)}>
       <h3 className="text-sm font-semibold text-zinc-800">
-        {labels.youtubeSection}{" "}
-        <span className="font-normal text-zinc-500">
-          ({labels.youtubeOptional})
-        </span>
+        <FieldLabel
+          label={labels.youtubeSection}
+          optional
+          optionalLabel={labels.youtubeOptional}
+        />
       </h3>
       <p className="text-xs text-zinc-500">{labels.youtubeHint}</p>
 
