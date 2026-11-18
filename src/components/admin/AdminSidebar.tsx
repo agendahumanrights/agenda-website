@@ -22,6 +22,11 @@ const LINKS = [
   { href: "/admin/events", key: "events" as const, icon: EventsIcon },
   { href: "/admin/founders", key: "founders" as const, icon: FoundersIcon },
   { href: "/admin/writers", key: "writers" as const, icon: WritersIcon },
+  {
+    href: "/admin/newsletter",
+    key: "newsletter" as const,
+    icon: NewsletterIcon,
+  },
   { href: "/admin/homepage", key: "homepage" as const, icon: HomepageIcon },
 ];
 
@@ -146,6 +151,29 @@ function WritersIcon({ className }: { className?: string }) {
         stroke="currentColor"
         strokeWidth="1.5"
         strokeLinecap="round"
+      />
+    </svg>
+  );
+}
+
+function NewsletterIcon({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 20 20" fill="none" className={className} aria-hidden>
+      <rect
+        x="2.5"
+        y="4.5"
+        width="15"
+        height="11"
+        rx="1.5"
+        stroke="currentColor"
+        strokeWidth="1.5"
+      />
+      <path
+        d="m3.5 6 6.5 5 6.5-5"
+        stroke="currentColor"
+        strokeWidth="1.5"
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
     </svg>
   );

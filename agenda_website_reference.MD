@@ -4,7 +4,7 @@
 > **Source of truth:** application code. Requirements and older docs describe intended or planned behavior; this file describes verified implementation.  
 > **Do not treat scaffolding as completed features.**
 
-**Last updated:** 2026-11-18 (Inline Markdown image uploads)  
+**Last updated:** 2026-11-18 (Newsletter emails: no logo / no displayed emails)  
 **Inspection basis:** Checked-in source under the repository root. DB migrate/admin bootstrap depend on local `.env` (gitignored).
 
 ---
@@ -61,7 +61,7 @@
 | Founders admin CRUD, reorder, About Us bios | **Implemented** (scope update vs original PDF §2.5) |
 | Writers admin + public profiles | **Implemented** — admin CRUD; public `/writers/{slug}` (+ `/ar/…`); no public writers directory or header/footer nav; publication authors use `authorWriterId` |
 | Homepage featured publications + events (max 3) | **Implemented** (sectioned saves) |
-| Migrations folder | **Present** (`20251018100000_init`, `20261107120000_add_youtube_url`, `20261107180000_publication_categories`) |
+| Migrations folder | **Present** (through `20261118220000_newsletter_subscribers`) |
 
 ### Technology stack (versions from `package.json` / `package-lock.json`)
 
@@ -432,7 +432,7 @@ No logout route or working login form exists.
 - **Styling:** Tailwind CSS v4 via `@import "tailwindcss"` in `globals.css`; utility classes in components.
 - **Theme / brand:** Brand blue `#05498C` plus shared glass tokens (`--glass-tint`, 20px blur, border/highlight/shadow, opaque fallback). Fixed header spacing via `--site-header-height` / `--site-header-offset`. Public chrome uses glass; page bodies still largely zinc/white.
 - **Fonts:** `next/font/google` on `<html>`: **Geist** / **Geist Mono** (UI), **Source Serif 4** (editorial titles via `.font-editorial`), **Noto Sans Arabic** (Arabic coverage). Stack: sans → Geist + Noto Arabic; serif → Source Serif + Noto Arabic.
-- **Responsive:** Desktop footer 3-column glass panel; mobile stacks with horizontal separators and horizontal social icons. Desktop nav from `md:`. Heroes are full viewport under a **fixed** transparent header (no negative-margin pull; clearance via padding / `.public-main-offset`).
+- **Responsive:** Desktop footer 4-column glass panel (brand · nav · newsletter · social); mobile stacks with horizontal separators and horizontal social icons. Desktop nav from `md:`. Heroes are full viewport under a **fixed** transparent header (no negative-margin pull; clearance via padding / `.public-main-offset`).
 - **RTL/LTR:** `dir` on `<html>` from locale (`ar` → `rtl`, `en` → `ltr`). Hero gradient and slider arrows use logical/`dir`-aware placement. Logical `border-e` used in `AdminSidebar`.
 
 ### Layout / navigation
@@ -443,7 +443,8 @@ No logout route or working login form exists.
 | `SiteHeader` | **Fixed** transparent overlay (`fixed inset-x-0 top-0`); full-width glass capsule ~16px from top. No in-flow white band. Heroes/detail pages extend behind it; clearance via padding / `.public-main-offset`. Locale lockup logo · pill nav · language · mobile menu. |
 | `PageHero` | Full-bleed navy→brand-blue intro from viewport top; optional framed media (About logo / omit for empty catalogue fallback); breadcrumbs; curved content transition |
 | `LatestContentHero` | Full-bleed single-item cinematic hero for Publications/Events: cover image + `.hero-media-gradient`, bottom-start copy (badge, title, optional subtitle, date, optional author, CTA); branded gradient if image missing/fails; page H1 sr-only; not a carousel |
-| `SiteFooter` | Full-width glass rounded panel over blue/gray wash: locale lockup + mission summary · single primary nav column (Home / Publications / Events / About) · circular social icons (Facebook/LinkedIn/YouTube) · copyright row. No Explore heading or Vision/Mission/Founders footer links. No newsletter. |
+| `SiteFooter` | Full-width glass rounded panel over blue/gray wash: brand · primary nav · **newsletter subscribe** · social icons · copyright row. No Explore heading or Vision/Mission/Founders footer links. |
+| `NewsletterSubscribeForm` | Client footer form: email + Subscribe, honeypot, loading/success/error/already-subscribed states; `POST /api/newsletter/subscribe` |
 | `MainNavigation` | Pill links with brighter active glass surface |
 | `MobileNavigation` | Glass panel under fixed header; Escape/focus trap/overlay preserved |
 | `nav-items.ts` | Shared nav href/label helpers + active-path matching |
@@ -524,7 +525,8 @@ No logout route or working login form exists.
 | --- | --- |
 | `AdminShell` | Authenticated chrome: sticky header, desktop sidebar, mobile drawer; scoped `.admin-shell` styles |
 | `AdminHeader` | Logo, org title, signed-in account, language switcher, sign-out, mobile menu toggle |
-| `AdminSidebar` | Full-height nav with icons + blue active state (Writers link after Founders) |
+| `AdminSidebar` | Full-height nav with icons + blue active state (Writers → **Newsletter** → Homepage) |
+| `NewsletterSubscribersTable` | Read-only admin list: email search, status filter, pagination; columns email/status/subscribed/notification |
 | `AdminPageHeader` | Title/description helper |
 | `AdminConfirmDialog` / `AdminOverflowMenu` | Accessible confirm + overflow actions |
 | `MediaDropzone` | Click + drag-and-drop upload surface; optional `multiple` / `onFiles` for gallery batches |
@@ -590,7 +592,12 @@ No logout route or working login form exists.
 
 - **AdminUser:** `email` (unique), `passwordHash` (Argon2id), optional `name`, `sessions`.
 - **AdminSession:** `tokenHash` (unique SHA-256 of cookie token), `expiresAt` (7-day TTL), `revokedAt?`, cascade delete with user.
-- **LoginThrottle:** `key` (`email:…` / `ip:…`), `failedCount`, `windowStartedAt`, `blockedUntil?` — 5 failures / 15 minutes.
+- **LoginThrottle:** `key` (`email:…` / `ip:…`), `failedCount`, `windowStartedAt`, `blockedUntil?` — 5 failures / 15 minutes. Newsletter subscribe also writes `newsletter:…` keys (8 attempts / 60 minutes).
+
+#### `NewsletterSubscriber`
+
+- Unique normalized `email`; `status` `ACTIVE` | `UNSUBSCRIBED`; `subscribedAt` / `consentAt`; `notificationSentAt?`; `lastNotificationError?`.
+- Footer subscribe + admin read-only list at `/admin/newsletter` (sidebar **Newsletter**). Gmail SMTP sends admin notify + subscriber welcome (`src/server/mail/templates/*`); bodies are text-branded only (no logo image, no subscriber/contact emails in HTML). No unsubscribe/delete UI yet.
 
 #### `AdminUser` (fields)
 
@@ -849,8 +856,10 @@ Content (still unimplemented after auth):
 - `/api/admin/founders/reorder` (PUT complete ordered IDs)
 - `/api/admin/writers` (GET paginated list, POST create)
 - `/api/admin/writers/[id]` (GET, PATCH, DELETE)
+- `/api/admin/newsletter/subscribers` (GET paginated list; session required)
 - `/api/admin/media/upload` (POST multipart; publication + event + founder + writer purposes, including `publication-inline` / `event-inline`)
 - `/api/admin/homepage` (GET both sections; PUT patch — omitted section preserved)
+- `/api/newsletter/subscribe` (POST public; Zod email + honeypot; same-origin; rate limit; saves `NewsletterSubscriber`; Gmail SMTP notify)
 - `/api/media/[...key]` (GET access-checked file delivery)
 - `/api/admin/events` (GET, POST)
 - `/api/admin/events/[id]` (GET, PATCH, DELETE)
@@ -874,6 +883,7 @@ Content (still unimplemented after auth):
 | `founders` | list/get/create/update/delete (no publication link checks); `listAllAdminFoundersOrdered`; reorder (complete IDs); About bios only | — |
 | `writers` | list/get/create/update/delete (admin); `listWriters` / `getWriterBySlug` (public read); slug allocation; delete blocked when publications linked | public writers listing page |
 | `media` | upload (MIME sniff), access checks (FK refs + Markdown description/biography URL contains), orphan delete (FK + Markdown refs), `resolvePublicMediaUrl` | — |
+| `newsletter` | subscribe + `listAdminNewsletterSubscribers` (search/status/pagination) | unsubscribe/delete/export UI |
 
 ### Layers still thin / not production-complete
 
@@ -1077,6 +1087,12 @@ Open `http://localhost:3000`.
 | `STORAGE_PROVIDER` | Optional | `local` (default), `r2`, or `unimplemented` | Yes — `src/server/storage` |
 | `UPLOAD_DIR` | Optional | Local upload root | Yes — local adapter / migration |
 | `R2_ACCOUNT_ID` / `R2_BUCKET_NAME` / `R2_ACCESS_KEY_ID` / `R2_SECRET_ACCESS_KEY` / `R2_ENDPOINT` / `R2_REGION` / `R2_PUBLIC_BASE_URL` | Required when `STORAGE_PROVIDER=r2` | Cloudflare R2 | Yes — server + CLI only (no `NEXT_PUBLIC_`) |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_SECURE` | Optional (defaults: gmail / 465 / true) | Newsletter SMTP transport | Yes — `src/server/mail` |
+| `SMTP_USER` | For live notify | Gmail account used to send | Yes |
+| `SMTP_APP_PASSWORD` | For live notify | Gmail App Password (never commit) | Yes |
+| `NEWSLETTER_NOTIFY_EMAIL` | Optional (defaults to `SMTP_USER`) | Recipient of new-subscriber alerts | Yes |
+
+**Newsletter production setup:** set `SMTP_USER`, `SMTP_APP_PASSWORD` (Gmail App Password), and `NEWSLETTER_NOTIFY_EMAIL` in host secrets; keep `NEXT_PUBLIC_SITE_URL` aligned with the public origin for same-origin subscribe checks. Verify by submitting the footer form, confirming a `NewsletterSubscriber` row, and checking Gmail for the admin notification. Missing App Password still saves the subscriber (`lastNotificationError` set).
 
 **Never commit real secrets.** Use placeholders like `postgresql://USER:PASSWORD@HOST:5432/DATABASE?schema=public`.
 
@@ -1142,6 +1158,49 @@ Open `http://localhost:3000`.
 ---
 
 ## K. Change history
+
+### 2026-11-18 — Newsletter emails: remove logo + displayed emails
+
+- Shared layout header is text-only (org name + domain link); no `<img>` logo.
+- Welcome and admin bodies no longer show subscriber email, contact `mailto:`, or `agendahumanrights@gmail.com` in HTML/text.
+- Admin panel keeps date / website / status; admins review addresses in `/admin/newsletter`.
+- `contactEmail` remains for SMTP Reply-To only. Removed unused `emailLogoUrl`.
+- Validated: `vitest` `tests/newsletter/email-templates.test.ts` (3 pass).
+
+### 2026-11-18 — Newsletter email templates + deliverability polish
+
+- Reusable templates: `src/server/mail/templates/{layout,subscriber-welcome,admin-new-subscriber}.ts` + `brand.ts` / `escape.ts`.
+- Welcome email: branded HTML + text, EN/AR (`locale` from footer), subjects “Welcome…” / «مرحبًا بك…» (later: no logo / no displayed emails — see entry above).
+- Admin notify: branded HTML panel (date/time/status); subject `New Newsletter Subscriber | Human Rights Agenda`.
+- SMTP: consistent From/Reply-To, `Content-Language`, transport reuse; keep **587/STARTTLS** (465 often refused locally). No fake unsubscribe link.
+- Duplicates: no resend when `notificationSentAt` is set; pending retries still allowed.
+- Deliverability notes: SMTP accept ≠ inbox; Gmail spam often needs custom-domain auth later; inspect **Show original** for SPF/DKIM/DMARC on gmail.com sends.
+- Validated: template/unit tests; `tsc` / vitest / build (no live spam-inbox claim).
+
+### 2026-11-18 — Newsletter SMTP fix (port 587) + subscriber confirmation
+
+- Root cause: outbound **TCP 465** to `smtp.gmail.com` was `ECONNREFUSED` on the local network; **587/STARTTLS** works.
+- Defaults/env: `SMTP_PORT=587`, `SMTP_SECURE=false`; strip spaces from App Password; clearer AggregateError messages.
+- Sends **two** emails on subscribe: admin notify to `NEWSLETTER_NOTIFY_EMAIL` + confirmation to the subscriber.
+- Retries mail for ACTIVE rows still missing `notificationSentAt` (including re-submit of the same email).
+- Scripts: `scripts/test-newsletter-smtp.ts`, `scripts/retry-newsletter-notifications.ts`, `scripts/probe-smtp-ports.ts`.
+- Validated live: VERIFY_OK + NOTIFY_SEND_OK + SUBSCRIBER_SEND_OK on 587; pending rows retried.
+
+### 2026-11-18 — Admin newsletter subscribers list
+
+- Sidebar: **Newsletter** link (`/admin/newsletter`) between Writers and Homepage.
+- Page + `NewsletterSubscribersTable`: email search, Active/Unsubscribed filter, pagination; columns email, status, subscribed date, notification sent/pending.
+- Backend: `listAdminNewsletterSubscribers`; `GET /api/admin/newsletter/subscribers` (admin session); Zod `adminNewsletterListQuerySchema`.
+- EN/AR `admin.newsletter` + `admin.newsletterAdmin.*`.
+- Validated: `tsc --noEmit`; `vitest` 111 pass / 1 skip; `next build` pass (`/admin/newsletter` + `GET /api/admin/newsletter/subscribers` listed).
+
+### 2026-11-18 — Newsletter footer subscription + Gmail SMTP
+
+- Schema: `NewsletterSubscriber` + `NewsletterSubscriberStatus` (migration `20261118220000_newsletter_subscribers`, applied).
+- Public `POST /api/newsletter/subscribe`: Zod email + honeypot, same-origin CSRF, rate limit via `LoginThrottle` (`newsletter:…` keys), saves/dedupes subscribers, sends admin notification via Nodemailer Gmail SMTP (`SMTP_*`, `NEWSLETTER_NOTIFY_EMAIL`). SMTP failure keeps the row and records `lastNotificationError`.
+- Footer: newsletter column (EN/AR) with email + Subscribe, loading/success/already-subscribed/error states; consent note; social column retained.
+- Env: `.env.example` + local `.env` placeholders (`SMTP_APP_PASSWORD` empty for manual fill). Dependency: `nodemailer`.
+- Validated: migration deploy; `tsc --noEmit`; `vitest` 109 pass / 1 skip; eslint on changed files clean; `next build` pass. Live Gmail send not claimed (App Password unset).
 
 ### 2026-11-18 — Inline images in Publication/Event Markdown
 

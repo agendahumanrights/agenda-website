@@ -3,6 +3,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { connection } from "next/server";
 
+import { NewsletterSubscribeForm } from "@/components/layout/NewsletterSubscribeForm";
 import {
   FacebookIcon,
   LinkedInIcon,
@@ -54,6 +55,20 @@ export function SiteFooter({ locale, dict }: Props) {
     { href: sitePath("/about", locale), label: dict.nav.about },
   ];
 
+  const newsletterLabels = {
+    title: dict.footer.newsletterTitle,
+    description: dict.footer.newsletterDescription,
+    emailPlaceholder: dict.footer.newsletterEmailPlaceholder,
+    subscribe: dict.footer.newsletterSubscribe,
+    subscribing: dict.footer.newsletterSubscribing,
+    consent: dict.footer.newsletterConsent,
+    success: dict.footer.newsletterSuccess,
+    invalidEmail: dict.footer.newsletterInvalidEmail,
+    alreadySubscribed: dict.footer.newsletterAlreadySubscribed,
+    error: dict.footer.newsletterError,
+    honeypotLabel: dict.footer.newsletterHoneypot,
+  };
+
   return (
     <footer className="relative mt-auto overflow-hidden">
       <div
@@ -62,7 +77,7 @@ export function SiteFooter({ locale, dict }: Props) {
       />
       <div className="relative px-3 py-8 sm:px-5 sm:py-10 lg:px-6 lg:py-12">
         <div className="glass-panel mx-auto w-full overflow-hidden rounded-[1.75rem] sm:rounded-[2rem]">
-          <div className="grid gap-0 lg:grid-cols-[minmax(0,1.35fr)_minmax(0,0.85fr)_auto]">
+          <div className="grid gap-0 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,0.7fr)_minmax(0,1.15fr)_auto]">
             {/* Brand */}
             <div className="flex flex-col gap-5 p-6 sm:p-8 lg:p-9">
               <Link
@@ -87,7 +102,7 @@ export function SiteFooter({ locale, dict }: Props) {
               </p>
             </div>
 
-            {/* Navigation — desktop vertical divider */}
+            {/* Navigation */}
             <nav
               aria-label={dict.nav.mainNav}
               className="border-t border-white/15 p-6 sm:p-8 lg:border-t-0 lg:border-s lg:p-9"
@@ -105,6 +120,14 @@ export function SiteFooter({ locale, dict }: Props) {
                 ))}
               </ul>
             </nav>
+
+            {/* Newsletter */}
+            <div className="border-t border-white/15 p-6 sm:p-8 lg:border-t-0 lg:border-s lg:p-9">
+              <NewsletterSubscribeForm
+                labels={newsletterLabels}
+                locale={locale}
+              />
+            </div>
 
             {/* Social */}
             <div className="border-t border-white/15 p-6 sm:p-8 lg:border-t-0 lg:border-s lg:p-9">

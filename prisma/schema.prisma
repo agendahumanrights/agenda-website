@@ -348,3 +348,26 @@ model FeaturedEvent {
 
   @@index([sortOrder])
 }
+
+enum NewsletterSubscriberStatus {
+  ACTIVE
+  UNSUBSCRIBED
+}
+
+/// Public newsletter sign-ups from the site footer. No admin UI yet.
+model NewsletterSubscriber {
+  id                   String                      @id @default(cuid())
+  /// Normalized lowercase email (unique).
+  email                String                      @unique
+  status               NewsletterSubscriberStatus  @default(ACTIVE)
+  subscribedAt         DateTime                    @default(now())
+  /// Explicit consent timestamp captured at subscription.
+  consentAt            DateTime                    @default(now())
+  notificationSentAt   DateTime?
+  /// Last SMTP failure message (no secrets). Cleared on successful send.
+  lastNotificationError String?                    @db.Text
+  createdAt            DateTime                    @default(now())
+  updatedAt            DateTime                    @updatedAt
+
+  @@index([status, subscribedAt])
+}
