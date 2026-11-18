@@ -4,7 +4,7 @@
 > **Source of truth:** application code. Requirements and older docs describe intended or planned behavior; this file describes verified implementation.  
 > **Do not treat scaffolding as completed features.**
 
-**Last updated:** 2026-11-18 (Newsletter emails: no logo / no displayed emails)  
+**Last updated:** 2026-11-19 (About PageHero tighter text/logo gap)  
 **Inspection basis:** Checked-in source under the repository root. DB migrate/admin bootstrap depend on local `.env` (gitignored).
 
 ---
@@ -151,6 +151,7 @@ agenda/
 │   └── images/
 │       ├── agenda-logo-en.png / agenda-logo-ar.png (locale lockups)
 │       ├── agenda-logo.png (EN copy, legacy fallback)
+│       ├── about/ (vision-agenda.jpg, mission-agenda.jpg)
 │       └── brand/ (EN/AR copies for SEO/legacy paths)
 ├── README.md
 ├── tsconfig.json
@@ -228,7 +229,7 @@ Next.js 16 **Proxy** (replaces deprecated `middleware`). Rewrites `/ar/...` to t
 | `publications/[slug]/page.tsx` | Publication detail by canonical slug |
 | `events/page.tsx` | Events catalogue: `LatestContentHero` (newest by `eventDate`) or empty `PageHero`; live title search + date sort |
 | `events/[slug]/page.tsx` | Event detail |
-| `about/page.tsx` | About Us with `PageHero` (locale Agenda lockup in framed panel); vision/mission/founders (anchors preserved) |
+| `about/page.tsx` | About Us with `PageHero` (locale Agenda lockup); vision/mission → strategic goals → program areas → strategic positioning → values → founders (`#founder-{bioKey}` preserved) |
 
 ### `src/app/admin/`
 
@@ -277,7 +278,7 @@ Organized by domain: `about/`, `admin/`, `events/`, `home/`, `layout/`, `publica
 | `i18n/pathnames.ts` | `sitePath`, `stripLocalePrefix`, deprecated `localizedPath` alias |
 | `i18n/actions.ts` | Server Action `setLocaleAction` |
 | `messages/ar.json`, `en.json` | UI chrome strings only |
-| `content/about.ts` | Localized vision, mission, intro, homepage missionSummary (outside admin) |
+| `content/about.ts` | Localized org copy outside admin: vision, mission, intro, missionSummary, strategicGoals[4], programAreas[4], strategicPositioning[2], values[8] (EN/AR) |
 | `lib/utils.ts` | `cn`, `clamp` |
 | `lib/slugs.ts` | `slugify` helper (not wired into mutations yet) |
 | `lib/catalogue-query.ts` | Parse/build public catalogue URL params (`q`, `category`, `sort=newest|oldest`, `page`); page size 12; default sort omitted from URLs |
@@ -392,9 +393,9 @@ Other query params preserved. `/api` and static-like paths not rewritten.
 
 | Aspect | Detail |
 | --- | --- |
-| Purpose | Organization intro, vision, mission, founders |
+| Purpose | Full org identity: vision, mission, strategic goals, program areas, strategic positioning, values, founders |
 | Data | `getOrganizationCopy(locale)` from `content/about.ts`; `listFounderBiographies(locale)` (DB or `[]`) |
-| UI | `PageHero` + vision/mission blocks; founders: `AccentHeading` + full-width alternating circular-portrait / soft panel rows (`id=founder-{bioKey}`, `.anchor-offset`); bio card flexes to remaining width with inner readable measure |
+| UI | Existing `PageHero` (logo panel); `OrganizationIntro`; two `AboutTimeline` sections (goals white / programs soft blue); `StrategicPositioningSection`; `ValuesSection` (2-col cards); founders alternating rows (`id=founder-{bioKey}`) |
 | Auth | None |
 | Status | **Implemented** (org copy static; founders depend on admin/DB rows) |
 
@@ -441,7 +442,7 @@ No logout route or working login form exists.
 | --- | --- |
 | `Container` | Full-width padded wrapper (`px-4 sm:px-6 lg:px-8`, no max-width) for below-hero home sections + other public pages |
 | `SiteHeader` | **Fixed** transparent overlay (`fixed inset-x-0 top-0`); full-width glass capsule ~16px from top. No in-flow white band. Heroes/detail pages extend behind it; clearance via padding / `.public-main-offset`. Locale lockup logo · pill nav · language · mobile menu. |
-| `PageHero` | Full-bleed navy→brand-blue intro from viewport top; optional framed media (About logo / omit for empty catalogue fallback); breadcrumbs; curved content transition |
+| `PageHero` | Full-bleed navy→brand-blue intro from viewport top; optional framed media (About logo / omit for empty catalogue fallback); image layout uses capped row + tighter gap (not `justify-between`); breadcrumbs; curved content transition |
 | `LatestContentHero` | Full-bleed single-item cinematic hero for Publications/Events: cover image + `.hero-media-gradient`, bottom-start copy (badge, title, optional subtitle, date, optional author, CTA); branded gradient if image missing/fails; page H1 sr-only; not a carousel |
 | `SiteFooter` | Full-width glass rounded panel over blue/gray wash: brand · primary nav · **newsletter subscribe** · social icons · copyright row. No Explore heading or Vision/Mission/Founders footer links. |
 | `NewsletterSubscribeForm` | Client footer form: email + Subscribe, honeypot, loading/success/error/already-subscribed states; `POST /api/newsletter/subscribe` |
@@ -511,10 +512,14 @@ No logout route or working login form exists.
 
 | Component | Status |
 | --- | --- |
-| `HomeAboutSection` | **Removed** — homepage no longer renders an About teaser; standalone `/about` unchanged |
-| `OrganizationIntro` | About page vision + mission via `AboutContentBlock` (mission column reversed on desktop) |
+| `HomeAboutSection` | **Removed** — homepage has no About teaser; footer still uses `missionSummary` from `content/about.ts` |
+| `OrganizationIntro` | Vision + mission via `AboutContentBlock` (mission column reversed on desktop); tighter spacing |
 | `AboutContentBlock` / `IllustrationPanel` / `AccentHeading` | Shared two-column layout, white illustration card with decorative circles, blue vertical accent |
-| `AboutIllustrations` | Lightweight brand-blue SVGs (vision target, mission document/check, inclusion figures) |
+| `AboutIllustrations` | Vision/Mission use `public/images/about/{vision,mission}-agenda.jpg` via `next/image` (decorative, `aria-hidden`) |
+| `AboutIcons` | Timeline + value icon SVGs (no icon package) |
+| `AboutTimeline` | Alternating vertical timeline (center spine on `lg+`, start-side spine on mobile); used for Strategic Goals + Program Areas; `.about-timeline*` CSS in `globals.css`; logical properties for RTL |
+| `StrategicPositioningSection` | Editorial two-paragraph statement on soft blue wash |
+| `ValuesSection` | Responsive 1→2 column value cards (icon, number, title, full description) |
 | `FounderBiography` | Full-width alternating desktop rows: fixed circular portrait + flexible soft bio card (name → role → full biography → labeled email); card and copy fill remaining row width; mobile stacks portrait above card; `id=founder-{bioKey}`; `.anchor-offset` |
 | `FounderProfileImage` | Circular portrait (`object-cover object-top`) with soft blue ring; person-silhouette fallback when missing/failed |
 | `FounderCard` | Alias → `FounderBiography` (compat) |
@@ -919,7 +924,7 @@ Same editorial pattern without author/PDF. Visitor-facing date is `eventDate`. P
 - `FounderBiography` sets `id=founder-{bioKey}` with `scroll-mt` under the site header. Immutable `bioKey` after create.
 - About lists founders via `listFounderBiographies` in admin `sortOrder`; biographies are plain text with preserved paragraph breaks (not Markdown). Empty list → localized EmptyState.
 - Admin reorder requires the **complete** ordered ID list (`listAllAdminFoundersOrdered` / `GET ?forOrder=1`); profile image required on create/update (Replace only, no clear).
-- Org vision/mission/intro/missionSummary from `src/content/about.ts` (outside admin), localized `en`/`ar`.
+- Org copy from `src/content/about.ts` (outside admin), localized `en`/`ar`: vision, mission, intro, missionSummary, strategicGoals (4), programAreas (4), strategicPositioning (2 paragraphs), values (8).
 
 ### Homepage selections and ordering
 
@@ -981,7 +986,7 @@ Same editorial pattern without author/PDF. Visitor-facing date is `eventDate`. P
 | --- | --- |
 | UI chrome | `src/messages/ar.json`, `en.json` |
 | Publication/event/founder content | DB `*Translation` tables |
-| Organization intro/vision/mission | `src/content/about.ts` (localized EN/AR strings) |
+| Organization About copy (vision/mission/goals/areas/positioning/values + footer summary) | `src/content/about.ts` (localized EN/AR); section titles in `messages/{en,ar}.json` `about.*` |
 
 ### Publications terminology (UI)
 
@@ -1158,6 +1163,31 @@ Open `http://localhost:3000`.
 ---
 
 ## K. Change history
+
+### 2026-11-19 — About PageHero tighter text/logo gap
+
+- `PageHero` with image: dropped `justify-between`, capped row at `max-w-6xl`/`7xl`, reduced desktop gap and logo frame width so copy and logo sit closer.
+- Validated: layout class change only (no browser visual QA).
+
+### 2026-11-19 — Strategic Goal 4 timeline icon
+
+- Replaced scales-of-justice SVG for `accountability-justice` with a target-and-arrow mark aligned to the Mission artwork language.
+- Validated: icon switch in `AboutIcons.tsx` only.
+
+### 2026-11-19 — About Vision/Mission illustration assets
+
+- Replaced inline SVG vision/mission icons with provided JPGs at `public/images/about/vision-agenda.jpg` and `mission-agenda.jpg`.
+- `AboutIllustrations` now renders them through `next/image` inside the existing white illustration panels.
+- Validated: assets moved under `public/`; typecheck of illustration component path only (no browser visual QA).
+
+### 2026-11-19 — About Us full organizational content + timeline redesign
+
+- Extended `src/content/about.ts` with exact EN/AR copy: updated vision/mission; strategicGoals (4); programAreas (4); strategicPositioning (2 paragraphs); values (8); refreshed intro/missionSummary.
+- New UI: `AboutTimeline` (alternating spine timeline, Agenda blue), `StrategicPositioningSection`, `ValuesSection`, `AboutIcons`; CSS `.about-timeline*` in `globals.css`.
+- `/about` section order: Vision → Mission → Strategic Goals → Program Areas → Strategic Positioning → Values → Founders (anchors preserved). Hero unchanged (logo panel).
+- Dictionaries: `about.strategicGoals|programAreas|strategicPositioning|values` + hero description; footer/email mission summaries aligned.
+- Homepage About teaser remains removed; no admin/schema changes for org copy.
+- Validated: `tsc --noEmit`; `vitest` 114 pass / 1 skip; `next build` pass. Lint still reports pre-existing `AddCategoryModal` setState-in-effect (unrelated). Browser visual QA not run in this task.
 
 ### 2026-11-18 — Newsletter emails: remove logo + displayed emails
 

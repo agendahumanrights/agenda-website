@@ -473,3 +473,162 @@ body {
 .admin-control:focus-visible {
   border-color: var(--admin-accent);
 }
+/* About Us alternating timeline (Strategic Goals / Program Areas) */
+.about-timeline {
+  --about-timeline-node: 3.5rem;
+  --about-timeline-gap: 1.25rem;
+}
+
+.about-timeline-spine {
+  position: absolute;
+  inset-block: 1.25rem 1.75rem;
+  inset-inline-start: calc(var(--about-timeline-node) / 2);
+  width: 2px;
+  translate: -50% 0;
+  background: linear-gradient(
+    to bottom,
+    color-mix(in srgb, var(--brand-blue) 55%, white),
+    color-mix(in srgb, var(--brand-blue) 18%, white)
+  );
+  border-radius: 999px;
+}
+
+[dir="rtl"] .about-timeline-spine {
+  translate: 50% 0;
+}
+
+.about-timeline-item {
+  display: grid;
+  grid-template-columns: var(--about-timeline-node) minmax(0, 1fr);
+  column-gap: var(--about-timeline-gap);
+  padding-block-end: 2.75rem;
+  align-items: start;
+}
+
+.about-timeline-item:last-child {
+  padding-block-end: 0;
+}
+
+.about-timeline-node {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  place-items: center;
+  width: var(--about-timeline-node);
+  height: var(--about-timeline-node);
+}
+
+.about-timeline-node-ring {
+  position: absolute;
+  inset: 0;
+  border-radius: 999px;
+  border: 2px solid color-mix(in srgb, var(--brand-blue) 35%, white);
+  box-shadow: 0 0 0 6px color-mix(in srgb, var(--brand-blue) 6%, white);
+}
+
+.about-timeline-node-disc {
+  display: grid;
+  place-items: center;
+  width: calc(var(--about-timeline-node) - 0.55rem);
+  height: calc(var(--about-timeline-node) - 0.55rem);
+  border-radius: 999px;
+  background: #fff;
+  box-shadow: 0 8px 22px rgba(5, 73, 140, 0.12);
+}
+
+.about-timeline-copy {
+  padding-block-start: 0.35rem;
+}
+
+@media (min-width: 1024px) {
+  .about-timeline {
+    --about-timeline-node: 4rem;
+  }
+
+  .about-timeline-spine {
+    /* Physical center keeps the spine aligned in LTR and RTL. */
+    inset-inline-start: auto;
+    left: 50%;
+    translate: -50% 0;
+  }
+
+  [dir="rtl"] .about-timeline-spine {
+    translate: -50% 0;
+  }
+
+  .about-timeline-item {
+    grid-template-columns: minmax(0, 1fr) var(--about-timeline-node) minmax(0, 1fr);
+    column-gap: 1.75rem;
+    padding-block-end: 3.25rem;
+  }
+
+  .about-timeline-node {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .about-timeline-item--end .about-timeline-copy {
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: start;
+    text-align: start;
+  }
+
+  .about-timeline-item--start .about-timeline-copy {
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: end;
+    text-align: end;
+  }
+
+  /* Soft curved connector toward the copy side */
+  .about-timeline-item--end .about-timeline-node::after,
+  .about-timeline-item--start .about-timeline-node::after {
+    content: "";
+    position: absolute;
+    top: 50%;
+    width: 1.65rem;
+    height: 1.65rem;
+    border: 2px solid color-mix(in srgb, var(--brand-blue) 42%, white);
+    border-radius: 999px;
+    pointer-events: none;
+  }
+
+  .about-timeline-item--end .about-timeline-node::after {
+    inset-inline-start: calc(100% - 0.35rem);
+    border-inline-start: none;
+    border-block-start: none;
+    transform: translateY(-15%) rotate(0deg);
+  }
+
+  .about-timeline-item--start .about-timeline-node::after {
+    inset-inline-end: calc(100% - 0.35rem);
+    border-inline-end: none;
+    border-block-start: none;
+    transform: translateY(-15%) rotate(0deg);
+  }
+
+  .about-timeline-item--end .about-timeline-node::before,
+  .about-timeline-item--start .about-timeline-node::before {
+    content: "";
+    position: absolute;
+    top: calc(50% + 1.15rem);
+    width: min(5.5rem, 18vw);
+    border-block-start: 2px dotted color-mix(in srgb, var(--brand-blue) 28%, white);
+    pointer-events: none;
+  }
+
+  .about-timeline-item--end .about-timeline-node::before {
+    inset-inline-start: calc(100% + 1.15rem);
+  }
+
+  .about-timeline-item--start .about-timeline-node::before {
+    inset-inline-end: calc(100% + 1.15rem);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .about-timeline-node-disc {
+    box-shadow: 0 2px 8px rgba(5, 73, 140, 0.08);
+  }
+}

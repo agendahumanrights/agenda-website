@@ -26,16 +26,16 @@ export function AboutContentBlock({
     <section
       aria-labelledby={id}
       className={cn(
-        "anchor-offset grid items-center gap-10 lg:grid-cols-2 lg:gap-14 xl:gap-16",
+        "anchor-offset grid items-center gap-8 lg:grid-cols-2 lg:gap-12 xl:gap-14",
         className,
       )}
     >
       <div className={cn(reverse && "lg:order-2")}>
         <IllustrationPanel>{illustration}</IllustrationPanel>
       </div>
-      <div className={cn("flex flex-col gap-4", reverse && "lg:order-1")}>
+      <div className={cn("flex flex-col gap-3.5", reverse && "lg:order-1")}>
         <AccentHeading id={id}>{title}</AccentHeading>
-        <p className="max-w-xl text-base leading-relaxed text-zinc-700 text-pretty sm:text-lg sm:leading-relaxed">
+        <p className="max-w-xl text-base leading-relaxed text-pretty text-zinc-700 sm:text-lg sm:leading-[1.75]">
           {body}
         </p>
       </div>

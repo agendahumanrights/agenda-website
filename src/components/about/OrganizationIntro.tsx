@@ -14,7 +14,7 @@ type Props = {
 /** Vision and mission blocks for the About Us page. */
 export function OrganizationIntro({ copy, labels }: Props) {
   return (
-    <div className="flex flex-col gap-16 sm:gap-20">
+    <div className="flex flex-col gap-12 sm:gap-14 lg:gap-16">
       <AboutContentBlock
         id="about-vision"
         title={labels.vision}

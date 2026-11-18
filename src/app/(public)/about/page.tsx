@@ -1,8 +1,11 @@
 import type { Metadata } from "next";
 
 import { AccentHeading } from "@/components/about/AccentHeading";
+import { AboutTimeline } from "@/components/about/AboutTimeline";
 import { FounderBiography } from "@/components/about/FounderBiography";
 import { OrganizationIntro } from "@/components/about/OrganizationIntro";
+import { StrategicPositioningSection } from "@/components/about/StrategicPositioningSection";
+import { ValuesSection } from "@/components/about/ValuesSection";
 import { Container } from "@/components/layout/Container";
 import { PageHero } from "@/components/layout/PageHero";
 import { JsonLd } from "@/components/seo/JsonLd";
@@ -62,8 +65,31 @@ export default async function AboutPage() {
         contentBackgroundClassName="bg-[color-mix(in_srgb,var(--brand-blue)_3%,white)]"
       />
       <div className="bg-[color-mix(in_srgb,var(--brand-blue)_3%,white)]">
-        <Container className="flex flex-col gap-14 pt-10 pb-10 sm:gap-16 sm:pt-12 sm:pb-14 lg:gap-20 lg:pt-14">
+        <Container className="mx-auto flex max-w-6xl flex-col gap-12 pt-8 pb-12 sm:gap-14 sm:pt-10 sm:pb-14 lg:max-w-7xl lg:gap-16 lg:pt-12 lg:pb-16 xl:gap-[4.25rem]">
           <OrganizationIntro copy={org} labels={dict.about} />
+
+          <AboutTimeline
+            id="about-strategic-goals"
+            headingId="strategic-goals-heading"
+            title={dict.about.strategicGoals}
+            items={org.strategicGoals}
+            tone="default"
+          />
+
+          <AboutTimeline
+            id="about-program-areas"
+            headingId="program-areas-heading"
+            title={dict.about.programAreas}
+            items={org.programAreas}
+            tone="soft"
+          />
+
+          <StrategicPositioningSection
+            title={dict.about.strategicPositioning}
+            paragraphs={org.strategicPositioning}
+          />
+
+          <ValuesSection title={dict.about.values} items={org.values} />
 
           <section
             id="about-founders"

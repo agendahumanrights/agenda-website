@@ -37,6 +37,6 @@ export function emailOrgName(locale: Locale): string {
 
 export function emailMissionSummary(locale: Locale): string {
   return locale === "ar"
-    ? "ندافع عن حقوق الإنسان في اليمن ونناصرها ونوثقها، ونبني القدرات، وندعم إشراك الفئات المستضعفة."
-    : "We defend, advocate for, and document human rights in Yemen, build capacities, and support the inclusion of vulnerable groups.";
+    ? "نُعزز حقوق الإنسان والمساءلة في اليمن من خلال الربط بين الأدلة والمجتمع المدني والمناصرة والمجتمعات المتضررة."
+    : "We advance human rights and accountability in Yemen by connecting evidence, civil society, advocacy, and affected communities.";
 }

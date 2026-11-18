@@ -104,12 +104,16 @@
   },
   "about": {
     "title": "About Us",
-    "heroDescription": "Learn about Human Rights Agenda, our vision, our mission, and our founders.",
+    "heroDescription": "Learn about Human Rights Agenda — our vision, mission, strategic goals, program areas, values, and founders.",
     "founders": "Founders",
     "founderEmail": "Email",
     "organization": "Organization",
     "vision": "Our Vision",
     "mission": "Our Mission",
+    "strategicGoals": "Our Strategic Goals",
+    "programAreas": "Our Program Areas",
+    "strategicPositioning": "Our Strategic Positioning",
+    "values": "Our Values",
     "contentPending": "Organizational content will be provided in a later phase.",
     "foundersPending": "Founder biographies will be listed here once they are added."
   },

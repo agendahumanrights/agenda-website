@@ -83,14 +83,14 @@ export function PageHero({
           "sm:gap-10 sm:px-6 sm:pb-16",
           "lg:px-8 lg:pb-20",
           showImage
-            ? "lg:min-h-[min(34rem,70vh)] lg:flex-row lg:items-center lg:justify-between lg:gap-12"
+            ? "max-w-6xl lg:min-h-[min(34rem,70vh)] lg:flex-row lg:items-center lg:gap-8 xl:max-w-7xl xl:gap-10"
             : "lg:min-h-[min(22rem,48vh)] lg:max-w-3xl",
         )}
       >
         <div
           className={cn(
             "flex min-w-0 flex-col gap-4 lg:gap-5",
-            showImage ? "flex-1 lg:max-w-xl" : "w-full",
+            showImage ? "flex-1 lg:max-w-2xl" : "w-full",
           )}
         >
           <Breadcrumbs
@@ -111,7 +111,7 @@ export function PageHero({
         </div>
 
         {showImage && image ? (
-          <div className="relative mx-auto w-full max-w-md shrink-0 lg:mx-0 lg:w-[min(100%,28rem)] lg:max-w-none xl:w-[min(100%,32rem)]">
+          <div className="relative mx-auto w-full max-w-md shrink-0 lg:mx-0 lg:w-[min(100%,24rem)] lg:max-w-none xl:w-[min(100%,26rem)]">
             <div
               className="pointer-events-none absolute -inset-3 rounded-[1.35rem] bg-white/10 blur-md sm:-inset-4"
               aria-hidden
