@@ -121,9 +121,10 @@ export function publicationDetailMetadata(input: {
     ogImage: input.publication.mainImageUrl,
     publishedTime: input.publication.publishedAt,
     modifiedTime: null,
-    authors: input.publication.authorName
-      ? [input.publication.authorName]
-      : undefined,
+    authors:
+      input.publication.authors.length > 0
+        ? input.publication.authors.map((a) => a.name)
+        : undefined,
   });
 }
 

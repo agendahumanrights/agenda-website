@@ -85,7 +85,7 @@ function parseSocialLinks(value: unknown): WriterSocialLink[] {
 const adminInclude = {
   profileImage: { include: { altTexts: true } },
   translations: true,
-  _count: { select: { publications: true } },
+  _count: { select: { publicationAuthors: true } },
 } satisfies Prisma.WriterInclude;
 
 function mapAdminDetail(
@@ -97,7 +97,7 @@ function mapAdminDetail(
     email: row.email,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
-    publicationCount: row._count.publications,
+    publicationCount: row._count.publicationAuthors,
     socialLinks: parseSocialLinks(row.socialLinks),
     translations: row.translations.map((t) => ({
       locale: t.locale,
@@ -247,7 +247,7 @@ export async function listAdminWriters(
       include: {
         profileImage: true,
         translations: true,
-        _count: { select: { publications: true } },
+        _count: { select: { publicationAuthors: true } },
       },
     }),
   ]);
@@ -274,7 +274,7 @@ export async function listAdminWriters(
       profileImageUrl: row.profileImage
         ? storage.getPublicUrl(row.profileImage.storageKey)
         : null,
-      publicationCount: row._count.publications,
+      publicationCount: row._count.publicationAuthors,
     };
   });
 
@@ -445,24 +445,26 @@ export async function deleteWriter(id: string): Promise<void> {
   const existing = await prisma.writer.findUnique({
     where: { id },
     include: {
-      _count: { select: { publications: true } },
-      publications: {
-        select: { id: true, slug: true, status: true },
+      _count: { select: { publicationAuthors: true } },
+      publicationAuthors: {
         take: 20,
+        select: {
+          publication: { select: { id: true, slug: true, status: true } },
+        },
       },
     },
   });
   if (!existing) throw notFound("Writer not found");
 
-  if (existing._count.publications > 0) {
+  if (existing._count.publicationAuthors > 0) {
     throw conflict(
       "Cannot delete a writer linked to publications. Reassign or remove those publications first.",
       {
-        publicationCount: existing._count.publications,
-        publications: existing.publications.map((p) => ({
-          id: p.id,
-          slug: p.slug,
-          status: p.status,
+        publicationCount: existing._count.publicationAuthors,
+        publications: existing.publicationAuthors.map((link) => ({
+          id: link.publication.id,
+          slug: link.publication.slug,
+          status: link.publication.status,
         })),
       },
     );

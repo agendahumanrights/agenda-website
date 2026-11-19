@@ -134,7 +134,7 @@ model Writer {
   profileImage   MediaAsset? @relation("WriterProfileImage", fields: [profileImageId], references: [id], onDelete: SetNull)
 
   translations WriterTranslation[]
-  publications Publication[]
+  publicationAuthors PublicationWriter[]
 
   @@index([email])
 }
@@ -177,8 +177,6 @@ model Publication {
   status          PublicationStatus @default(DRAFT)
   /// Date shown to visitors
   publishedAt     DateTime?
-  /// Optional writer author for any category; required to publish when category.requiresAuthor
-  authorWriterId String?
   createdAt      DateTime          @default(now())
   updatedAt      DateTime          @updatedAt
 
@@ -191,20 +189,36 @@ model Publication {
   youtubeUrl  String?
 
   category     PublicationCategory @relation(fields: [categoryId], references: [id], onDelete: Restrict)
-  authorWriter Writer?             @relation(fields: [authorWriterId], references: [id], onDelete: Restrict)
   mainImage    MediaAsset?         @relation("PublicationMainImage", fields: [mainImageId], references: [id], onDelete: SetNull)
   pdfEn        MediaAsset?         @relation("PublicationPdfEn", fields: [pdfEnId], references: [id], onDelete: SetNull)
   pdfAr        MediaAsset?         @relation("PublicationPdfAr", fields: [pdfArId], references: [id], onDelete: SetNull)
   translations PublicationTranslation[]
   gallery      PublicationGalleryImage[]
+  /// Ordered writer authors (0–10). Required to publish when category.requiresAuthor.
+  authors      PublicationWriter[]
   featured     FeaturedPublication?
 
   @@index([status, publishedAt])
   @@index([categoryId, status])
-  @@index([authorWriterId])
   @@index([mainImageId])
   @@index([pdfEnId])
   @@index([pdfArId])
+}
+
+/// Explicit many-to-many: publication ↔ writers with stable display order.
+model PublicationWriter {
+  id            String @id @default(cuid())
+  publicationId String
+  writerId      String
+  /// 0-based display order on public surfaces.
+  sortOrder     Int    @default(0)
+
+  publication Publication @relation(fields: [publicationId], references: [id], onDelete: Cascade)
+  writer      Writer      @relation(fields: [writerId], references: [id], onDelete: Restrict)
+
+  @@unique([publicationId, writerId])
+  @@index([publicationId, sortOrder])
+  @@index([writerId])
 }
 
 model PublicationTranslation {

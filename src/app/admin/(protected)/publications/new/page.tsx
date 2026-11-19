@@ -23,7 +23,11 @@ export default async function AdminNewPublicationPage() {
       locale={locale}
       labels={dict.admin.pub}
       markdownLabels={dict.admin.markdown}
-      writers={writers.map((f) => ({ id: f.id, fullName: f.fullName }))}
+      writers={writers.map((f) => ({
+        id: f.id,
+        fullName: f.fullName,
+        profileImageUrl: f.profileImageUrl,
+      }))}
       categories={categories}
       mediaLimits={{
         maxImageBytes: MEDIA_LIMITS.maxImageBytes,

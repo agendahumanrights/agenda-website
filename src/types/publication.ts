@@ -35,6 +35,19 @@ export const PUBLICATION_STATUSES = ["DRAFT", "PUBLISHED"] as const;
 
 export type PublicationStatus = (typeof PUBLICATION_STATUSES)[number];
 
+/** Compact author for cards / heroes (ordered). */
+export type PublicationListAuthor = {
+  name: string;
+  slug: string;
+};
+
+/** Full author row for publication detail. */
+export type PublicationAuthorDetail = PublicationListAuthor & {
+  id: string;
+  major: string | null;
+  imageUrl: string | null;
+};
+
 export type PublicationListItem = {
   id: string;
   category: PublicationCategorySummary;
@@ -43,9 +56,8 @@ export type PublicationListItem = {
   subtitle: string;
   slug: string;
   mainImageUrl: string | null;
-  authorName: string | null;
-  /** Writer public slug for /writers/{slug}. */
-  authorSlug: string | null;
+  /** Ordered writer authors (empty when none). */
+  authors: PublicationListAuthor[];
 };
 
 export type PublicationDetail = PublicationListItem & {
@@ -57,9 +69,8 @@ export type PublicationDetail = PublicationListItem & {
   galleryImageUrls: string[];
   /** Main image first, then gallery (deduped by media id). */
   images: DetailMediaImage[];
-  /** Writer major / professional specialization. */
-  authorMajor: string | null;
-  authorImageUrl: string | null;
+  /** Ordered authors with major + portrait. */
+  authors: PublicationAuthorDetail[];
 };
 
 export type AdminMediaRef = {
@@ -88,6 +99,13 @@ export type AdminPublicationListItem = {
   isFeatured: boolean;
 };
 
+export type AdminPublicationAuthor = {
+  id: string;
+  slug: string;
+  fullName: string;
+  profileImageUrl: string | null;
+};
+
 export type AdminPublicationDetail = {
   id: string;
   slug: string;
@@ -97,9 +115,9 @@ export type AdminPublicationDetail = {
   publishedAt: string | null;
   createdAt: string;
   updatedAt: string;
-  authorWriterId: string | null;
-  authorName: string | null;
-  authorSlug: string | null;
+  /** Ordered writer IDs (0–10). */
+  authorWriterIds: string[];
+  authors: AdminPublicationAuthor[];
   translations: {
     locale: "ar" | "en";
     title: string;

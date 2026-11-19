@@ -8,7 +8,6 @@ import { cn } from "@/lib/utils";
 type AuthorInfo = {
   name: string;
   slug: string;
-  byLabel: string;
 };
 
 type Props = {
@@ -20,7 +19,8 @@ type Props = {
   excerpt?: string | null;
   dateTime?: string | null;
   dateLabel?: string | null;
-  author?: AuthorInfo | null;
+  authors?: AuthorInfo[];
+  byLabel?: string;
   locale?: Locale;
   className?: string;
 };
@@ -28,7 +28,7 @@ type Props = {
 /**
  * Shared publication/event card: compact full-bleed cover with bottom text overlay.
  * Title uses a stretched link for card navigation; author links sit above it (z-index)
- * so founder bios remain reachable without nested anchors.
+ * so writer profiles remain reachable without nested anchors.
  */
 export function ContentCard({
   href,
@@ -39,13 +39,15 @@ export function ContentCard({
   excerpt,
   dateTime,
   dateLabel,
-  author,
+  authors = [],
+  byLabel,
   locale,
   className,
 }: Props) {
   const trimmedExcerpt = excerpt?.trim() || null;
   const showDate = Boolean(dateTime && dateLabel);
-  const showMeta = Boolean(author || showDate);
+  const showAuthors = authors.length > 0;
+  const showMeta = Boolean(showAuthors || showDate);
 
   return (
     <article
@@ -130,15 +132,26 @@ export function ContentCard({
 
         {showMeta ? (
           <div className="mt-2 flex flex-col gap-1">
-            {author ? (
-              <p className="relative z-[3] text-[0.75rem] leading-snug text-white/95 sm:text-[0.8125rem]">
-                <span className="text-white/80">{author.byLabel} </span>
-                <AuthorLink
-                  slug={author.slug}
-                  name={author.name}
-                  locale={locale}
-                  className="font-medium text-white underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-                />
+            {showAuthors ? (
+              <p className="relative z-[3] line-clamp-2 text-[0.75rem] leading-snug text-white/95 sm:text-[0.8125rem]">
+                {byLabel ? (
+                  <span className="text-white/80">{byLabel} </span>
+                ) : null}
+                {authors.map((author, index) => (
+                  <span key={`${author.slug}-${index}`}>
+                    {index > 0 ? (
+                      <span className="text-white/70" aria-hidden>
+                        {" · "}
+                      </span>
+                    ) : null}
+                    <AuthorLink
+                      slug={author.slug}
+                      name={author.name}
+                      locale={locale}
+                      className="font-medium text-white underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                    />
+                  </span>
+                ))}
               </p>
             ) : null}
 

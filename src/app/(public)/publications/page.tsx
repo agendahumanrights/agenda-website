@@ -327,14 +327,9 @@ export default async function PublicationsPage({
           imageAlt={newest.title}
           dateTime={newest.publishedAt}
           dateLabel={dateLabel}
-          author={
-            newest.authorName && newest.authorSlug
-              ? {
-                  name: newest.authorName,
-                  slug: newest.authorSlug,
-                  byLabel: dict.publications.authorBy,
-                }
-              : null
+          authors={newest.authors}
+          byLabel={
+            newest.authors.length > 0 ? dict.publications.authorBy : undefined
           }
         />
       ) : (

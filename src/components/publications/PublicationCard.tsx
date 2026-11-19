@@ -20,15 +20,6 @@ export function PublicationCard({ locale, item, categoryLabels }: Props) {
       })
     : null;
 
-  const author =
-    item.authorName && item.authorSlug
-      ? {
-          name: item.authorName,
-          slug: item.authorSlug,
-          byLabel: categoryLabels.authorBy,
-        }
-      : null;
-
   return (
     <ContentCard
       className="w-full"
@@ -40,7 +31,8 @@ export function PublicationCard({ locale, item, categoryLabels }: Props) {
       excerpt={item.subtitle}
       dateTime={item.publishedAt}
       dateLabel={dateLabel}
-      author={author}
+      authors={item.authors}
+      byLabel={item.authors.length > 0 ? categoryLabels.authorBy : undefined}
       locale={locale}
     />
   );

@@ -231,15 +231,26 @@ export function FeaturedPublicationsSlider({
             {dateLabel && current.publishedAt ? (
               <time dateTime={current.publishedAt}>{dateLabel}</time>
             ) : null}
-            {current.authorName && current.authorSlug ? (
+            {current.authors.length > 0 ? (
               <>
                 {dateLabel ? <span aria-hidden>·</span> : null}
-                <AuthorLink
-                  slug={current.authorSlug}
-                  name={current.authorName}
-                  locale={locale}
-                  className="normal-case tracking-normal text-white underline decoration-white/50 underline-offset-4 hover:decoration-white"
-                />
+                <span className="normal-case tracking-normal">
+                  {current.authors.map((author, index) => (
+                    <span key={`${author.slug}-${index}`}>
+                      {index > 0 ? (
+                        <span className="text-white/70" aria-hidden>
+                          {" · "}
+                        </span>
+                      ) : null}
+                      <AuthorLink
+                        slug={author.slug}
+                        name={author.name}
+                        locale={locale}
+                        className="text-white underline decoration-white/50 underline-offset-4 hover:decoration-white"
+                      />
+                    </span>
+                  ))}
+                </span>
               </>
             ) : null}
           </div>

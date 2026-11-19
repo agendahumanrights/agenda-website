@@ -4,7 +4,7 @@
 > **Source of truth:** application code. Requirements and older docs describe intended or planned behavior; this file describes verified implementation.  
 > **Do not treat scaffolding as completed features.**
 
-**Last updated:** 2026-11-19 (Catalogue heroes: remove pub/event CTAs)  
+**Last updated:** 2026-11-19 (Publications: multiple authors, max 10)  
 **Inspection basis:** Checked-in source under the repository root. DB migrate/admin bootstrap depend on local `.env` (gitignored).
 
 ---
@@ -59,9 +59,9 @@
 | Publications admin CRUD, publish rules, uploads, Markdown | **Implemented** |
 | Events admin CRUD, publish rules, uploads, Markdown | **Implemented** |
 | Founders admin CRUD, reorder, About Us bios | **Implemented** (scope update vs original PDF §2.5) |
-| Writers admin + public profiles | **Implemented** — admin CRUD; public `/writers/{slug}` (+ `/ar/…`); no public writers directory or header/footer nav; publication authors use `authorWriterId` |
+| Writers admin + public profiles | **Implemented** — admin CRUD; public `/writers/{slug}` (+ `/ar/…`); no public writers directory or header/footer nav; publications use `PublicationWriter` (0–10 ordered authors) |
 | Homepage featured publications + events (max 3) | **Implemented** (sectioned saves) |
-| Migrations folder | **Present** (through `20261118220000_newsletter_subscribers`) |
+| Migrations folder | **Present** (through `20261119140000_publication_multiple_authors`) |
 
 ### Technology stack (versions from `package.json` / `package-lock.json`)
 
@@ -520,6 +520,8 @@ No logout route or working login form exists.
 | `AboutTimeline` | Alternating vertical timeline (center spine on `lg+`, start-side spine on mobile); used for Strategic Goals + Program Areas; `.about-timeline*` CSS in `globals.css`; logical properties for RTL |
 | `StrategicPositioningSection` | Editorial two-paragraph statement on soft blue wash |
 | `ValuesSection` | Responsive 1→2 column value cards (icon, number, title, full description) |
+| `PublicationAuthors` / `PublicationAuthor` | Detail authors block: one author = classic portrait row; multiple = “Written by” + wrapping compact rows with profile links |
+| `PublicationAuthorsField` | Admin searchable multi-select (max 10), selected chips with portrait/remove, drag + ↑↓ reorder |
 | `FounderBiography` | Full-width alternating desktop rows: fixed circular portrait + flexible soft bio card (name → role → full biography → labeled email); card and copy fill remaining row width; mobile stacks portrait above card; `id=founder-{bioKey}`; `.anchor-offset` |
 | `FounderProfileImage` | Circular portrait (`object-cover object-top`) with soft blue ring; person-silhouette fallback when missing/failed |
 | `FounderCard` | Alias → `FounderBiography` (compat) |
@@ -535,7 +537,7 @@ No logout route or working login form exists.
 | `AdminPageHeader` | Title/description helper |
 | `AdminConfirmDialog` / `AdminOverflowMenu` | Accessible confirm + overflow actions |
 | `MediaDropzone` | Click + drag-and-drop upload surface; optional `multiple` / `onFiles` for gallery batches |
-| `PublicationForm` | Two-column New/Edit: AR/EN content tabs; required `*`; author selector **always visible** (required vs optional from `requiresAuthor`); optional subtitle / YouTube / EN+AR PDFs; publish no longer requires subtitle |
+| `PublicationForm` | Two-column New/Edit: AR/EN content tabs; required `*`; searchable multi-author picker (`PublicationAuthorsField`, max 10, reorder); required vs optional from `requiresAuthor`; optional subtitle / YouTube / EN+AR PDFs |
 | `AddCategoryModal` / `CategoriesTable` | Create bilingual categories from the form or `/admin/publications/categories` |
 | `PublicationsTable` | Debounced search, filters, desktop table + mobile cards, overflow delete/view |
 | `EventForm` / `EventsTable` | Matches Publications chrome; required `*` on title, description, main image, event date; subtitle / YouTube optional; publish without subtitle allowed |
@@ -675,11 +677,11 @@ Admin-managed bilingual categories (replaces former Prisma enum).
 | `categoryId` | FK → `PublicationCategory` `onDelete: Restrict` |
 | `status` | default `DRAFT` |
 | `publishedAt` | DateTime? — visitor-facing date |
-| `authorWriterId` | String? FK Writer `onDelete: Restrict` — optional for every category; required to publish when category.`requiresAuthor` |
+| `authors` | `PublicationWriter[]` join (ordered, unique writer per publication, max 10 in app); required ≥1 to publish when category.`requiresAuthor` |
 | `mainImageId` | FK MediaAsset SetNull |
 | `pdfEnId` / `pdfArId` | String? **unique** FKs MediaAsset SetNull — optional locale PDFs; public `pdfUrl` resolves to the active locale only (no cross-language fallback) |
 | `youtubeUrl` | String? — optional canonical YouTube watch URL (not counted toward image limits) |
-| Indexes | `[status, publishedAt]`, `[categoryId, status]`, `[authorWriterId]` |
+| Indexes | `[status, publishedAt]`, `[categoryId, status]` |
 
 Relations: category, translations, gallery, optional `FeaturedPublication`.
 
@@ -919,7 +921,7 @@ Same editorial pattern without author/PDF. Visitor-facing date is `eventDate`. P
 ### Founders / authors / biographies
 
 - **Founders** are About Us biographies only (`/about#founder-{bioKey}`); admin delete always allowed (portrait orphan cleanup). No `publications` relation on `Founder`.
-- **Writers** are publication authors (`authorWriterId`); admin delete blocked (409) when publications reference the writer.
+- **Writers** are publication authors via `PublicationWriter` (many-to-many, ordered `sortOrder`, max 10); admin delete blocked (409) when any publication links remain.
 - Publication list/detail map writer author fields; `AuthorLink` may still point at writer public pages (see writers module).
 - `FounderBiography` sets `id=founder-{bioKey}` with `scroll-mt` under the site header. Immutable `bioKey` after create.
 - About lists founders via `listFounderBiographies` in admin `sortOrder`; biographies are plain text with preserved paragraph breaks (not Markdown). Empty list → localized EmptyState.
@@ -965,7 +967,7 @@ Same editorial pattern without author/PDF. Visitor-facing date is `eventDate`. P
 | Manually selected homepage content | **Implemented** (admin homepage selection + public reads) |
 | Max three featured homepage events | **Zod + service read `take: 3` + write validation** |
 | Event filter by record creation date (≠ event date) | **Service/API + admin yes**; **public Events page no** (title search only; cards show `eventDate`) |
-| Writers as publication authors | **Implemented** (`authorWriterId`; admin writers module; `requiresAuthor` gates publish when set) |
+| Writers as publication authors | **Implemented** (`PublicationWriter` M2M, max 10; admin writers module; `requiresAuthor` gates publish when set) |
 | Founders on About Us | **Implemented** (admin CRUD + reorder; not publication authors) |
 | About Us org copy outside admin | **Followed** (`content/about.ts`); founders are admin-managed (scope update) |
 | Brand header + full-bleed hero | **Implemented** (fixed glass capsule overlay; hero photography shows through glass; no white band) |
@@ -1163,6 +1165,16 @@ Open `http://localhost:3000`.
 ---
 
 ## K. Change history
+
+### 2026-11-19 — Publications: multiple authors (max 10)
+
+- Schema: `PublicationWriter` (`publicationId`, `writerId`, `sortOrder`); unique pair; Writer `publicationAuthors`; dropped `Publication.authorWriterId`.
+- Migration `20261119140000_publication_multiple_authors`: create join table, backfill existing single authors at `sortOrder=0`, drop legacy FK/column (applied to configured DB).
+- API/validation: `authorWriterIds: string[]` (0–10, no duplicates); create/update replace authors atomically; `requiresAuthor` needs ≥1.
+- Admin: `PublicationAuthorsField` searchable multi-select with chips, remove, drag + up/down reorder, 3/10 counter.
+- Public: details `PublicationAuthors` (single keeps classic layout; multi wrapping row); cards/slider/hero compact `·`-separated links; JSON-LD/meta authors arrays.
+- Writers: publication counts / delete-block use `publicationAuthors`.
+- Validated: `prisma migrate deploy`; `tsc --noEmit`; `vitest` 120 pass / 1 skip. Browser visual QA not run in this task.
 
 ### 2026-11-19 — Catalogue heroes: remove pub/event CTAs
 

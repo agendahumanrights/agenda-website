@@ -3,7 +3,7 @@ import { ArticleMarkdown } from "@/components/shared/ArticleMarkdown";
 import { MediaGallery } from "@/components/shared/MediaGallery";
 import { ShareControls } from "@/components/shared/ShareControls";
 import { YouTubeEmbed } from "@/components/shared/YouTubeEmbed";
-import { PublicationAuthor } from "@/components/publications/PublicationAuthor";
+import { PublicationAuthors } from "@/components/publications/PublicationAuthors";
 import { PublicationPdfActions } from "@/components/publications/PublicationPdfActions";
 import { sitePath } from "@/i18n/pathnames";
 import type { Locale } from "@/i18n/config";
@@ -89,16 +89,12 @@ export function PublicationDetails({
             </p>
           ) : null}
 
-          {publication.authorName && publication.authorSlug ? (
-            <PublicationAuthor
-              className="mt-6"
-              name={publication.authorName}
-              slug={publication.authorSlug}
-              major={publication.authorMajor}
-              imageUrl={publication.authorImageUrl}
-              locale={locale}
-            />
-          ) : null}
+          <PublicationAuthors
+            className="mt-6"
+            authors={publication.authors}
+            writtenByLabel={labels.writtenBy}
+            locale={locale}
+          />
         </div>
 
         {hasPdf ? (

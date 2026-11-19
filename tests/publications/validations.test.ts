@@ -16,6 +16,7 @@ describe("publication validations", () => {
     expect(parsed.status).toBe("DRAFT");
     expect(parsed.galleryImageIds).toEqual([]);
     expect(parsed.categoryId).toBe("cpubcat000000000000000001");
+    expect(parsed.authorWriterIds).toEqual([]);
   });
 
   it("rejects invalid slug pattern when provided", () => {
@@ -30,19 +31,19 @@ describe("publication validations", () => {
   it("omits slug from update schema", () => {
     const parsed = updatePublicationBodySchema.parse({
       categoryId: "cpubcat000000000000000002",
-      authorWriterId: null,
+      authorWriterIds: [],
     });
     expect("slug" in parsed).toBe(false);
   });
 
-  it("allows an optional writer author on create for any category", () => {
+  it("allows optional writer authors on create for any category", () => {
     const parsed = createPublicationBodySchema.parse({
       categoryId: "cpubcat000000000000000001",
       status: "DRAFT",
-      authorWriterId: "clxxxxxxxxxxxxxxxxxxxxxx9",
+      authorWriterIds: ["clxxxxxxxxxxxxxxxxxxxxxx9"],
       translations: [{ locale: "en", title: "Report", subtitle: "", description: "" }],
     });
-    expect(parsed.authorWriterId).toBe("clxxxxxxxxxxxxxxxxxxxxxx9");
+    expect(parsed.authorWriterIds).toEqual(["clxxxxxxxxxxxxxxxxxxxxxx9"]);
   });
 
   it("rejects duplicate featured publication ids", () => {

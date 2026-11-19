@@ -83,13 +83,18 @@ export async function getFeaturedPublications(
               },
             },
             mainImage: { select: { storageKey: true } },
-            authorWriter: {
+            authors: {
+              orderBy: { sortOrder: "asc" },
               select: {
-                slug: true,
-                translations: {
-                  where: { locale },
-                  take: 1,
-                  select: { fullName: true },
+                writer: {
+                  select: {
+                    slug: true,
+                    translations: {
+                      where: { locale },
+                      take: 1,
+                      select: { fullName: true },
+                    },
+                  },
                 },
               },
             },
@@ -119,8 +124,13 @@ export async function getFeaturedPublications(
           mainImageUrl: p.mainImage
             ? storage.getPublicUrl(p.mainImage.storageKey)
             : null,
-          authorName: p.authorWriter?.translations[0]?.fullName ?? null,
-          authorSlug: p.authorWriter?.slug ?? null,
+          authors: p.authors
+            .map((link) => {
+              const name = link.writer.translations[0]?.fullName?.trim();
+              if (!name) return null;
+              return { name, slug: link.writer.slug };
+            })
+            .filter((a): a is { name: string; slug: string } => Boolean(a)),
         };
       });
   }, []);

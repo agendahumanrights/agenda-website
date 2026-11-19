@@ -4,6 +4,10 @@ import { cacheLife, cacheTag } from "next/cache";
 
 import { Prisma } from "@/generated/prisma";
 
+import {
+  MAX_PUBLICATION_AUTHORS,
+  normalizeAuthorWriterIds,
+} from "@/lib/publications/authors";
 import { resolveLocalePdfUrl } from "@/lib/publications/locale-pdf";
 import { slugify } from "@/lib/slugs";
 import {
@@ -52,7 +56,7 @@ import type {
 /**
  * Business rules (service-enforced unless noted):
  * - Public queries only return PUBLISHED items.
- * - Any category may have a writer author; categories with requiresAuthor=true need one to publish (none seeded that way by default).
+ * - Any category may have 0–10 writer authors; categories with requiresAuthor=true need ≥1 to publish.
  * - Publishing requires both ar + en titles/descriptions, main image, category, publishedAt (subtitle optional).
  * - Drafts need at least one non-empty title.
  * - Slug is immutable after creation.
@@ -64,6 +68,40 @@ function requireDb() {
   if (!isDatabaseConfigured()) {
     throw serviceUnavailable("Database is not configured.");
   }
+}
+
+const publicAuthorListSelect = (locale: "ar" | "en") =>
+  ({
+    orderBy: { sortOrder: "asc" as const },
+    select: {
+      writer: {
+        select: {
+          slug: true,
+          translations: {
+            where: { locale },
+            take: 1,
+            select: { fullName: true },
+          },
+        },
+      },
+    },
+  }) as const;
+
+function mapListAuthors(
+  authors: {
+    writer: {
+      slug: string;
+      translations: { fullName: string }[];
+    };
+  }[],
+): PublicationListItem["authors"] {
+  return authors
+    .map((link) => {
+      const name = link.writer.translations[0]?.fullName?.trim();
+      if (!name) return null;
+      return { name, slug: link.writer.slug };
+    })
+    .filter((a): a is PublicationListItem["authors"][number] => Boolean(a));
 }
 
 function mapListItem(
@@ -79,10 +117,12 @@ function mapListItem(
       requiresAuthor: boolean;
     };
     mainImage: { storageKey: string } | null;
-    authorWriter: {
-      slug: string;
-      translations: { fullName: string }[];
-    } | null;
+    authors: {
+      writer: {
+        slug: string;
+        translations: { fullName: string }[];
+      };
+    }[];
     translations: {
       title: string;
       subtitle: string;
@@ -102,8 +142,7 @@ function mapListItem(
     mainImageUrl: row.mainImage
       ? storage.getPublicUrl(row.mainImage.storageKey)
       : null,
-    authorName: row.authorWriter?.translations[0]?.fullName ?? null,
-    authorSlug: row.authorWriter?.slug ?? null,
+    authors: mapListAuthors(row.authors),
   };
 }
 
@@ -157,16 +196,7 @@ export async function getNewestPublishedPublication(
         },
       },
       mainImage: { select: { storageKey: true } },
-      authorWriter: {
-        select: {
-          slug: true,
-          translations: {
-            where: { locale },
-            take: 1,
-            select: { fullName: true },
-          },
-        },
-      },
+      authors: publicAuthorListSelect(locale),
       translations: {
         where: { locale },
         take: 1,
@@ -239,16 +269,7 @@ export async function listPublishedPublications(
           },
         },
         mainImage: { select: { storageKey: true } },
-        authorWriter: {
-          select: {
-            slug: true,
-            translations: {
-              where: { locale: query.locale },
-              take: 1,
-              select: { fullName: true },
-            },
-          },
-        },
+        authors: publicAuthorListSelect(query.locale),
         translations: {
           where: { locale: query.locale },
           take: 1,
@@ -292,10 +313,15 @@ export async function getPublishedPublicationBySlug(
         orderBy: { sortOrder: "asc" },
         include: { mediaAsset: { include: { altTexts: true } } },
       },
-      authorWriter: {
+      authors: {
+        orderBy: { sortOrder: "asc" },
         include: {
-          profileImage: true,
-          translations: { where: { locale }, take: 1 },
+          writer: {
+            include: {
+              profileImage: true,
+              translations: { where: { locale }, take: 1 },
+            },
+          },
         },
       },
       translations: { where: { locale }, take: 1 },
@@ -332,10 +358,22 @@ export async function getPublishedPublicationBySlug(
       .filter((img) => img.id !== row.mainImage?.id)
       .map((img) => img.url),
     images,
-    authorMajor: row.authorWriter?.translations[0]?.major ?? null,
-    authorImageUrl: row.authorWriter?.profileImage
-      ? storage.getPublicUrl(row.authorWriter.profileImage.storageKey)
-      : null,
+    authors: row.authors
+      .map((link) => {
+        const t = link.writer.translations[0];
+        const name = t?.fullName?.trim();
+        if (!name) return null;
+        return {
+          id: link.writer.id,
+          name,
+          slug: link.writer.slug,
+          major: t?.major?.trim() || null,
+          imageUrl: link.writer.profileImage
+            ? storage.getPublicUrl(link.writer.profileImage.storageKey)
+            : null,
+        };
+      })
+      .filter((a): a is NonNullable<typeof a> => Boolean(a)),
   };
 }
 
@@ -352,7 +390,7 @@ function assertPublishable(input: {
   requiresAuthor: boolean;
   publishedAt: Date | null | undefined;
   mainImageId: string | null | undefined;
-  authorWriterId: string | null | undefined;
+  authorWriterIds: string[];
   translations: {
     locale: string;
     title: string;
@@ -378,15 +416,20 @@ function assertPublishable(input: {
   if (!input.categoryId) {
     throw badRequest("Publishing requires a category.");
   }
-  assertAuthorRules(input.requiresAuthor, input.authorWriterId ?? null);
+  assertAuthorRules(input.requiresAuthor, input.authorWriterIds);
 }
 
 function assertAuthorRules(
   requiresAuthor: boolean,
-  authorWriterId: string | null,
+  authorWriterIds: string[],
 ): void {
-  if (requiresAuthor && !authorWriterId) {
-    throw badRequest("This category requires a writer author.");
+  if (authorWriterIds.length > MAX_PUBLICATION_AUTHORS) {
+    throw badRequest(
+      `A publication may have at most ${MAX_PUBLICATION_AUTHORS} authors.`,
+    );
+  }
+  if (requiresAuthor && authorWriterIds.length === 0) {
+    throw badRequest("This category requires at least one writer author.");
   }
 }
 
@@ -443,13 +486,31 @@ async function validateMediaRefs(input: {
   }
 }
 
-async function assertWriterExists(id: string): Promise<void> {
+async function assertWritersExist(ids: string[]): Promise<void> {
+  if (ids.length === 0) return;
   const prisma = getPrisma();
-  const writer = await prisma.writer.findUnique({
-    where: { id },
-    select: { id: true },
+  const count = await prisma.writer.count({
+    where: { id: { in: ids } },
   });
-  if (!writer) throw badRequest("Selected writer author does not exist.");
+  if (count !== ids.length) {
+    throw badRequest("One or more selected writer authors do not exist.");
+  }
+}
+
+async function replacePublicationAuthors(
+  tx: Prisma.TransactionClient,
+  publicationId: string,
+  authorWriterIds: string[],
+): Promise<void> {
+  await tx.publicationWriter.deleteMany({ where: { publicationId } });
+  if (authorWriterIds.length === 0) return;
+  await tx.publicationWriter.createMany({
+    data: authorWriterIds.map((writerId, index) => ({
+      publicationId,
+      writerId,
+      sortOrder: index,
+    })),
+  });
 }
 
 const adminInclude = {
@@ -461,9 +522,15 @@ const adminInclude = {
     orderBy: { sortOrder: "asc" as const },
     include: { mediaAsset: { include: { altTexts: true } } },
   },
-  authorWriter: {
+  authors: {
+    orderBy: { sortOrder: "asc" as const },
     include: {
-      translations: true,
+      writer: {
+        include: {
+          profileImage: true,
+          translations: true,
+        },
+      },
     },
   },
   translations: true,
@@ -474,9 +541,20 @@ function mapAdminDetail(
   row: Prisma.PublicationGetPayload<{ include: typeof adminInclude }>,
   locale: "ar" | "en" = "ar",
 ): AdminPublicationDetail {
-  const authorLocale =
-    row.authorWriter?.translations.find((t) => t.locale === "ar") ??
-    row.authorWriter?.translations[0];
+  const storage = getStorage();
+  const authors = row.authors.map((link) => {
+    const authorLocale =
+      link.writer.translations.find((t) => t.locale === "ar") ??
+      link.writer.translations[0];
+    return {
+      id: link.writer.id,
+      slug: link.writer.slug,
+      fullName: authorLocale?.fullName ?? link.writer.slug,
+      profileImageUrl: link.writer.profileImage
+        ? storage.getPublicUrl(link.writer.profileImage.storageKey)
+        : null,
+    };
+  });
   return {
     id: row.id,
     slug: row.slug,
@@ -486,9 +564,8 @@ function mapAdminDetail(
     publishedAt: row.publishedAt?.toISOString() ?? null,
     createdAt: row.createdAt.toISOString(),
     updatedAt: row.updatedAt.toISOString(),
-    authorWriterId: row.authorWriterId,
-    authorName: authorLocale?.fullName ?? null,
-    authorSlug: row.authorWriter?.slug ?? null,
+    authorWriterIds: authors.map((a) => a.id),
+    authors,
     translations: row.translations.map((t) => ({
       locale: t.locale,
       title: t.title,
@@ -602,7 +679,8 @@ export async function createPublication(
   requireDb();
   assertDraftHasTitle(input.translations);
   const category = await assertCategoryExists(input.categoryId);
-  assertAuthorRules(category.requiresAuthor, input.authorWriterId ?? null);
+  const authorWriterIds = normalizeAuthorWriterIds(input.authorWriterIds ?? []);
+  assertAuthorRules(category.requiresAuthor, authorWriterIds);
 
   if (input.status === "PUBLISHED") {
     assertPublishable({
@@ -610,14 +688,12 @@ export async function createPublication(
       requiresAuthor: category.requiresAuthor,
       publishedAt: input.publishedAt,
       mainImageId: input.mainImageId,
-      authorWriterId: input.authorWriterId,
+      authorWriterIds,
       translations: input.translations,
     });
   }
 
-  if (input.authorWriterId) {
-    await assertWriterExists(input.authorWriterId);
-  }
+  await assertWritersExist(authorWriterIds);
   await validateMediaRefs({
     mainImageId: input.mainImageId,
     pdfEnId: input.pdfEnId,
@@ -635,8 +711,6 @@ export async function createPublication(
   const prisma = getPrisma();
   const galleryIds = input.galleryImageIds ?? [];
 
-  // Nested create is one DB round-trip (atomic). Avoid interactive transactions
-  // here — remote pooler latency was exceeding Prisma's default 5s timeout.
   let featuredCreate: { sortOrder: number } | undefined;
   if (input.featureOnHomepage) {
     if (input.status !== "PUBLISHED") {
@@ -649,36 +723,44 @@ export async function createPublication(
   }
 
   try {
-    const created = await prisma.publication.create({
-      data: {
-        slug,
-        categoryId: input.categoryId,
-        status: input.status,
-        publishedAt: input.publishedAt ?? null,
-        authorWriterId: input.authorWriterId ?? null,
-        mainImageId: input.mainImageId ?? null,
-        pdfEnId: input.pdfEnId ?? null,
-        pdfArId: input.pdfArId ?? null,
-        youtubeUrl: input.youtubeUrl ?? null,
-        translations: {
-          create: input.translations.map((t) => ({
-            locale: t.locale,
-            title: t.title.trim(),
-            subtitle: t.subtitle.trim(),
-            description: t.description,
-          })),
+    const created = await withInteractiveTransaction(async (tx) => {
+      const row = await tx.publication.create({
+        data: {
+          slug,
+          categoryId: input.categoryId,
+          status: input.status,
+          publishedAt: input.publishedAt ?? null,
+          mainImageId: input.mainImageId ?? null,
+          pdfEnId: input.pdfEnId ?? null,
+          pdfArId: input.pdfArId ?? null,
+          youtubeUrl: input.youtubeUrl ?? null,
+          translations: {
+            create: input.translations.map((t) => ({
+              locale: t.locale,
+              title: t.title.trim(),
+              subtitle: t.subtitle.trim(),
+              description: t.description,
+            })),
+          },
+          gallery: {
+            create: galleryIds.map((mediaAssetId, index) => ({
+              mediaAssetId,
+              sortOrder: index,
+            })),
+          },
+          authors: {
+            create: authorWriterIds.map((writerId, index) => ({
+              writerId,
+              sortOrder: index,
+            })),
+          },
+          ...(featuredCreate
+            ? { featured: { create: featuredCreate } }
+            : {}),
         },
-        gallery: {
-          create: galleryIds.map((mediaAssetId, index) => ({
-            mediaAssetId,
-            sortOrder: index,
-          })),
-        },
-        ...(featuredCreate
-          ? { featured: { create: featuredCreate } }
-          : {}),
-      },
-      include: adminInclude,
+        include: adminInclude,
+      });
+      return row;
     });
 
     revalidatePublicationPaths(created.slug);
@@ -707,6 +789,7 @@ export async function updatePublication(
       gallery: true,
       featured: true,
       translations: true,
+      authors: { orderBy: { sortOrder: "asc" } },
     },
   });
   if (!existing) throw notFound("Publication not found");
@@ -723,10 +806,10 @@ export async function updatePublication(
   const nextStatus = input.status ?? existing.status;
   const nextPublishedAt =
     input.publishedAt !== undefined ? input.publishedAt : existing.publishedAt;
-  const nextAuthor =
-    input.authorWriterId !== undefined
-      ? input.authorWriterId
-      : existing.authorWriterId;
+  const nextAuthors =
+    input.authorWriterIds !== undefined
+      ? normalizeAuthorWriterIds(input.authorWriterIds)
+      : existing.authors.map((a) => a.writerId);
   const nextMainImage =
     input.mainImageId !== undefined ? input.mainImageId : existing.mainImageId;
   const nextPdfEn =
@@ -752,7 +835,7 @@ export async function updatePublication(
     }));
 
   assertDraftHasTitle(nextTranslations);
-  assertAuthorRules(nextCategory.requiresAuthor, nextAuthor);
+  assertAuthorRules(nextCategory.requiresAuthor, nextAuthors);
 
   if (nextStatus === "PUBLISHED") {
     assertPublishable({
@@ -760,12 +843,12 @@ export async function updatePublication(
       requiresAuthor: nextCategory.requiresAuthor,
       publishedAt: nextPublishedAt,
       mainImageId: nextMainImage,
-      authorWriterId: nextAuthor,
+      authorWriterIds: nextAuthors,
       translations: nextTranslations,
     });
   }
 
-  if (nextAuthor) await assertWriterExists(nextAuthor);
+  await assertWritersExist(nextAuthors);
   const previousImageCount = countContentImages(
     Boolean(existing.mainImageId),
     existing.gallery.length,
@@ -844,13 +927,16 @@ export async function updatePublication(
         categoryId: nextCategoryId,
         status: nextStatus,
         publishedAt: nextPublishedAt,
-        authorWriterId: nextAuthor,
         mainImageId: nextMainImage,
         pdfEnId: nextPdfEn,
         pdfArId: nextPdfAr,
         youtubeUrl: nextYoutubeUrl,
       },
     });
+
+    if (input.authorWriterIds !== undefined) {
+      await replacePublicationAuthors(tx, id, nextAuthors);
+    }
 
     if (input.featureOnHomepage === true && !existing.featured) {
       const maxOrder = await tx.featuredPublication.aggregate({

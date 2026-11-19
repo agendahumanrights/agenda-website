@@ -110,7 +110,10 @@ async function PublicationDetailContent({ params }: { params: Params }) {
             url: pageUrl,
             imageUrl: publication.mainImageUrl,
             datePublished: publication.publishedAt,
-            authorName: publication.authorName,
+            authors: publication.authors.map((author) => ({
+              name: author.name,
+              url: absoluteLocalizedUrl(`/writers/${author.slug}`, locale),
+            })),
             type:
               publication.category.slug === "BLOG" ? "BlogPosting" : "Article",
           }),

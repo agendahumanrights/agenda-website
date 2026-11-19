@@ -41,7 +41,11 @@ export default async function AdminEditPublicationPage({
       locale={locale}
       labels={dict.admin.pub}
       markdownLabels={dict.admin.markdown}
-      writers={writers.map((w) => ({ id: w.id, fullName: w.fullName }))}
+      writers={writers.map((w) => ({
+        id: w.id,
+        fullName: w.fullName,
+        profileImageUrl: w.profileImageUrl,
+      }))}
       categories={categories}
       mediaLimits={{
         maxImageBytes: MEDIA_LIMITS.maxImageBytes,

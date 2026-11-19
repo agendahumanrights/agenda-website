@@ -77,10 +77,19 @@ export function articleJsonLd(input: {
   imageUrl?: string | null;
   datePublished?: string | null;
   dateModified?: string | null;
-  authorName?: string | null;
+  authors?: Array<{ name: string; url?: string | null }> | null;
   /** Use BlogPosting for BLOG category slug; else Article. */
   type: "Article" | "BlogPosting";
 }) {
+  const authorNodes =
+    input.authors
+      ?.filter((a) => a.name.trim())
+      .map((a) => ({
+        "@type": "Person" as const,
+        name: a.name,
+        ...(a.url ? { url: a.url } : {}),
+      })) ?? [];
+
   return {
     "@context": "https://schema.org",
     "@type": input.type,
@@ -92,14 +101,11 @@ export function articleJsonLd(input: {
     ...(input.imageUrl ? { image: [absoluteUrl(input.imageUrl)] } : {}),
     ...(input.datePublished ? { datePublished: input.datePublished } : {}),
     ...(input.dateModified ? { dateModified: input.dateModified } : {}),
-    ...(input.authorName
-      ? {
-          author: {
-            "@type": "Person",
-            name: input.authorName,
-          },
-        }
-      : {}),
+    ...(authorNodes.length === 1
+      ? { author: authorNodes[0] }
+      : authorNodes.length > 1
+        ? { author: authorNodes }
+        : {}),
     publisher: {
       "@type": "Organization",
       name: input.siteName,

@@ -15,7 +15,6 @@ import { cn } from "@/lib/utils";
 export type LatestContentHeroAuthor = {
   name: string;
   slug: string;
-  byLabel: string;
 };
 
 export type LatestContentHeroProps = {
@@ -33,7 +32,8 @@ export type LatestContentHeroProps = {
   imageAlt?: string;
   dateTime?: string | null;
   dateLabel?: string | null;
-  author?: LatestContentHeroAuthor | null;
+  authors?: LatestContentHeroAuthor[];
+  byLabel?: string;
   /** Optional CTA under meta (e.g. events). Omit for publications. */
   ctaLabel?: string | null;
   className?: string;
@@ -57,7 +57,8 @@ export function LatestContentHero({
   imageAlt = "",
   dateTime = null,
   dateLabel = null,
-  author = null,
+  authors = [],
+  byLabel,
   ctaLabel = null,
   className,
 }: LatestContentHeroProps) {
@@ -66,7 +67,8 @@ export function LatestContentHero({
   const trimmedSubtitle = subtitle?.trim() || null;
   const trimmedCta = ctaLabel?.trim() || null;
   const showImage = Boolean(imageUrl) && !imageFailed;
-  const showMeta = Boolean((dateTime && dateLabel) || author);
+  const showAuthors = authors.length > 0;
+  const showMeta = Boolean((dateTime && dateLabel) || showAuthors);
 
   return (
     <section
@@ -164,17 +166,28 @@ export function LatestContentHero({
                     {dateLabel}
                   </time>
                 ) : null}
-                {author ? (
+                {showAuthors ? (
                   <>
                     {dateTime && dateLabel ? <span aria-hidden>·</span> : null}
-                    <p className="text-white/90">
-                      <span className="text-white/75">{author.byLabel} </span>
-                      <AuthorLink
-                        slug={author.slug}
-                        name={author.name}
-                        locale={locale}
-                        className="font-medium text-white underline decoration-white/50 underline-offset-4 hover:decoration-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
-                      />
+                    <p className="max-w-full text-white/90">
+                      {byLabel ? (
+                        <span className="text-white/75">{byLabel} </span>
+                      ) : null}
+                      {authors.map((author, index) => (
+                        <span key={`${author.slug}-${index}`}>
+                          {index > 0 ? (
+                            <span className="text-white/70" aria-hidden>
+                              {" · "}
+                            </span>
+                          ) : null}
+                          <AuthorLink
+                            slug={author.slug}
+                            name={author.name}
+                            locale={locale}
+                            className="font-medium text-white underline decoration-white/50 underline-offset-4 hover:decoration-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
+                          />
+                        </span>
+                      ))}
                     </p>
                   </>
                 ) : null}

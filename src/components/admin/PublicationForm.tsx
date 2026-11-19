@@ -26,6 +26,7 @@ const MarkdownEditor = dynamic(
   },
 );
 import { MediaDropzone } from "@/components/admin/MediaDropzone";
+import { PublicationAuthorsField } from "@/components/admin/PublicationAuthorsField";
 import {
   YouTubeUrlField,
   youtubeUrlForPayload,
@@ -50,7 +51,11 @@ import type {
   PublicationCategorySummary,
 } from "@/types/publication";
 
-type WriterOption = { id: string; fullName: string };
+type WriterOption = {
+  id: string;
+  fullName: string;
+  profileImageUrl?: string | null;
+};
 
 type Labels = Dictionary["admin"]["pub"];
 
@@ -124,8 +129,8 @@ export function PublicationForm({
   const [publishedAt, setPublishedAt] = useState(
     toDateInput(initial?.publishedAt ?? null),
   );
-  const [authorWriterId, setAuthorWriterId] = useState(
-    initial?.authorWriterId ?? "",
+  const [authorWriterIds, setAuthorWriterIds] = useState<string[]>(
+    () => initial?.authorWriterIds ?? [],
   );
   const [slugPreview, setSlugPreview] = useState(initial?.slug ?? "");
   const [ar, setAr] = useState<TranslationState>(() => {
@@ -188,7 +193,7 @@ export function PublicationForm({
     return {
       categoryId,
       publishedAt: publishedAt ? new Date(publishedAt).toISOString() : null,
-      authorWriterId: authorWriterId || null,
+      authorWriterIds,
       mainImageId: mainImage?.id ?? null,
       pdfEnId: pdfEn?.id ?? null,
       pdfArId: pdfAr?.id ?? null,
@@ -219,7 +224,7 @@ export function PublicationForm({
     if (!mainImage) next.mainImage = labels.errorValidation;
     if (!publishedAt) next.publishedAt = labels.errorValidation;
     if (!categoryId) next.category = labels.errorValidation;
-    if (requiresAuthor && !authorWriterId) {
+    if (requiresAuthor && authorWriterIds.length === 0) {
       next.author = labels.authorRequired;
     }
     return next;
@@ -1113,8 +1118,8 @@ export function PublicationForm({
                 id="author"
                 label={
                   requiresAuthor
-                    ? `${labels.author} (${labels.authorRequired})`
-                    : labels.author
+                    ? `${labels.authors} (${labels.authorRequired})`
+                    : labels.authors
                 }
                 required={requiresAuthor}
                 requiredLabel={labels.requiredAria}
@@ -1122,29 +1127,29 @@ export function PublicationForm({
                 optionalLabel={labels.optional}
                 error={fieldErrors.author}
               >
-                {writers.length === 0 ? (
-                  <p className="text-sm text-amber-800">{labels.authorEmpty}</p>
-                ) : (
-                  <Select
-                    id="author"
-                    className="admin-control"
-                    value={authorWriterId}
-                    disabled={busy}
-                    required={requiresAuthor || undefined}
-                    aria-required={requiresAuthor || undefined}
-                    onChange={(e) => {
-                      markDirty();
-                      setAuthorWriterId(e.target.value);
-                    }}
-                  >
-                    <option value="">{labels.authorNone}</option>
-                    {writers.map((f) => (
-                      <option key={f.id} value={f.id}>
-                        {f.fullName}
-                      </option>
-                    ))}
-                  </Select>
-                )}
+                <PublicationAuthorsField
+                  id="author"
+                  writers={writers}
+                  selectedIds={authorWriterIds}
+                  disabled={busy}
+                  required={requiresAuthor}
+                  labels={{
+                    authors: labels.authors,
+                    addAuthor: labels.addAuthor,
+                    selectedAuthors: labels.selectedAuthors,
+                    authorsMax: labels.authorsMax,
+                    removeAuthor: labels.removeAuthor,
+                    authorSearchPlaceholder: labels.authorSearchPlaceholder,
+                    authorEmpty: labels.authorEmpty,
+                    authorNone: labels.authorNone,
+                    moveUp: labels.moveAuthorUp,
+                    moveDown: labels.moveAuthorDown,
+                  }}
+                  onChange={(ids) => {
+                    markDirty();
+                    setAuthorWriterIds(ids);
+                  }}
+                />
               </FormField>
 
               <label className="flex items-start gap-2.5 text-sm">

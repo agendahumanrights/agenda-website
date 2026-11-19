@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import { MAX_PUBLICATION_AUTHORS } from "@/lib/publications/authors";
 import { MEDIA_LIMITS } from "@/server/storage/limits";
 import {
   catalogueDateSortSchema,
@@ -8,6 +9,25 @@ import {
   paginationSchema,
 } from "@/server/validations/common";
 import { optionalYoutubeUrlSchema } from "@/server/validations/youtube";
+
+const authorWriterIdsSchema = z
+  .array(z.string().cuid())
+  .max(MAX_PUBLICATION_AUTHORS, `At most ${MAX_PUBLICATION_AUTHORS} authors.`)
+  .superRefine((ids, ctx) => {
+    const seen = new Set<string>();
+    for (let i = 0; i < ids.length; i++) {
+      if (seen.has(ids[i]!)) {
+        ctx.addIssue({
+          code: "custom",
+          message: "Duplicate writer authors are not allowed.",
+          path: [i],
+        });
+        return;
+      }
+      seen.add(ids[i]!);
+    }
+  });
+
 
 /** Absolute ceiling for update payloads so grandfathered over-limit galleries still parse. */
 const GALLERY_IDS_UPDATE_CEILING = 100;
@@ -63,7 +83,7 @@ export const createPublicationBodySchema = z.object({
   categoryId: z.string().cuid(),
   status: publicationStatusSchema.default("DRAFT"),
   publishedAt: z.coerce.date().nullable().optional(),
-  authorWriterId: z.string().cuid().nullable().optional(),
+  authorWriterIds: authorWriterIdsSchema.optional().default([]),
   mainImageId: z.string().cuid().nullable().optional(),
   pdfEnId: z.string().cuid().nullable().optional(),
   pdfArId: z.string().cuid().nullable().optional(),
@@ -87,7 +107,7 @@ export const updatePublicationBodySchema = z.object({
   categoryId: z.string().cuid().optional(),
   status: publicationStatusSchema.optional(),
   publishedAt: z.coerce.date().nullable().optional(),
-  authorWriterId: z.string().cuid().nullable().optional(),
+  authorWriterIds: authorWriterIdsSchema.optional(),
   mainImageId: z.string().cuid().nullable().optional(),
   pdfEnId: z.string().cuid().nullable().optional(),
   pdfArId: z.string().cuid().nullable().optional(),
