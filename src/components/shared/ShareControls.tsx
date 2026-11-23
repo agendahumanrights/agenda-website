@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  useCallback,
-  useEffect,
-  useId,
-  useLayoutEffect,
-  useRef,
-  useState,
-} from "react";
+import { useEffect, useId, useRef, useState } from "react";
 
 import { cn } from "@/lib/utils";
 
@@ -29,8 +22,6 @@ type Props = {
   className?: string;
 };
 
-type Placement = "below" | "above";
-
 function absoluteUrl(path: string): string {
   const normalized = path.startsWith("/") ? path : `/${path}`;
   if (typeof window === "undefined") return normalized;
@@ -41,59 +32,22 @@ const actionClass =
   "inline-flex size-12 shrink-0 items-center justify-center rounded-full text-zinc-600 transition-colors hover:bg-[color-mix(in_srgb,var(--brand-blue)_8%,white)] hover:text-[var(--brand-blue)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-blue)]";
 
 /**
- * Expandable share menu: circular trigger + vertical action stack
- * (opens below when space allows, otherwise above). Open by default;
- * toggles only via the share button. Used on publication and event details.
+ * Expandable share menu: circular trigger + vertical action stack.
+ * Always opens below the trigger. Open by default; toggles only via the
+ * share button. Used on publication and event details.
  */
 export function ShareControls({ title, path, labels, className }: Props) {
   const [open, setOpen] = useState(true);
-  const [placement, setPlacement] = useState<Placement>("below");
   const [status, setStatus] = useState<"idle" | "ok" | "err">("idle");
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
-
-  const updatePlacement = useCallback(() => {
-    const trigger = triggerRef.current;
-    const menu = menuRef.current;
-    if (!trigger || !menu) return;
-
-    const triggerRect = trigger.getBoundingClientRect();
-    const menuHeight = menu.offsetHeight || 300;
-    const gap = 12;
-    const spaceBelow = window.innerHeight - triggerRect.bottom - gap;
-    const spaceAbove = triggerRect.top - gap;
-
-    if (spaceBelow < menuHeight && spaceAbove > spaceBelow) {
-      setPlacement("above");
-    } else {
-      setPlacement("below");
-    }
-  }, []);
 
   useEffect(() => {
     if (status === "idle") return;
     const timer = window.setTimeout(() => setStatus("idle"), 2500);
     return () => window.clearTimeout(timer);
   }, [status]);
-
-  useLayoutEffect(() => {
-    if (!open) return;
-    updatePlacement();
-  }, [open, updatePlacement]);
-
-  useEffect(() => {
-    if (!open) return;
-
-    const onViewportChange = () => updatePlacement();
-
-    window.addEventListener("resize", onViewportChange);
-    window.addEventListener("scroll", onViewportChange, true);
-    return () => {
-      window.removeEventListener("resize", onViewportChange);
-      window.removeEventListener("scroll", onViewportChange, true);
-    };
-  }, [open, updatePlacement]);
 
   const encodedTitle = encodeURIComponent(title);
   // Path-only in markup for SSR/hydration stability; absolute URL applied on click.
@@ -138,10 +92,7 @@ export function ShareControls({ title, path, labels, className }: Props) {
           aria-hidden={!open}
           inert={open ? undefined : true}
           className={cn(
-            "absolute z-30 start-0",
-            placement === "below"
-              ? "top-full mt-3 origin-top"
-              : "bottom-full mb-3 origin-bottom",
+            "absolute z-30 start-0 top-full mt-3 origin-top",
             "motion-safe:transition-[opacity,transform] motion-safe:duration-200 motion-safe:ease-out",
             open
               ? "pointer-events-auto opacity-100 motion-safe:scale-100"
@@ -155,25 +106,14 @@ export function ShareControls({ title, path, labels, className }: Props) {
               "shadow-[0_8px_28px_rgba(5,73,140,0.16)] ring-1 ring-zinc-200/70",
             )}
           >
-            {placement === "below" ? (
-              <span
-                aria-hidden
-                className={cn(
-                  "absolute start-5 bottom-full size-0",
-                  "border-x-[8px] border-x-transparent border-b-[9px] border-b-white",
-                  "drop-shadow-[0_-1px_0_rgba(228,228,231,0.9)]",
-                )}
-              />
-            ) : (
-              <span
-                aria-hidden
-                className={cn(
-                  "absolute start-5 top-full size-0",
-                  "border-x-[8px] border-x-transparent border-t-[9px] border-t-white",
-                  "drop-shadow-[0_1px_0_rgba(228,228,231,0.9)]",
-                )}
-              />
-            )}
+            <span
+              aria-hidden
+              className={cn(
+                "absolute start-5 bottom-full size-0",
+                "border-x-[8px] border-x-transparent border-b-[9px] border-b-white",
+                "drop-shadow-[0_-1px_0_rgba(228,228,231,0.9)]",
+              )}
+            />
 
             <a
               role="menuitem"

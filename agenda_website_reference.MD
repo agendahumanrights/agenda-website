@@ -4,7 +4,7 @@
 > **Source of truth:** application code. Requirements and older docs describe intended or planned behavior; this file describes verified implementation.  
 > **Do not treat scaffolding as completed features.**
 
-**Last updated:** 2026-11-23 (Arabic typography: Cairo + IBM Plex)  
+**Last updated:** 2026-11-24 (Share menu always below)  
 **Inspection basis:** Checked-in source under the repository root. DB migrate/admin bootstrap depend on local `.env` (gitignored).
 
 ---
@@ -352,7 +352,7 @@ Other query params preserved. `/api` and static-like paths not rewritten.
 | --- | --- |
 | Purpose | Publication detail |
 | Data | `getPublishedPublicationBySlug`; without DB → `EmptyState` placeholder; missing row/translation → `notFound()` |
-| UI | Editorial `PublicationDetails`: wide shell; header + PDF; gallery; then `lg` 2fr/1fr grid (YouTube + Markdown | sticky Share). Share column stretches; Share pinned to trailing shell edge (`lg:ms-auto`, matches image/page end); `top: var(--site-header-offset)`. Mobile: Share above body. |
+| UI | `PublicationDetails`: full-bleed `ContentDetailHero` slider (all images, manual nav + thumbs; title/meta overlay) → Container body: optional PDF → YouTube + Markdown | sticky Share. |
 | Instant nav | `params` read inside Suspense + `DetailSkeleton` fallback |
 | Auth | None |
 | Status | **Implemented** (content depends on DB + published locale translation) |
@@ -377,7 +377,7 @@ Other query params preserved. `/api` and static-like paths not rewritten.
 | --- | --- |
 | Purpose | Event detail |
 | Data | `getPublishedEventBySlug`; same DB/empty/notFound pattern as publications |
-| UI | Editorial `EventDetails`: same wide shell as publications; breadcrumbs; header with Event label + `eventDate`/title/subtitle + share; gallery; optional YouTube; Markdown fills content width (no PDF) |
+| UI | `EventDetails`: same full-bleed `ContentDetailHero` slider as publications; body: Share → optional YouTube → Markdown (no PDF) |
 | Instant nav | `params` read inside Suspense + `DetailSkeleton` fallback |
 | Auth | None |
 | Status | **Implemented** (content depends on DB) |
@@ -444,7 +444,8 @@ No logout route or working login form exists.
 | `Container` | Full-width padded wrapper (`px-4 sm:px-6 lg:px-8`, no max-width) for below-hero home sections + other public pages |
 | `SiteHeader` | **Fixed** transparent overlay (`fixed inset-x-0 top-0`); full-width glass capsule ~16px from top. No in-flow white band. Heroes/detail pages extend behind it; clearance via padding / `.public-main-offset`. Locale lockup logo · pill nav · language · mobile menu. |
 | `PageHero` | Full-bleed navy→brand-blue intro from viewport top; optional framed media (About logo / omit for empty catalogue fallback); image layout uses capped row + tighter gap (not `justify-between`); breadcrumbs; curved content transition |
-| `LatestContentHero` | Full-bleed single-item cinematic hero for Publications/Events: cover image + `.hero-media-gradient`, bottom-start copy (badge, title, optional subtitle, date, optional author; optional CTA unused by both catalogues); title remains linked; branded gradient if image missing/fails; page H1 sr-only; not a carousel |
+| `LatestContentHero` | Full-bleed single-item cinematic hero for Publications/Events catalogues: cover image + `.hero-media-gradient`, bottom-start copy (badge, linked title, subtitle, date, authors); branded gradient fallback; page H1 sr-only; not a carousel |
+| `ContentDetailHero` | Full-bleed detail hero (`.hero-viewport` = full screen width/height): main + gallery **manual slider** with white pagination dots (active filled / inactive outline); title/meta overlay; **thumbnails under** the big image; used by publication/event details |
 | `SiteFooter` | Full-width glass rounded panel over blue/gray wash: brand · primary nav · **newsletter subscribe** · social icons · copyright row. No Explore heading or Vision/Mission/Founders footer links. |
 | `NewsletterSubscribeForm` | Client footer form: email + Subscribe, honeypot, loading/success/error/already-subscribed states; `POST /api/newsletter/subscribe` |
 | `MainNavigation` | Pill links with brighter active glass surface |
@@ -479,7 +480,7 @@ No logout route or working login form exists.
 | `PublicationCategoryBadge` | Localized category label (list cards / legacy) |
 | `AuthorLink` | `/writers/{slug}` (locale-aware via `sitePath`) |
 | `PublicationAuthor` | Circular portrait, name link, professional area (blogs) |
-| `PublicationDetails` | Wide editorial layout: breadcrumbs → header (+ PDF) → gallery → body grid with sticky Share in the trailing column (`lg+`). Sticky requires a stretched Share column (not `items-start`/`self-start`). |
+| `PublicationDetails` | Full-bleed `ContentDetailHero` + constrained body (PDF, remaining gallery images, Markdown, sticky Share). |
 | `PublicationPdfActions` | Client: View/Download for the locale-matched `pdfUrl` only; hidden when that locale has no PDF. Download via `/api/media/...?download=1` blob |
 | `PdfPreview` / `PdfDownloadLink` | Legacy helpers (unused on public detail page after PDF action move) |
 | `PublicationFilters` | **Implemented** live search + category + date sort (debounced `q`, immediate category/sort, Reset); URL replace; IME-safe |
@@ -489,7 +490,7 @@ No logout route or working login form exists.
 | Component | Status |
 | --- | --- |
 | `EventCard` / `EventGrid` | `ContentCard` with localized “Event / فعالية” badge; visitor-facing `eventDate` (not `createdAt`); subtitle as excerpt; 1/2/3-col grid |
-| `EventDetails` | Same wide editorial pattern as publications (no author/PDF); uses `eventDate`; optional YouTube between gallery and Markdown |
+| `EventDetails` | Same full-bleed hero pattern as publications (no authors/PDF); uses `eventDate`; optional YouTube then Markdown |
 | `EventDateFilter` | **Implemented** live title search + Sort by Date (`eventDate`) + Reset (debounced; no public creation-date fields) |
 | `CatalogueLiveProvider` / `CatalogueResultsFrame` | Soft-nav pending indicator; keeps prior results visible while updating |
 
@@ -498,7 +499,7 @@ No logout route or working login form exists.
 | Component | Status |
 | --- | --- |
 | `Breadcrumbs` | Localized Home → section → current title |
-| `ShareControls` | Client expandable share menu: circular trigger + **vertical** white stack (pointer, separators) with X, Facebook, LinkedIn, email, copy link; **open by default**; toggles **only via the share button** (no outside/Escape dismiss); opens below (or above if space is tight); RTL/LTR via `start`; copy feedback; `aria-expanded` / `aria-controls` / `aria-haspopup` |
+| `ShareControls` | Client expandable share menu: circular trigger + **vertical** white stack (pointer, separators) with X, Facebook, LinkedIn, email, copy link; **open by default**; toggles **only via the share button**; menu **always opens below**; RTL/LTR via `start`; copy feedback; `aria-expanded` / `aria-controls` / `aria-haspopup` |
 | `MediaGallery` | Client: main+gallery images (deduped by media id); frame uses full-bleed `object-cover` (lightbox keeps `object-contain`); centered thumb row (`w-max min-w-full justify-center`) with horizontal scroll when needed; prev/next, counter, fullscreen, keyboard/swipe, RTL-aware; omits when empty |
 | `YouTubeEmbed` | Shared responsive 16:9 iframe via `youtube-nocookie.com` from validated video ID; optional heading; lazy by default; omits when URL invalid |
 | `YouTubeUrlField` | Admin Media-card control: URL input (LTR), live preview, remove; used by Publication/Event forms |
@@ -913,7 +914,7 @@ Categories are enum values; UI labels from dictionaries. Public catalogue and AP
 
 ### Publication details
 
-Reading order: breadcrumbs → category + `publishedAt` → title → **optional subtitle** (omitted when empty) → **optional writer author** (any category; image/major/`AuthorLink` → `/writers/{slug}` when assigned) → share + **locale-matched** PDF actions (hidden when that language has no PDF) → `MediaGallery` → optional `YouTubeEmbed` → Markdown. DTO `pdfUrl` is EN-only or AR-only per request locale. Markdown uses sanitized `ArticleMarkdown` below gallery/video. No embedded PDF iframe. SEO description prefers subtitle, else Markdown excerpt, else title.
+Reading order: full-bleed `ContentDetailHero` slider (all images + overlaid category/title/subtitle/date/authors) → **locale-matched** PDF → optional `YouTubeEmbed` → Markdown + sticky Share. DTO `pdfUrl` is EN-only or AR-only per request locale. No embedded PDF iframe. SEO description prefers subtitle, else Markdown excerpt, else title.
 
 ### Events and event details
 
@@ -1167,6 +1168,18 @@ Open `http://localhost:3000`.
 
 ## K. Change history
 
+### 2026-11-24 — Detail pages: full-bleed hero slider
+
+- `ContentDetailHero`: full-width cover with overlaid category/H1/subtitle/date/authors; **all** detail images slide manually (prev/next, counter, keyboard, swipe); thumbnail strip sits **under** the big image (not on the overlay).
+- Hero stage uses `.hero-viewport` (`min-height: 100svh` / `100dvh`) for full-screen width and height.
+- Prev/next no longer scrolls the page down: thumb visibility uses horizontal-only strip scrolling (not `scrollIntoView`).
+- `PublicationDetails` / `EventDetails`: no separate below-hero `MediaGallery`; PDF/Share/body follow the hero.
+- Validated: `tsc --noEmit` pass.
+
+### 2026-11-23 — Publication/event detail gallery above title
+
+- Superseded by 2026-11-24 full-bleed hero: gallery was temporarily ordered above the title block.
+
 ### 2026-11-23 — Arabic typography system (Cairo + IBM Plex Sans Arabic)
 
 - Replaced Noto Sans Arabic with **Cairo** headings (`--font-arabic-heading` 600/700) + sitewide **IBM Plex Sans Arabic** body (`--font-arabic-body` 400/500/600); both load only for `ar`.
@@ -1197,6 +1210,10 @@ Open `http://localhost:3000`.
 - Public: `PublicationDetails` / `EventDetails` inherit justify via shared `ArticleMarkdown`. Writers: `WriterProfile` + admin Writer preview use `.article-prose--align-start` / `alignStartPreview`.
 - Admin Publication/Event Preview & Split match public justify; stored Markdown unchanged (no alignment syntax).
 - Validated: `npm run typecheck` pass; `npm test` 123 pass / 1 skip; `npm run build` pass. `npm run lint` still fails on pre-existing `AddCategoryModal` setState-in-effect only (unrelated).
+
+### 2026-11-24 — ShareControls always open downward
+
+- Removed viewport flip-to-above logic; social menu always stacks below the share button.
 
 ### 2026-11-23 — ShareControls open by default; trigger-only close; larger
 

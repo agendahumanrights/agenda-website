@@ -84,7 +84,7 @@ async function EventDetailContent({ params }: { params: Params }) {
   const description = event.subtitle?.trim() || event.title;
 
   return (
-    <div className="public-main-offset bg-white">
+    <div className="bg-white">
       <JsonLd
         data={[
           breadcrumbJsonLd([
@@ -109,15 +109,13 @@ async function EventDetailContent({ params }: { params: Params }) {
           }),
         ]}
       />
-      <Container className="pb-12 sm:pb-16 lg:pb-20">
-        <EventDetails
-          locale={locale}
-          event={event}
-          labels={dict.events}
-          shared={dict.shared}
-          navHome={dict.nav.home}
-        />
-      </Container>
+      <EventDetails
+        locale={locale}
+        event={event}
+        labels={dict.events}
+        shared={dict.shared}
+        navHome={dict.nav.home}
+      />
     </div>
   );
 }

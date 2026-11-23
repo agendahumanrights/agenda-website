@@ -1,10 +1,9 @@
-import { Breadcrumbs } from "@/components/shared/Breadcrumbs";
 import { ArticleMarkdown } from "@/components/shared/ArticleMarkdown";
-import { MediaGallery } from "@/components/shared/MediaGallery";
+import { ContentDetailHero } from "@/components/shared/ContentDetailHero";
 import { ShareControls } from "@/components/shared/ShareControls";
 import { YouTubeEmbed } from "@/components/shared/YouTubeEmbed";
-import { PublicationAuthors } from "@/components/publications/PublicationAuthors";
 import { PublicationPdfActions } from "@/components/publications/PublicationPdfActions";
+import { Container } from "@/components/layout/Container";
 import { sitePath } from "@/i18n/pathnames";
 import type { Locale } from "@/i18n/config";
 import type { Dictionary } from "@/i18n/dictionaries";
@@ -47,122 +46,91 @@ export function PublicationDetails({
     copyFailed: shared.copyFailed,
   };
 
+  const galleryLabels = {
+    previous: shared.previous,
+    next: shared.next,
+    imageOf: shared.imageOf,
+    goToImage: shared.goToImage,
+    gallery: shared.gallery,
+    imageFailed: shared.imageFailed,
+  };
+
   return (
-    <article className="mx-auto flex w-full max-w-6xl flex-col gap-8 overflow-visible sm:gap-10 xl:max-w-7xl">
-      <Breadcrumbs
-        label={shared.breadcrumbNav}
-        items={[
+    <>
+      <ContentDetailHero
+        locale={locale}
+        breadcrumbLabel={shared.breadcrumbNav}
+        breadcrumbs={[
           { label: navHome, href: sitePath("/", locale) },
           { label: labels.title, href: sitePath("/publications", locale) },
           { label: publication.title },
         ]}
-      />
-
-      <header className="flex flex-col gap-6 border-b border-[var(--border)] pb-8 sm:gap-7 sm:pb-10 lg:flex-row lg:items-start lg:justify-between lg:gap-10">
-        <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-x-3 gap-y-2 text-sm tracking-wide">
-            <span className="font-semibold text-[var(--brand-blue)] uppercase underline decoration-2 underline-offset-8">
-              {categoryLabel}
-            </span>
-            {dateLabel && publication.publishedAt ? (
-              <>
-                <span aria-hidden className="text-zinc-300">
-                  |
-                </span>
-                <time
-                  dateTime={publication.publishedAt}
-                  className="text-[var(--brand-gray)]"
-                >
-                  {dateLabel}
-                </time>
-              </>
-            ) : null}
-          </div>
-
-          <h1 className="font-editorial mt-4 text-[clamp(1.85rem,4vw,3.15rem)] leading-[1.15] font-semibold text-balance text-[var(--brand-blue)] sm:mt-5">
-            {publication.title}
-          </h1>
-
-          {publication.subtitle ? (
-            <p className="mt-4 max-w-4xl text-base leading-relaxed text-zinc-600 text-pretty sm:mt-5 sm:text-lg sm:leading-relaxed">
-              {publication.subtitle}
-            </p>
-          ) : null}
-
-          <PublicationAuthors
-            className="mt-6"
-            authors={publication.authors}
-            writtenByLabel={labels.writtenBy}
-            locale={locale}
-          />
-        </div>
-
-        {hasPdf ? (
-          <aside className="flex shrink-0 lg:pt-1">
-            <PublicationPdfActions
-              url={publication.pdfUrl}
-              labels={{
-                viewPdf: labels.viewPdf,
-                downloadPdf: labels.downloadPdf,
-                downloadFailed: labels.pdfDownloadFailed,
-              }}
-            />
-          </aside>
-        ) : null}
-      </header>
-
-      <MediaGallery
+        badge={categoryLabel}
+        title={publication.title}
+        subtitle={publication.subtitle}
         images={publication.images}
-        labels={{
-          gallery: shared.gallery,
-          previous: shared.previous,
-          next: shared.next,
-          enlarge: shared.enlarge,
-          close: shared.close,
-          imageOf: shared.imageOf,
-          imageFailed: shared.imageFailed,
-          goToImage: shared.goToImage,
-        }}
+        fallbackImageUrl={publication.mainImageUrl}
+        fallbackImageAlt={publication.title}
+        dateTime={publication.publishedAt}
+        dateLabel={dateLabel}
+        authors={publication.authors.map((author) => ({
+          name: author.name,
+          slug: author.slug,
+        }))}
+        byLabel={
+          publication.authors.length > 0 ? labels.authorBy : undefined
+        }
+        galleryLabels={galleryLabels}
       />
 
-      {/*
-        Sticky Share lives in a column that *stretches* to the description
-        height. Prior `items-start` / `self-start` shrunk that column to the
-        button height, so sticky had no travel distance. YouTube sits in the
-        reading column so Share starts flush under the gallery.
-      */}
-      <section
-        aria-label={labels.title}
-        className="grid w-full grid-cols-1 gap-6 overflow-visible lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:gap-10"
-      >
-        <div className="flex min-w-0 flex-col gap-8 sm:gap-10">
-          {publication.youtubeUrl ? (
-            <YouTubeEmbed
-              url={publication.youtubeUrl}
-              title={publication.title}
-              heading={shared.watchVideo}
-            />
+      <Container className="pb-12 sm:pb-16 lg:pb-20">
+        <article className="mx-auto flex w-full max-w-6xl flex-col gap-8 overflow-visible pt-8 sm:gap-10 sm:pt-10 xl:max-w-7xl">
+          {hasPdf ? (
+            <div className="flex justify-end border-b border-[var(--border)] pb-6 sm:pb-8">
+              <PublicationPdfActions
+                url={publication.pdfUrl}
+                labels={{
+                  viewPdf: labels.viewPdf,
+                  downloadPdf: labels.downloadPdf,
+                  downloadFailed: labels.pdfDownloadFailed,
+                }}
+              />
+            </div>
           ) : null}
 
-          <ArticleMarkdown
-            source={publication.description}
-            locale={locale}
-            arabicArticleFont
-            className="w-full break-words [overflow-wrap:anywhere]"
-          />
-        </div>
+          <section
+            aria-label={labels.title}
+            className="grid w-full grid-cols-1 gap-6 overflow-visible lg:grid-cols-[minmax(0,2fr)_minmax(0,1fr)] lg:gap-10"
+          >
+            <div className="flex min-w-0 flex-col gap-8 sm:gap-10">
+              {publication.youtubeUrl ? (
+                <YouTubeEmbed
+                  url={publication.youtubeUrl}
+                  title={publication.title}
+                  heading={shared.watchVideo}
+                />
+              ) : null}
 
-        <aside className="relative order-first min-h-0 overflow-visible lg:order-none">
-          {/* ms-auto pins Share to the trailing edge of the shell (matches image/page end). */}
-          <div className="z-20 w-fit max-lg:ms-0 lg:ms-auto lg:sticky lg:top-[var(--site-header-offset)]">
-            <ShareControls
-              title={publication.title}
-              path={sharePath}
-              labels={shareLabels}
-            />
-          </div>
-        </aside>
-      </section>
-    </article>
+              <ArticleMarkdown
+                source={publication.description}
+                locale={locale}
+                arabicArticleFont
+                className="w-full break-words [overflow-wrap:anywhere]"
+              />
+            </div>
+
+            <aside className="relative order-first min-h-0 overflow-visible lg:order-none">
+              <div className="z-20 w-fit max-lg:ms-0 lg:ms-auto lg:sticky lg:top-[var(--site-header-offset)]">
+                <ShareControls
+                  title={publication.title}
+                  path={sharePath}
+                  labels={shareLabels}
+                />
+              </div>
+            </aside>
+          </section>
+        </article>
+      </Container>
+    </>
   );
 }

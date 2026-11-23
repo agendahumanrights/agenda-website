@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Suspense } from "react";
 
-import { Container } from "@/components/layout/Container";
 import { PublicationDetails } from "@/components/publications/PublicationDetails";
+import { Container } from "@/components/layout/Container";
 import { JsonLd } from "@/components/seo/JsonLd";
 import { EmptyState } from "@/components/ui/EmptyState";
 import { DetailSkeleton } from "@/components/ui/Skeleton";
@@ -88,7 +88,7 @@ async function PublicationDetailContent({ params }: { params: Params }) {
     publication.subtitle?.trim() || publication.title;
 
   return (
-    <div className="public-main-offset bg-white">
+    <div className="bg-white">
       <JsonLd
         data={[
           breadcrumbJsonLd([
@@ -119,15 +119,13 @@ async function PublicationDetailContent({ params }: { params: Params }) {
           }),
         ]}
       />
-      <Container className="pb-12 sm:pb-16 lg:pb-20">
-        <PublicationDetails
-          locale={locale}
-          publication={publication}
-          labels={dict.publications}
-          shared={dict.shared}
-          navHome={dict.nav.home}
-        />
-      </Container>
+      <PublicationDetails
+        locale={locale}
+        publication={publication}
+        labels={dict.publications}
+        shared={dict.shared}
+        navHome={dict.nav.home}
+      />
     </div>
   );
 }
