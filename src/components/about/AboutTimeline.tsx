@@ -16,7 +16,7 @@ type Props = {
 /**
  * Alternating vertical timeline for Strategic Goals / Program Areas.
  * Desktop: center spine with text alternating sides. Mobile: start-side spine.
- * Uses logical CSS so RTL mirrors correctly.
+ * Copy always uses text-align: start (EN left / AR right) on both sides.
  */
 export function AboutTimeline({
   id,

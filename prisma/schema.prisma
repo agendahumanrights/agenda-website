@@ -144,7 +144,7 @@ model WriterTranslation {
   writerId String
   locale   Locale
   fullName String
-  /// Professional specialization / major
+  /// Optional professional specialization / major (empty string when unset).
   major    String
   /// Markdown biography; empty string allowed for legacy rows migrated without copy.
   biography String @default("") @db.Text

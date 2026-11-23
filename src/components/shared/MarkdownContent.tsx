@@ -91,8 +91,10 @@ export function MarkdownContent({
   dir,
   shiftHeadings = false,
 }: Props) {
+  const lang = dir === "rtl" ? "ar" : dir === "ltr" ? "en" : undefined;
+
   return (
-    <div className={cn(className)} dir={dir}>
+    <div className={cn(className)} dir={dir} lang={lang}>
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         rehypePlugins={[

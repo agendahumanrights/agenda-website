@@ -16,7 +16,8 @@ type Props = {
 
 /**
  * Safe Markdown with editorial article typography.
- * Callers set the reading measure (e.g. publication details ~⅔ width).
+ * Body paragraphs use justified alignment via `.article-prose` (opt out with
+ * `.article-prose--align-start`). Callers set the reading measure.
  */
 export function ArticleMarkdown({
   source,

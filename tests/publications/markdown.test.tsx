@@ -99,4 +99,17 @@ describe("MarkdownContent", () => {
     expect(html).toContain("<figcaption>Harbor boats</figcaption>");
     expect(html).not.toContain("/evil/path.png");
   });
+
+  it("sets dir and lang for LTR/RTL article bodies", () => {
+    const en = renderToStaticMarkup(
+      <MarkdownContent source="Hello" dir="ltr" className="article-prose" />,
+    );
+    const ar = renderToStaticMarkup(
+      <MarkdownContent source="مرحبا" dir="rtl" className="article-prose" />,
+    );
+    expect(en).toContain('dir="ltr"');
+    expect(en).toContain('lang="en"');
+    expect(ar).toContain('dir="rtl"');
+    expect(ar).toContain('lang="ar"');
+  });
 });

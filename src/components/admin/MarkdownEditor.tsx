@@ -48,6 +48,12 @@ type Props = {
   labels: MarkdownEditorLabels;
   /** When set, the Image dialog supports direct uploads for this purpose. */
   imageUpload?: MarkdownImageUploadConfig | null;
+  /**
+   * When true, Preview/Split keep start-aligned prose (writer bios).
+   * Publication/Event descriptions leave this false so preview matches
+   * public justified `.article-prose`.
+   */
+  alignStartPreview?: boolean;
 };
 
 const HISTORY_LIMIT = 100;
@@ -85,6 +91,7 @@ export function MarkdownEditor({
   rows = 14,
   labels,
   imageUpload = null,
+  alignStartPreview = false,
 }: Props) {
   const [mode, setMode] = useState<Mode>("write");
   const [expanded, setExpanded] = useState(false);
@@ -445,8 +452,12 @@ export function MarkdownEditor({
             {value.trim() ? (
               <MarkdownContent
                 source={value}
+                dir={dir}
                 shiftHeadings
-                className="article-prose"
+                className={cn(
+                  "article-prose",
+                  alignStartPreview && "article-prose--align-start",
+                )}
               />
             ) : (
               <p className="text-sm text-zinc-500">{labels.emptyPreview}</p>

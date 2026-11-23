@@ -37,6 +37,6 @@ export function emailOrgName(locale: Locale): string {
 
 export function emailMissionSummary(locale: Locale): string {
   return locale === "ar"
-    ? "نُعزز حقوق الإنسان والمساءلة في اليمن من خلال الربط بين الأدلة والمجتمع المدني والمناصرة والمجتمعات المتضررة."
-    : "We advance human rights and accountability in Yemen by connecting evidence, civil society, advocacy, and affected communities.";
+    ? "منظمة مفكرة لحقوق الإنسان هي منظمة يمنية مستقلة وغير ربحية، تأسست عام 2023، تعمل على تعزيز المساءلة والعدالة الانتقالية وجبر الضرر الفعّال من خلال الربط بين الأدلة الموثوقة، والمجتمعات المتضررة، والعمل المدني."
+    : "Human Rights Agenda (HRA) is an independent, non-profit Yemeni human rights organization founded in 2023. HRA connects credible evidence, affected communities, and civil society action to advance accountability, transitional justice, and meaningful reparation.";
 }

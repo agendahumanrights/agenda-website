@@ -190,7 +190,7 @@ export function WriterForm({
 
   const bodyPayload = useMemo(
     () => ({
-      email,
+      email: email.trim() ? email.trim() : null,
       profileImageId: profileImage?.id ?? null,
       socialLinks: socialLinksForSubmit(socialRows),
       translations: [
@@ -209,15 +209,11 @@ export function WriterForm({
   }
 
   function validate(): boolean {
-    const arOk =
-      Boolean(ar.fullName.trim()) &&
-      Boolean(ar.major.trim()) &&
-      Boolean(ar.biography.trim());
-    const enOk =
-      Boolean(en.fullName.trim()) &&
-      Boolean(en.major.trim()) &&
-      Boolean(en.biography.trim());
-    const emailOk = emailFormatSchema.safeParse(email).success;
+    const arOk = Boolean(ar.fullName.trim()) && Boolean(ar.biography.trim());
+    const enOk = Boolean(en.fullName.trim()) && Boolean(en.biography.trim());
+    const trimmedEmail = email.trim();
+    const emailOk =
+      trimmedEmail.length === 0 || emailFormatSchema.safeParse(trimmedEmail).success;
     const imageOk = Boolean(profileImage?.id);
     const next: FieldErrors = {
       ar: !arOk,
@@ -555,12 +551,8 @@ export function WriterForm({
                 <FormField
                   id={`major-${contentLocale}`}
                   label={labels.major}
-                  required
-                  error={
-                    fieldErrors[contentLocale] && !active.major.trim()
-                      ? labels.errorValidation
-                      : undefined
-                  }
+                  optional
+                  optionalLabel={labels.optional}
                 >
                   <Input
                     id={`major-${contentLocale}`}
@@ -593,6 +585,7 @@ export function WriterForm({
                     value={active.biography}
                     disabled={busy}
                     labels={markdownLabels}
+                    alignStartPreview
                     onChange={(value) => {
                       markDirty();
                       setActive((s) => ({ ...s, biography: value }));
@@ -786,7 +779,8 @@ export function WriterForm({
               <FormField
                 id="email"
                 label={labels.email}
-                required
+                optional
+                optionalLabel={labels.optional}
                 error={
                   fieldErrors.email ? labels.errorInvalidEmail : undefined
                 }
@@ -797,7 +791,6 @@ export function WriterForm({
                   type="email"
                   dir="ltr"
                   className="admin-control"
-                  required
                   value={email}
                   disabled={busy}
                   onChange={(e) => {

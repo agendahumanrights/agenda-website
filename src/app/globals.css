@@ -71,10 +71,12 @@
 }
 
 @keyframes agenda-skeleton-pulse {
+
   0%,
   100% {
     opacity: 1;
   }
+
   50% {
     opacity: 0.55;
   }
@@ -141,25 +143,21 @@ body {
 
 /* Hero text legibility: bottom wash only — keeps mid/upper photo clear */
 .hero-media-gradient {
-  background: linear-gradient(
-    to top,
-    rgba(0, 0, 0, 0.72) 0%,
-    rgba(0, 0, 0, 0.48) 22%,
-    rgba(0, 0, 0, 0.22) 48%,
-    rgba(0, 0, 0, 0.06) 68%,
-    transparent 82%
-  );
+  background: linear-gradient(to top,
+      rgba(0, 0, 0, 0.72) 0%,
+      rgba(0, 0, 0, 0.48) 22%,
+      rgba(0, 0, 0, 0.22) 48%,
+      rgba(0, 0, 0, 0.06) 68%,
+      transparent 82%);
 }
 
 /* Content cards: bottom-weighted wash — keeps upper photo clear */
 .content-card-gradient {
-  background: linear-gradient(
-    to top,
-    rgba(0, 0, 0, 0.78) 0%,
-    rgba(0, 16, 38, 0.45) 28%,
-    rgba(0, 16, 38, 0.14) 48%,
-    transparent 65%
-  );
+  background: linear-gradient(to top,
+      rgba(0, 0, 0, 0.78) 0%,
+      rgba(0, 16, 38, 0.45) 28%,
+      rgba(0, 16, 38, 0.14) 48%,
+      transparent 65%);
 }
 
 /* Soft shadow so white overlay copy stays readable on bright photos */
@@ -230,7 +228,19 @@ body {
     var(--font-noto-arabic), system-ui, sans-serif;
   font-size: 1rem;
   line-height: 1.9;
+}
+
+/**
+ * Opt out of justified body text (writer biographies).
+ * Publication/event descriptions keep default `.article-prose` justify.
+ */
+.article-prose--align-start :where(p),
+.article-prose--align-start :where(li),
+.article-prose--align-start :where(blockquote) {
   text-align: start;
+  text-align-last: auto;
+  text-justify: auto;
+  hyphens: manual;
 }
 
 @media (min-width: 640px) {
@@ -269,6 +279,7 @@ body {
   line-height: 1.3;
   margin-top: 1.75em;
   margin-bottom: 0.6em;
+  text-align: start;
   text-wrap: balance;
 }
 
@@ -294,7 +305,30 @@ body {
 
 .article-prose :where(p) {
   margin: 0.9em 0;
+  text-align: justify;
+  text-align-last: start;
+  text-justify: inter-word;
   text-wrap: pretty;
+}
+
+/* LTR English: light hyphenation to reduce large justify gaps. */
+.article-prose[dir="ltr"] :where(p),
+.article-prose[dir="ltr"] :where(li),
+.article-prose[dir="ltr"] :where(blockquote) {
+  hyphens: auto;
+  -webkit-hyphens: auto;
+}
+
+/* RTL / Arabic: justify without hyphenation or distorted spacing. */
+.article-prose[dir="rtl"] :where(p),
+.article-prose[dir="rtl"] :where(li),
+.article-prose[dir="rtl"] :where(blockquote),
+.article-prose--arabic :where(p),
+.article-prose--arabic :where(li),
+.article-prose--arabic :where(blockquote) {
+  hyphens: none;
+  -webkit-hyphens: none;
+  word-spacing: normal;
 }
 
 .article-prose :where(a) {
@@ -324,6 +358,9 @@ body {
 
 .article-prose :where(li) {
   margin: 0.35em 0;
+  text-align: justify;
+  text-align-last: start;
+  text-justify: inter-word;
 }
 
 .article-prose :where(li > p) {
@@ -369,6 +406,9 @@ body {
   padding-inline-start: 1rem;
   color: #52525b;
   font-style: italic;
+  text-align: justify;
+  text-align-last: start;
+  text-justify: inter-word;
 }
 
 .article-prose :where(hr) {
@@ -399,6 +439,8 @@ body {
   padding: 0.1em 0.35em;
   direction: ltr;
   unicode-bidi: isolate;
+  text-align: start;
+  hyphens: none;
 }
 
 .article-prose :where(pre) {
@@ -411,6 +453,9 @@ body {
   direction: ltr;
   unicode-bidi: isolate;
   max-width: 100%;
+  text-align: start;
+  text-align-last: auto;
+  hyphens: none;
 }
 
 .article-prose :where(pre code) {
@@ -514,6 +559,7 @@ body {
 .admin-control:focus-visible {
   border-color: var(--admin-accent);
 }
+
 /* About Us alternating timeline (Strategic Goals / Program Areas) */
 .about-timeline {
   --about-timeline-node: 3.5rem;
@@ -526,11 +572,9 @@ body {
   inset-inline-start: calc(var(--about-timeline-node) / 2);
   width: 2px;
   translate: -50% 0;
-  background: linear-gradient(
-    to bottom,
-    color-mix(in srgb, var(--brand-blue) 55%, white),
-    color-mix(in srgb, var(--brand-blue) 18%, white)
-  );
+  background: linear-gradient(to bottom,
+      color-mix(in srgb, var(--brand-blue) 55%, white),
+      color-mix(in srgb, var(--brand-blue) 18%, white));
   border-radius: 999px;
 }
 
@@ -615,11 +659,13 @@ body {
     text-align: start;
   }
 
+  /* Keep block near the spine, but always start-align prose (LTR left / RTL right)
+     so left-side items match right-side reading edges. */
   .about-timeline-item--start .about-timeline-copy {
     grid-column: 1;
     grid-row: 1;
     justify-self: end;
-    text-align: end;
+    text-align: start;
   }
 
   /* Soft curved connector toward the copy side */

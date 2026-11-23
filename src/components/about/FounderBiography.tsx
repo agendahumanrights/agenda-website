@@ -67,7 +67,7 @@ export function FounderBiography({
 
       <div
         className={cn(
-          "w-full min-w-0 flex-1 rounded-3xl",
+          "w-full min-w-0 flex-1 rounded-3xl text-start",
           "bg-[color-mix(in_srgb,var(--brand-blue)_3.5%,white)]",
           "p-6 sm:p-7 lg:p-8 xl:p-9",
           "shadow-[0_10px_32px_rgba(5,73,140,0.07)]",
@@ -102,7 +102,9 @@ export function FounderBiography({
             <EnvelopeIcon className="size-4 shrink-0 text-[var(--brand-blue)]" />
             <span className="min-w-0">
               <span className="font-medium text-zinc-600">{emailLabel}: </span>
-              <span className="break-all">{email}</span>
+              <span className="break-all" dir="ltr">
+                {email}
+              </span>
             </span>
           </a>
         ) : null}

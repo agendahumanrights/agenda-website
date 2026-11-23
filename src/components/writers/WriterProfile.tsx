@@ -24,6 +24,9 @@ const PLATFORM_LABELS: Record<WriterSocialPlatform, keyof Labels> = {
 export function WriterProfile({ writer, labels, locale }: Props) {
   const dir = locale === "ar" ? "rtl" : "ltr";
   const biography = writer.biography.trim();
+  const major = writer.major.trim();
+  const email = writer.email?.trim() || null;
+  const hasContact = Boolean(email) || writer.socialLinks.length > 0;
 
   return (
     <div dir={dir} className="mx-auto flex w-full max-w-4xl flex-col gap-8 sm:gap-10">
@@ -78,49 +81,63 @@ export function WriterProfile({ writer, labels, locale }: Props) {
               >
                 {writer.fullName}
               </h1>
-              <p className="mt-2 text-base text-[var(--brand-gray)] sm:text-lg">
-                {writer.major}
-              </p>
+              {major ? (
+                <p className="mt-2 text-base font-medium text-zinc-600 sm:text-lg">
+                  {major}
+                </p>
+              ) : null}
 
-              <div className="mt-5 flex flex-col items-center gap-3.5 sm:items-start">
-                {writer.email ? (
-                  <a
-                    href={`mailto:${writer.email}`}
-                    className="inline-flex max-w-full items-center gap-2 text-sm font-medium text-[var(--brand-blue)] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-blue)]"
-                  >
-                    <MailIcon className="size-4 shrink-0" />
-                    <span className="min-w-0 break-all">{writer.email}</span>
-                    <span className="sr-only">{labels.emailAction}</span>
-                  </a>
-                ) : null}
+              {hasContact ? (
+                <div
+                  className={cn(
+                    "mt-5 flex flex-col items-center gap-3 sm:items-start",
+                    "sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4 sm:gap-y-2.5",
+                  )}
+                >
+                  {email ? (
+                    <a
+                      href={`mailto:${email}`}
+                      className={cn(
+                        "inline-flex max-w-full items-center gap-2 rounded-full border border-[color-mix(in_srgb,var(--brand-blue)_16%,transparent)] bg-white px-3.5 py-2",
+                        "text-sm font-medium text-[var(--brand-blue)]",
+                        "transition-colors hover:bg-[color-mix(in_srgb,var(--brand-blue)_6%,white)]",
+                        "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-blue)]",
+                      )}
+                    >
+                      <MailIcon className="size-4 shrink-0" />
+                      <span className="min-w-0 break-all">{email}</span>
+                      <span className="sr-only">{labels.emailAction}</span>
+                    </a>
+                  ) : null}
 
-                {writer.socialLinks.length > 0 ? (
-                  <ul className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
-                    {writer.socialLinks.map((link) => {
-                      const labelKey = PLATFORM_LABELS[link.platform];
-                      const label = labels[labelKey];
-                      return (
-                        <li key={link.platform}>
-                          <a
-                            href={link.url}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className={cn(
-                              "inline-flex size-10 items-center justify-center rounded-full border border-[color-mix(in_srgb,var(--brand-blue)_18%,transparent)] bg-white text-[var(--brand-blue)] transition-colors",
-                              "hover:bg-[color-mix(in_srgb,var(--brand-blue)_8%,white)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-blue)]",
-                            )}
-                            aria-label={labels.socialLinkLabel
-                              .replace("{platform}", label)
-                              .replace("{name}", writer.fullName)}
-                          >
-                            <SocialIcon platform={link.platform} />
-                          </a>
-                        </li>
-                      );
-                    })}
-                  </ul>
-                ) : null}
-              </div>
+                  {writer.socialLinks.length > 0 ? (
+                    <ul className="flex flex-wrap items-center justify-center gap-2 sm:justify-start">
+                      {writer.socialLinks.map((link) => {
+                        const labelKey = PLATFORM_LABELS[link.platform];
+                        const label = labels[labelKey];
+                        return (
+                          <li key={link.platform}>
+                            <a
+                              href={link.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className={cn(
+                                "inline-flex size-10 items-center justify-center rounded-full border border-[color-mix(in_srgb,var(--brand-blue)_18%,transparent)] bg-white text-[var(--brand-blue)] transition-colors",
+                                "hover:bg-[color-mix(in_srgb,var(--brand-blue)_8%,white)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-blue)]",
+                              )}
+                              aria-label={labels.socialLinkLabel
+                                .replace("{platform}", label)
+                                .replace("{name}", writer.fullName)}
+                            >
+                              <SocialIcon platform={link.platform} />
+                            </a>
+                          </li>
+                        );
+                      })}
+                    </ul>
+                  ) : null}
+                </div>
+              ) : null}
             </div>
           </div>
         </div>
@@ -141,7 +158,11 @@ export function WriterProfile({ writer, labels, locale }: Props) {
             {labels.aboutHeading}
           </h2>
           <div className="mt-5 max-w-3xl">
-            <ArticleMarkdown source={biography} locale={locale} />
+            <ArticleMarkdown
+              source={biography}
+              locale={locale}
+              className="article-prose--align-start"
+            />
           </div>
         </section>
       ) : null}

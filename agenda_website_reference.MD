@@ -4,7 +4,7 @@
 > **Source of truth:** application code. Requirements and older docs describe intended or planned behavior; this file describes verified implementation.  
 > **Do not treat scaffolding as completed features.**
 
-**Last updated:** 2026-11-19 (Publications: multiple authors, max 10)  
+**Last updated:** 2026-11-23 (About timeline text-start)  
 **Inspection basis:** Checked-in source under the repository root. DB migrate/admin bootstrap depend on local `.env` (gitignored).
 
 ---
@@ -278,7 +278,7 @@ Organized by domain: `about/`, `admin/`, `events/`, `home/`, `layout/`, `publica
 | `i18n/pathnames.ts` | `sitePath`, `stripLocalePrefix`, deprecated `localizedPath` alias |
 | `i18n/actions.ts` | Server Action `setLocaleAction` |
 | `messages/ar.json`, `en.json` | UI chrome strings only |
-| `content/about.ts` | Localized org copy outside admin: vision, mission, intro, missionSummary, strategicGoals[4], programAreas[4], strategicPositioning[2], values[8] (EN/AR) |
+| `content/about.ts` | Localized org copy outside admin: vision, mission, intro, **missionSummary** (footer: first HRA founding paragraph EN/AR), strategicGoals[4], programAreas[4], strategicPositioning[2], values[8] |
 | `lib/utils.ts` | `cn`, `clamp` |
 | `lib/slugs.ts` | `slugify` helper (not wired into mutations yet) |
 | `lib/catalogue-query.ts` | Parse/build public catalogue URL params (`q`, `category`, `sort=newest|oldest`, `page`); page size 12; default sort omitted from URLs |
@@ -497,12 +497,12 @@ No logout route or working login form exists.
 | Component | Status |
 | --- | --- |
 | `Breadcrumbs` | Localized Home → section → current title |
-| `ShareControls` | Client expandable share menu: circular trigger + **vertical** white stack (pointer, separators) with X, Facebook, LinkedIn, email, copy link; opens below (or above if space is tight); outside/Escape close; RTL/LTR via `start`; copy feedback; `aria-expanded` / `aria-controls` / `aria-haspopup` |
+| `ShareControls` | Client expandable share menu: circular trigger + **vertical** white stack (pointer, separators) with X, Facebook, LinkedIn, email, copy link; **open by default**; toggles **only via the share button** (no outside/Escape dismiss); opens below (or above if space is tight); RTL/LTR via `start`; copy feedback; `aria-expanded` / `aria-controls` / `aria-haspopup` |
 | `MediaGallery` | Client: main+gallery images (deduped by media id); frame uses full-bleed `object-cover` (lightbox keeps `object-contain`); centered thumb row (`w-max min-w-full justify-center`) with horizontal scroll when needed; prev/next, counter, fullscreen, keyboard/swipe, RTL-aware; omits when empty |
 | `YouTubeEmbed` | Shared responsive 16:9 iframe via `youtube-nocookie.com` from validated video ID; optional heading; lazy by default; omits when URL invalid |
 | `YouTubeUrlField` | Admin Media-card control: URL input (LTR), live preview, remove; used by Publication/Event forms |
-| `ArticleMarkdown` / `MarkdownContent` | Shared safe GFM renderer (sanitize, external links, heading shift); `.article-prose` for public details + admin preview; optional `arabicArticleFont` → `.article-prose--arabic` (IBM Plex) on AR pub/event bodies only; reading measure set by the caller; inline images allow http(s) + `/api/media/…`; optional Markdown title → `<figure>`/`<figcaption>`; lazy-loaded |
-| `MarkdownEditor` | Admin toolbar editor (Write/Preview/Split, expand, help, undo/redo); Publication/Event descriptions support Image **upload** or URL via `MarkdownImageDialog`; cursor selection snapshotted before dialogs; optional paste/drop image upload |
+| `ArticleMarkdown` / `MarkdownContent` | Shared safe GFM renderer (sanitize, external links, heading shift); `.article-prose` for public details + admin preview; **justified** body `p` / list / blockquote (`text-align: justify`, `text-align-last: start`); headings/code/tables/captions stay start/center; `dir` + `lang` for LTR hyphenation / RTL no-hyphen; optional `arabicArticleFont` → `.article-prose--arabic` (IBM Plex) on AR pub/event bodies; writers opt out via `.article-prose--align-start`; inline images http(s) + `/api/media/…`; optional title → `<figure>`/`<figcaption>`; lazy-loaded |
+| `MarkdownEditor` | Admin toolbar editor (Write/Preview/Split, expand, help, undo/redo); Preview/Split use same `.article-prose` justify as public (Publication/Event); `alignStartPreview` for Writer bios; Image **upload** or URL via `MarkdownImageDialog` on Publication/Event; selection snapshotted; optional paste/drop upload |
 | `MarkdownImageDialog` | Insert-image dialog: Upload (MediaDropzone + progress) or URL; alt + optional caption; disables Insert until upload completes |
 | `lib/markdown-editor.ts` | Pure Markdown textarea transforms + `markdownToPlainText` for excerpts; `insertImage` places block images on their own lines |
 | `lib/markdown-media.ts` | Detects media keys/URLs inside Markdown (access + orphan safety) |
@@ -517,7 +517,7 @@ No logout route or working login form exists.
 | `AboutContentBlock` / `IllustrationPanel` / `AccentHeading` | Shared two-column layout, white illustration card with decorative circles, blue vertical accent |
 | `AboutIllustrations` | Vision/Mission use `public/images/about/{vision,mission}-agenda.jpg` via `next/image` (decorative, `aria-hidden`) |
 | `AboutIcons` | Timeline + value icon SVGs (no icon package) |
-| `AboutTimeline` | Alternating vertical timeline (center spine on `lg+`, start-side spine on mobile); used for Strategic Goals + Program Areas; `.about-timeline*` CSS in `globals.css`; logical properties for RTL |
+| `AboutTimeline` | Alternating vertical timeline (center spine on `lg+`, start-side spine on mobile); used for Strategic Goals + Program Areas; both sides `text-align: start` (EN left / AR right); `.about-timeline*` CSS in `globals.css` |
 | `StrategicPositioningSection` | Editorial two-paragraph statement on soft blue wash |
 | `ValuesSection` | Responsive 1→2 column value cards (icon, number, title, full description) |
 | `PublicationAuthors` / `PublicationAuthor` | Detail authors block: one author = classic portrait row; multiple = “Written by” + wrapping compact rows with profile links |
@@ -542,8 +542,8 @@ No logout route or working login form exists.
 | `PublicationsTable` | Debounced search, filters, desktop table + mobile cards, overflow delete/view |
 | `EventForm` / `EventsTable` | Matches Publications chrome; required `*` on title, description, main image, event date; subtitle / YouTube optional; publish without subtitle allowed |
 | `FounderForm` / `FoundersTable` | **Redesigned** to match admin chrome: debounced name search, founder cards/table (no publication column), overflow View/Delete, reorder dialog (DnD + keyboard, complete ID list), two-column form with AR/EN tabs, circular MediaDropzone portrait, sticky actions |
-| `WriterForm` / `WritersTable` | Major + Markdown biography per locale tab; required email + portrait (`writer-profile`); optional social links; delete blocked (409) when publications linked; View public → `/writers/{slug}` |
-| `WriterProfile` | Compact max-w-4xl header (portrait + name/major/email/socials) + optional “About the Writer” Markdown section (hidden when empty) |
+| `WriterForm` / `WritersTable` | Locale tabs: required full name + biography; **optional** major/email; required portrait (`writer-profile`); optional social links; delete blocked (409) when publications linked; View public → `/writers/{slug}` |
+| `WriterProfile` | Compact max-w-4xl header (portrait + name; major only when set; email chip + socials in one contact row when present) + optional “About the Writer” Markdown section (hidden when empty) |
 | `HomepageSelection` | **Redesigned** dual-panel curation: selected cards (thumb, order, DnD + keyboard move, remove), available browser with bilingual title search + load-more, independent dirty/save/reset per section, brand-blue saves, accurate empty/error states, beforeunload when unsaved |
 
 ### Shared UI
@@ -564,7 +564,7 @@ No logout route or working login form exists.
 | Requirement area | Implementation |
 | --- | --- |
 | Markdown editor | Shared admin `MarkdownEditor`: toolbar (headings, emphasis, lists, tasks, quotes, links, images, code, tables, HR, undo/redo), Write / Preview / Split, expand + help; stores Markdown strings; Publication/Event Image dialog uploads to R2/local via `publication-inline` / `event-inline` (separate from main+gallery 10-image cap) |
-| Markdown renderer | Shared `MarkdownContent` + `ArticleMarkdown` (GFM, sanitize, safe http(s)/mailto + `/api/media`, heading shift, `.article-prose` with centered responsive inline images + optional captions) for admin preview and public details |
+| Markdown renderer | Shared `MarkdownContent` + `ArticleMarkdown` (GFM, sanitize, safe http(s)/mailto + `/api/media`, heading shift, `.article-prose` with **automatic justified** description paragraphs, centered responsive inline images + optional captions) for admin preview and public details; writer bios use `.article-prose--align-start` |
 | PDF view/download | `PublicationPdfActions` under share controls; `GET /api/media/...?download=1` forces attachment |
 | Image galleries | `MediaGallery` on publication/event details (main + gallery, lightbox) |
 
@@ -655,7 +655,7 @@ Relations: `translations`, `publications` (as `authorWriter`).
 | Field | Notes |
 | --- | --- |
 | `writerId` + `locale` | **@@unique**; cascade delete |
-| `fullName`, `major` | Localized name + professional specialization |
+| `fullName`, `major` | Localized name; major optional (empty string allowed) |
 | `biography` | Markdown `@db.Text` default `""` (legacy-safe); required on admin create/save |
 
 #### `PublicationCategory`
@@ -948,7 +948,7 @@ Same editorial pattern without author/PDF. Visitor-facing date is `eventDate`. P
 - **Image cap (publications & events):** `MEDIA_LIMITS.maxImagesPerItem` default **10** total (1 main + up to 9 gallery), overridable via `UPLOAD_MAX_IMAGES_PER_ITEM`. Enforced in Zod create schemas, publication/event services (`assertContentImageCountAllowed`), and admin forms (counter, disable upload at limit, reject multi-select over remaining capacity). Existing over-limit records are grandfathered: saves may keep or reduce count, never auto-delete media, and cannot add more until under the cap. Replacing the main image does not change the count.
 - **YouTube (optional, one per item):** nullable `youtubeUrl` on Publication and Event. Shared `src/lib/youtube.ts` parses watch/youtu.be/embed/shorts (+ query params), normalizes to canonical watch URL, embeds via `youtube-nocookie.com`. Zod `optionalYoutubeUrlSchema` + admin `YouTubeUrlField` + public `YouTubeEmbed` (gallery → video → Markdown). Does **not** count toward the image cap; no video file storage.
 - Detail galleries use structured `images` with localized alt; list cards use cover `<img>`. Public `MediaGallery` unchanged (works with 1–10+ images).
-- Markdown: shared toolbar editor in admin; sanitized GFM for admin preview and public detail bodies (same `.article-prose` styles).
+- Markdown: shared toolbar editor in admin; sanitized GFM for admin preview and public detail bodies (same `.article-prose` styles, including automatic justified paragraphs on publication/event descriptions).
 - Publication PDF: View/Download buttons under share controls; same-origin media route supports `?download=1`; cross-origin R2 public URLs need bucket CORS GET (see `CLOUDFLARE_R2_STORAGE.md`).
 
 ### Search and filtering
@@ -1165,6 +1165,42 @@ Open `http://localhost:3000`.
 ---
 
 ## K. Change history
+
+### 2026-11-23 — About timeline start-aligned copy on both sides
+
+- Desktop `.about-timeline-item--start` copy keeps `justify-self: end` (near spine) but uses `text-align: start` instead of `end`, matching right-side items (EN left edge / AR right edge).
+- Applies to Strategic Goals and Program Areas; RTL inherits the same logical start.
+- Validated: CSS alignment change only.
+
+### 2026-11-23 — About hero + footer organization description
+
+- Replaced About `heroDescription` (EN/AR) and footer `missionSummary` / email summary with the supplied HRA founding description (independent non-profit, 2023; evidence, communities, civil society; documentation, capacity, international mechanisms).
+- Footer `missionSummary` keeps the **first paragraph only** (EN/AR); About hero retains both paragraphs.
+- `PageHero` description uses `whitespace-pre-line` for multi-paragraph copy; slightly wider max measure.
+- Formal About vision/mission section statements in `content/about.ts` unchanged; `intro` aligned to the first paragraph for SEO.
+- Validated: copy updates only.
+
+### 2026-11-23 — Justified publication/event description prose
+
+- CSS (`.article-prose`): paragraphs, list items, and blockquotes use `text-align: justify` + `text-align-last: start` + `text-justify: inter-word`; headings, code/pre, table cells, and figcaptions keep start/center alignment.
+- LTR (`dir="ltr"` / `lang="en"`): light `hyphens: auto`. RTL / `.article-prose--arabic`: `hyphens: none`, normal word-spacing; IBM Plex Arabic unchanged.
+- Public: `PublicationDetails` / `EventDetails` inherit justify via shared `ArticleMarkdown`. Writers: `WriterProfile` + admin Writer preview use `.article-prose--align-start` / `alignStartPreview`.
+- Admin Publication/Event Preview & Split match public justify; stored Markdown unchanged (no alignment syntax).
+- Validated: `npm run typecheck` pass; `npm test` 123 pass / 1 skip; `npm run build` pass. `npm run lint` still fails on pre-existing `AddCategoryModal` setState-in-effect only (unrelated).
+
+### 2026-11-23 — ShareControls open by default; trigger-only close; larger
+
+- Publication/event detail share menu starts expanded (`useState(true)`).
+- Closes only when the share button is clicked again (outside click and Escape dismiss removed).
+- Larger hit targets: trigger `size-14` / 22px icon; actions `size-12` / 18px icons; roomier menu padding.
+- Validated: interaction + size changes in `ShareControls.tsx`.
+
+### 2026-11-22 — Writer email and major optional
+
+- Validation/service: create/update allow null/empty email; major may be empty (full name + biography still required both locales). Portrait remains required.
+- Admin `WriterForm`: email + major marked Optional; empty email submits as `null`.
+- Public `WriterProfile`: hide empty major; email shown as a compact chip beside social icons when present. Publication author rows already omit empty major.
+- Validated: `tsc --noEmit`; `vitest` `tests/writers/validations.test.ts` 6 pass.
 
 ### 2026-11-19 — Publications: multiple authors (max 10)
 

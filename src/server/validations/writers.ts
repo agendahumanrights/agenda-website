@@ -23,9 +23,21 @@ export const writerBySlugSchema = z.object({
 export const writerTranslationInputSchema = z.object({
   locale: localeSchema,
   fullName: z.string().trim().min(1).max(200),
-  major: z.string().trim().min(1).max(300),
+  /** Optional professional specialization; empty string stored when omitted. */
+  major: z.string().trim().max(300).default(""),
   biography: z.string().trim().min(1).max(50_000),
 });
+
+/** Empty string or omitted → null; otherwise a valid email. */
+const optionalWriterEmailSchema = z.preprocess(
+  (value) => {
+    if (value === undefined || value === null) return null;
+    if (typeof value !== "string") return value;
+    const trimmed = value.trim();
+    return trimmed.length === 0 ? null : trimmed;
+  },
+  z.string().email().max(254).nullable(),
+);
 
 export const writerSocialLinkSchema = z.object({
   platform: z.enum(WRITER_SOCIAL_PLATFORMS),
@@ -70,7 +82,7 @@ function requireArEnTranslations(
 }
 
 export const createWriterBodySchema = z.object({
-  email: z.string().trim().email().max(254),
+  email: optionalWriterEmailSchema.optional().default(null),
   profileImageId: z.string().cuid(),
   slug: writerSlugSchema.optional(),
   socialLinks: writerSocialLinksSchema.optional().default([]),
@@ -82,7 +94,7 @@ export const createWriterBodySchema = z.object({
 
 /** slug is immutable after creation. */
 export const updateWriterBodySchema = z.object({
-  email: z.string().trim().email().max(254).nullable().optional(),
+  email: optionalWriterEmailSchema.optional(),
   profileImageId: z.string().cuid().nullable().optional(),
   socialLinks: writerSocialLinksSchema.optional(),
   translations: z

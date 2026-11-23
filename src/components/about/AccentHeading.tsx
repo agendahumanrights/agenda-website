@@ -20,7 +20,7 @@ export function AccentHeading({
     <Tag
       id={id}
       className={cn(
-        "anchor-offset flex items-stretch gap-3 font-editorial text-2xl font-semibold tracking-tight text-zinc-900 sm:text-[1.75rem]",
+        "anchor-offset flex items-stretch gap-3 text-start font-editorial text-2xl font-semibold tracking-tight text-zinc-900 sm:text-[1.75rem]",
         className,
       )}
     >

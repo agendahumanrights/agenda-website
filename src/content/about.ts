@@ -43,7 +43,7 @@ export type OrganizationCopy = {
   intro: string;
   vision: string;
   mission: string;
-  /** Short mission blurb (e.g. public footer). */
+  /** Organization description for the public footer (may be multi-paragraph). */
   missionSummary: string;
   strategicGoals: AboutTimelineItem[];
   programAreas: AboutTimelineItem[];
@@ -58,9 +58,9 @@ const copyByLocale: Record<Locale, OrganizationCopy> = {
     mission:
       "To advance human rights and accountability in Yemen by connecting evidence, civil society, advocacy, and affected communities.",
     intro:
-      "To advance human rights and accountability in Yemen by connecting evidence, civil society, advocacy, and affected communities.",
+      "Human Rights Agenda (HRA) is an independent, non-profit Yemeni human rights organization founded in 2023. HRA connects credible evidence, affected communities, and civil society action to advance accountability, transitional justice, and meaningful reparation.",
     missionSummary:
-      "We advance human rights and accountability in Yemen by connecting evidence, civil society, advocacy, and affected communities.",
+      "Human Rights Agenda (HRA) is an independent, non-profit Yemeni human rights organization founded in 2023. HRA connects credible evidence, affected communities, and civil society action to advance accountability, transitional justice, and meaningful reparation.",
     strategicGoals: [
       {
         icon: "civic-space",
@@ -174,9 +174,9 @@ const copyByLocale: Record<Locale, OrganizationCopy> = {
     mission:
       "تعزيز حقوق الإنسان والمساءلة في اليمن من خلال الربط بين الأدلة والمجتمع المدني والمناصرة والمجتمعات المتضررة.",
     intro:
-      "تعزيز حقوق الإنسان والمساءلة في اليمن من خلال الربط بين الأدلة والمجتمع المدني والمناصرة والمجتمعات المتضررة.",
+      "منظمة مفكرة لحقوق الإنسان هي منظمة يمنية مستقلة وغير ربحية، تأسست عام 2023، تعمل على تعزيز المساءلة والعدالة الانتقالية وجبر الضرر الفعّال من خلال الربط بين الأدلة الموثوقة، والمجتمعات المتضررة، والعمل المدني.",
     missionSummary:
-      "نُعزز حقوق الإنسان والمساءلة في اليمن من خلال الربط بين الأدلة والمجتمع المدني والمناصرة والمجتمعات المتضررة.",
+      "منظمة مفكرة لحقوق الإنسان هي منظمة يمنية مستقلة وغير ربحية، تأسست عام 2023، تعمل على تعزيز المساءلة والعدالة الانتقالية وجبر الضرر الفعّال من خلال الربط بين الأدلة الموثوقة، والمجتمعات المتضررة، والعمل المدني.",
     strategicGoals: [
       {
         icon: "civic-space",

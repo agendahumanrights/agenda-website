@@ -103,7 +103,7 @@
   },
   "about": {
     "title": "About Us",
-    "heroDescription": "Learn about Human Rights Agenda — our vision, mission, strategic goals, program areas, values, and founders.",
+    "heroDescription": "Human Rights Agenda (HRA) is an independent, non-profit Yemeni human rights organization founded in 2023. HRA connects credible evidence, affected communities, and civil society action to advance accountability, transitional justice, and meaningful reparation.\n\nWe document human rights violations, conduct research and analysis, strengthen the capacity of human rights actors, and support affected communities to articulate their priorities and participate meaningfully in decisions affecting their rights and future. HRA bridges grassroots actors, Yemeni civil society, and international human rights mechanisms to amplify local expertise and strengthen collective action for human rights and justice in Yemen.",
     "founders": "Founders",
     "founderEmail": "Email",
     "organization": "Organization",
@@ -556,6 +556,8 @@
       "copyLinkSuccess": "Link copied.",
       "copyLinkFailed": "Could not copy the link.",
       "email": "Email",
+      "optional": "Optional",
+      "requiredAria": "required",
       "profileImage": "Profile portrait",
       "profileImageHint": "JPEG, PNG, WebP, or GIF. Max {maxMb} MB. Circular crop is preview only — the original image is kept.",
       "dropHint": "Drag and drop, or click to browse",

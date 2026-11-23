@@ -53,8 +53,10 @@ export function PublicationAuthor({
           locale={locale}
           className="font-medium text-[var(--brand-blue)] underline-offset-4 hover:underline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-blue)]"
         />
-        {major ? (
-          <p className="mt-0.5 text-sm text-[var(--brand-gray)]">{major}</p>
+        {major?.trim() ? (
+          <p className="mt-0.5 text-sm leading-snug text-[var(--brand-gray)]">
+            {major.trim()}
+          </p>
         ) : null}
       </div>
     </div>

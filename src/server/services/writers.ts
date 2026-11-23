@@ -138,14 +138,9 @@ function assertCompleteTranslations(
   const byLocale = new Map(translations.map((t) => [t.locale, t]));
   for (const locale of ["ar", "en"] as const) {
     const t = byLocale.get(locale);
-    if (
-      !t ||
-      !t.fullName.trim() ||
-      !t.major.trim() ||
-      !t.biography.trim()
-    ) {
+    if (!t || !t.fullName.trim() || !t.biography.trim()) {
       throw badRequest(
-        `Complete ${locale.toUpperCase()} full name, major, and biography are required.`,
+        `Complete ${locale.toUpperCase()} full name and biography are required.`,
       );
     }
   }
@@ -322,7 +317,7 @@ export async function createWriter(
     const created = await prisma.writer.create({
       data: {
         slug,
-        email: input.email.trim().toLowerCase(),
+        email: input.email ? input.email.trim().toLowerCase() : null,
         profileImageId: input.profileImageId,
         socialLinks,
         translations: {
@@ -386,7 +381,6 @@ export async function updateWriter(
     }));
 
   assertCompleteTranslations(nextTranslations);
-  if (!nextEmail) throw badRequest("Email is required.");
   if (!nextImageId) throw badRequest("Profile image is required.");
   await assertMediaReady({ id: nextImageId, expectedKind: "IMAGE" });
 

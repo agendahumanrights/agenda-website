@@ -105,7 +105,7 @@ export function PageHero({
             className="h-0.5 w-16 rounded-full bg-[color-mix(in_srgb,#9fd0ff_70%,white)] sm:w-20"
             aria-hidden
           />
-          <p className="max-w-lg text-base leading-relaxed text-white/88 text-pretty sm:text-lg sm:leading-relaxed">
+          <p className="max-w-xl whitespace-pre-line text-base leading-relaxed text-white/88 text-pretty sm:max-w-2xl sm:text-lg sm:leading-relaxed">
             {description}
           </p>
         </div>

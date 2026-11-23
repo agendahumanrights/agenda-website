@@ -38,28 +38,20 @@ function absoluteUrl(path: string): string {
 }
 
 const actionClass =
-  "inline-flex size-10 shrink-0 items-center justify-center rounded-full text-zinc-600 transition-colors hover:bg-[color-mix(in_srgb,var(--brand-blue)_8%,white)] hover:text-[var(--brand-blue)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-blue)]";
+  "inline-flex size-12 shrink-0 items-center justify-center rounded-full text-zinc-600 transition-colors hover:bg-[color-mix(in_srgb,var(--brand-blue)_8%,white)] hover:text-[var(--brand-blue)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-blue)]";
 
 /**
  * Expandable share menu: circular trigger + vertical action stack
- * (opens below when space allows, otherwise above). Used on publication
- * and event detail pages.
+ * (opens below when space allows, otherwise above). Open by default;
+ * toggles only via the share button. Used on publication and event details.
  */
 export function ShareControls({ title, path, labels, className }: Props) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(true);
   const [placement, setPlacement] = useState<Placement>("below");
   const [status, setStatus] = useState<"idle" | "ok" | "err">("idle");
-  const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const menuId = useId();
-
-  const close = useCallback((restoreFocus = false) => {
-    setOpen(false);
-    if (restoreFocus) {
-      queueMicrotask(() => triggerRef.current?.focus());
-    }
-  }, []);
 
   const updatePlacement = useCallback(() => {
     const trigger = triggerRef.current;
@@ -67,7 +59,7 @@ export function ShareControls({ title, path, labels, className }: Props) {
     if (!trigger || !menu) return;
 
     const triggerRect = trigger.getBoundingClientRect();
-    const menuHeight = menu.offsetHeight || 240;
+    const menuHeight = menu.offsetHeight || 300;
     const gap = 12;
     const spaceBelow = window.innerHeight - triggerRect.bottom - gap;
     const spaceAbove = triggerRect.top - gap;
@@ -93,34 +85,15 @@ export function ShareControls({ title, path, labels, className }: Props) {
   useEffect(() => {
     if (!open) return;
 
-    const onPointerDown = (event: MouseEvent | TouchEvent) => {
-      const target = event.target as Node | null;
-      if (target && rootRef.current?.contains(target)) return;
-      close(false);
-    };
-
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        close(true);
-      }
-    };
-
     const onViewportChange = () => updatePlacement();
 
-    document.addEventListener("mousedown", onPointerDown);
-    document.addEventListener("touchstart", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
     window.addEventListener("resize", onViewportChange);
     window.addEventListener("scroll", onViewportChange, true);
     return () => {
-      document.removeEventListener("mousedown", onPointerDown);
-      document.removeEventListener("touchstart", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("resize", onViewportChange);
       window.removeEventListener("scroll", onViewportChange, true);
     };
-  }, [open, close, updatePlacement]);
+  }, [open, updatePlacement]);
 
   const encodedTitle = encodeURIComponent(title);
   // Path-only in markup for SSR/hydration stability; absolute URL applied on click.
@@ -137,7 +110,7 @@ export function ShareControls({ title, path, labels, className }: Props) {
 
   return (
     <div className={cn("flex flex-col gap-2", className)}>
-      <div ref={rootRef} className="relative inline-flex self-start">
+      <div className="relative inline-flex self-start">
         <button
           ref={triggerRef}
           type="button"
@@ -147,8 +120,8 @@ export function ShareControls({ title, path, labels, className }: Props) {
           aria-haspopup="menu"
           onClick={() => setOpen((value) => !value)}
           className={cn(
-            "relative z-10 inline-flex size-11 items-center justify-center rounded-full bg-white text-[var(--brand-gray)]",
-            "shadow-[0_4px_14px_rgba(5,73,140,0.12)] ring-1 ring-zinc-200/80",
+            "relative z-10 inline-flex size-14 items-center justify-center rounded-full bg-white text-[var(--brand-gray)]",
+            "shadow-[0_4px_16px_rgba(5,73,140,0.14)] ring-1 ring-zinc-200/80",
             "transition-colors hover:text-[var(--brand-blue)]",
             "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--brand-blue)]",
             open && "text-[var(--brand-blue)]",
@@ -178,16 +151,16 @@ export function ShareControls({ title, path, labels, className }: Props) {
         >
           <div
             className={cn(
-              "relative flex flex-col items-center gap-0.5 rounded-2xl bg-white px-1.5 py-1.5",
-              "shadow-[0_8px_24px_rgba(5,73,140,0.14)] ring-1 ring-zinc-200/70",
+              "relative flex flex-col items-center gap-1 rounded-3xl bg-white px-2 py-2",
+              "shadow-[0_8px_28px_rgba(5,73,140,0.16)] ring-1 ring-zinc-200/70",
             )}
           >
             {placement === "below" ? (
               <span
                 aria-hidden
                 className={cn(
-                  "absolute start-4 bottom-full size-0",
-                  "border-x-[7px] border-x-transparent border-b-[8px] border-b-white",
+                  "absolute start-5 bottom-full size-0",
+                  "border-x-[8px] border-x-transparent border-b-[9px] border-b-white",
                   "drop-shadow-[0_-1px_0_rgba(228,228,231,0.9)]",
                 )}
               />
@@ -195,8 +168,8 @@ export function ShareControls({ title, path, labels, className }: Props) {
               <span
                 aria-hidden
                 className={cn(
-                  "absolute start-4 top-full size-0",
-                  "border-x-[7px] border-x-transparent border-t-[8px] border-t-white",
+                  "absolute start-5 top-full size-0",
+                  "border-x-[8px] border-x-transparent border-t-[9px] border-t-white",
                   "drop-shadow-[0_1px_0_rgba(228,228,231,0.9)]",
                 )}
               />
@@ -285,12 +258,12 @@ export function ShareControls({ title, path, labels, className }: Props) {
 }
 
 function Separator() {
-  return <span aria-hidden className="h-px w-6 shrink-0 bg-zinc-200" />;
+  return <span aria-hidden className="h-px w-8 shrink-0 bg-zinc-200" />;
 }
 
 function ShareIcon() {
   return (
-    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden>
+    <svg width="22" height="22" viewBox="0 0 18 18" fill="none" aria-hidden>
       <circle cx="13.5" cy="4.5" r="2" stroke="currentColor" strokeWidth="1.5" />
       <circle cx="4.5" cy="9" r="2" stroke="currentColor" strokeWidth="1.5" />
       <circle cx="13.5" cy="13.5" r="2" stroke="currentColor" strokeWidth="1.5" />
@@ -306,7 +279,7 @@ function ShareIcon() {
 
 function XIcon() {
   return (
-    <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden>
+    <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden>
       <path d="M9.54 6.77 14.3 1.5h-1.13L9.03 6.07 5.7 1.5H1.5l5 7.2L1.5 14.5h1.13l4.37-5.02L10.3 14.5h4.2L9.54 6.77Zm-1.55 1.78-.5-.73L3.06 2.35h1.73l3.23 4.64.5.73 4.2 6.03h-1.73L7.99 8.55Z" />
     </svg>
   );
@@ -314,7 +287,7 @@ function XIcon() {
 
 function FacebookIcon() {
   return (
-    <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden>
+    <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden>
       <path d="M10.5 2.5H12V.1C11.74.07 10.82 0 9.75 0 7.52 0 6 1.35 6 3.82V6H3.5v2.7H6V16h2.8V8.7h2.32L11.5 6H8.8V4.1c0-.78.22-1.6 1.7-1.6Z" />
     </svg>
   );
@@ -322,7 +295,7 @@ function FacebookIcon() {
 
 function LinkedInIcon() {
   return (
-    <svg width="15" height="15" viewBox="0 0 16 16" fill="currentColor" aria-hidden>
+    <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" aria-hidden>
       <path d="M3.5 5.5H1V15h2.5V5.5ZM2.25 1C1.4 1 .75 1.65.75 2.5S1.4 4 2.25 4 3.75 3.35 3.75 2.5 3.1 1 2.25 1ZM15 15h-2.5v-4.6c0-1.1 0-2.5-1.55-2.5s-1.8 1.2-1.8 2.42V15H6.7V5.5h2.4v1.3h.03c.33-.63 1.15-1.3 2.37-1.3 2.54 0 3 1.67 3 3.84V15Z" />
     </svg>
   );
@@ -330,7 +303,7 @@ function LinkedInIcon() {
 
 function EmailIcon() {
   return (
-    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden>
+    <svg width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden>
       <rect x="1.5" y="3" width="13" height="10" rx="1.5" stroke="currentColor" strokeWidth="1.5" />
       <path d="M2 4.5 8 9l6-4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
     </svg>
@@ -339,7 +312,7 @@ function EmailIcon() {
 
 function LinkIcon() {
   return (
-    <svg width="15" height="15" viewBox="0 0 16 16" fill="none" aria-hidden>
+    <svg width="18" height="18" viewBox="0 0 16 16" fill="none" aria-hidden>
       <path
         d="M6.8 9.2a3 3 0 0 0 4.24 0l1.42-1.42a3 3 0 0 0-4.24-4.24L7.4 4.36"
         stroke="currentColor"
