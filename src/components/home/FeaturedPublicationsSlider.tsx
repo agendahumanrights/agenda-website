@@ -210,7 +210,10 @@ export function FeaturedPublicationsSlider({
           <p className="text-[0.6875rem] font-semibold uppercase tracking-[0.16em] text-white/90 sm:text-xs">
             {categoryLabel}
           </p>
-          <h3 className="font-editorial mt-2 text-[clamp(1.35rem,2.6vw,2.25rem)] leading-[1.2] font-semibold text-balance text-white sm:mt-2.5">
+          <h3
+            data-typography="compact"
+            className="font-editorial mt-2 text-[clamp(1.35rem,2.6vw,2.25rem)] leading-[1.2] font-semibold text-balance text-white sm:mt-2.5"
+          >
             <Link
               href={href}
               className={cn(

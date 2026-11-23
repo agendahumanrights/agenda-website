@@ -4,7 +4,7 @@
 > **Source of truth:** application code. Requirements and older docs describe intended or planned behavior; this file describes verified implementation.  
 > **Do not treat scaffolding as completed features.**
 
-**Last updated:** 2026-11-23 (About timeline text-start)  
+**Last updated:** 2026-11-23 (Arabic typography: Cairo + IBM Plex)  
 **Inspection basis:** Checked-in source under the repository root. DB migrate/admin bootstrap depend on local `.env` (gitignored).
 
 ---
@@ -432,7 +432,8 @@ No logout route or working login form exists.
 
 - **Styling:** Tailwind CSS v4 via `@import "tailwindcss"` in `globals.css`; utility classes in components.
 - **Theme / brand:** Brand blue `#05498C` plus shared glass tokens (`--glass-tint`, 20px blur, border/highlight/shadow, opaque fallback). Fixed header spacing via `--site-header-height` / `--site-header-offset`. Public chrome uses glass; page bodies still largely zinc/white.
-- **Fonts:** `next/font/google` on `<html>`: **Geist** / **Geist Mono** (UI), **Source Serif 4** (editorial titles via `.font-editorial`), **Noto Sans Arabic** (site Arabic UI), **IBM Plex Sans Arabic** (`--font-arabic-article`, weights 400/600/700) loaded only for `ar`. Stack: sans → Geist + Noto Arabic; serif → Source Serif + Noto Arabic. Arabic **publication/event** Markdown bodies use `.article-prose--arabic` (IBM Plex); titles/subtitles/other Arabic UI stay on existing fonts.
+- **Fonts (English):** `next/font/google` on `<html>`: **Geist** / **Geist Mono** (UI), **Source Serif 4** (`.font-editorial`). Stacks: `--font-sans` → Geist; `--font-serif` → Source Serif. Unchanged by Arabic work.
+- **Fonts (Arabic only, `lang="ar"`):** **Cairo** (`--font-arabic-heading`, weights 600/700) for H1–H3 / editorial titles; **IBM Plex Sans Arabic** (`--font-arabic-body`, weights 400/500/600) for body/UI. Loaded only when `locale === "ar"` (Noto removed). `html[lang="ar"]` remaps `--font-sans` / `--font-serif`. Public scale: H1 36px/32px mobile · 700 · lh 1.3; H2 26px · 600 · lh 1.4; H3 22px · 600 · lh 1.4; body 18px/17px mobile · 400 · lh 1.7. Compact titles (`data-typography="compact"`: cards, catalogue/slider heroes) keep layout sizes but use Cairo 600. Admin keeps compact control sizes; font families only. Markdown: Cairo headings + IBM Plex body (`.article-prose` + `[dir="rtl"]` preview); pub/event justify preserved.
 - **Responsive:** Desktop footer 4-column glass panel (brand · nav · newsletter · social); mobile stacks with horizontal separators and horizontal social icons. Desktop nav from `md:`. Heroes are full viewport under a **fixed** transparent header (no negative-margin pull; clearance via padding / `.public-main-offset`).
 - **RTL/LTR:** `dir` on `<html>` from locale (`ar` → `rtl`, `en` → `ltr`). Hero gradient and slider arrows use logical/`dir`-aware placement. Logical `border-e` used in `AdminSidebar`.
 
@@ -501,7 +502,7 @@ No logout route or working login form exists.
 | `MediaGallery` | Client: main+gallery images (deduped by media id); frame uses full-bleed `object-cover` (lightbox keeps `object-contain`); centered thumb row (`w-max min-w-full justify-center`) with horizontal scroll when needed; prev/next, counter, fullscreen, keyboard/swipe, RTL-aware; omits when empty |
 | `YouTubeEmbed` | Shared responsive 16:9 iframe via `youtube-nocookie.com` from validated video ID; optional heading; lazy by default; omits when URL invalid |
 | `YouTubeUrlField` | Admin Media-card control: URL input (LTR), live preview, remove; used by Publication/Event forms |
-| `ArticleMarkdown` / `MarkdownContent` | Shared safe GFM renderer (sanitize, external links, heading shift); `.article-prose` for public details + admin preview; **justified** body `p` / list / blockquote (`text-align: justify`, `text-align-last: start`); headings/code/tables/captions stay start/center; `dir` + `lang` for LTR hyphenation / RTL no-hyphen; optional `arabicArticleFont` → `.article-prose--arabic` (IBM Plex) on AR pub/event bodies; writers opt out via `.article-prose--align-start`; inline images http(s) + `/api/media/…`; optional title → `<figure>`/`<figcaption>`; lazy-loaded |
+| `ArticleMarkdown` / `MarkdownContent` | Shared safe GFM renderer; `.article-prose` + **justified** pub/event body; on `lang="ar"` / `[dir="rtl"]` → **Cairo** MD headings + **IBM Plex** body (18/17px, lh 1.7); writers `.article-prose--align-start`; optional `arabicArticleFont`; inline images http(s) + `/api/media/…`; captions/code/tables preserved |
 | `MarkdownEditor` | Admin toolbar editor (Write/Preview/Split, expand, help, undo/redo); Preview/Split use same `.article-prose` justify as public (Publication/Event); `alignStartPreview` for Writer bios; Image **upload** or URL via `MarkdownImageDialog` on Publication/Event; selection snapshotted; optional paste/drop upload |
 | `MarkdownImageDialog` | Insert-image dialog: Upload (MediaDropzone + progress) or URL; alt + optional caption; disables Insert until upload completes |
 | `lib/markdown-editor.ts` | Pure Markdown textarea transforms + `markdownToPlainText` for excerpts; `insertImage` places block images on their own lines |
@@ -1165,6 +1166,15 @@ Open `http://localhost:3000`.
 ---
 
 ## K. Change history
+
+### 2026-11-23 — Arabic typography system (Cairo + IBM Plex Sans Arabic)
+
+- Replaced Noto Sans Arabic with **Cairo** headings (`--font-arabic-heading` 600/700) + sitewide **IBM Plex Sans Arabic** body (`--font-arabic-body` 400/500/600); both load only for `ar`.
+- Centralized unlayered `html[lang="ar"]` rules in `globals.css`: remapped font stacks, public H1/H2/H3 scale, `.ar-body` / article prose sizes, admin family-only + compact UI sizing preserved.
+- Compact surfaces mark `data-typography="compact"` (ContentCard, FeaturedPublicationsSlider, LatestContentHero) so large cinematic/card titles are not forced to 22–26px.
+- Markdown: Arabic/RTL `.article-prose` uses Cairo for headings and IBM Plex for paragraphs (justify unchanged for publications/events).
+- English Geist / Source Serif typography unchanged.
+- Validated: `npm run typecheck` pass; `npm test` 123 pass / 1 skip; `npm run build` pass. `npm run lint` still fails only on pre-existing `AddCategoryModal` setState-in-effect.
 
 ### 2026-11-23 — About timeline start-aligned copy on both sides
 

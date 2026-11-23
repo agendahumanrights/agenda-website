@@ -35,7 +35,7 @@ export function AboutContentBlock({
       </div>
       <div className={cn("flex flex-col gap-3.5", reverse && "lg:order-1")}>
         <AccentHeading id={id}>{title}</AccentHeading>
-        <p className="max-w-xl text-base leading-relaxed text-pretty text-zinc-700 sm:text-lg sm:leading-[1.75]">
+        <p className="ar-body max-w-xl text-base leading-relaxed text-pretty text-zinc-700 sm:text-lg sm:leading-[1.75]">
           {body}
         </p>
       </div>

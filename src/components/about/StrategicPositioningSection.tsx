@@ -45,7 +45,7 @@ export function StrategicPositioningSection({
             {paragraphs.map((paragraph) => (
               <p
                 key={paragraph.slice(0, 48)}
-                className="text-base leading-relaxed text-pretty text-zinc-700 sm:text-lg sm:leading-[1.75]"
+                className="ar-body text-base leading-relaxed text-pretty text-zinc-700 sm:text-lg sm:leading-[1.75]"
               >
                 {paragraph}
               </p>

@@ -85,7 +85,7 @@ export function FounderBiography({
         ) : null}
 
         {biography ? (
-          <p className="mt-4 whitespace-pre-wrap text-base leading-[1.7] text-pretty text-zinc-700 sm:mt-5 sm:text-[1.0625rem] sm:leading-[1.75]">
+          <p className="ar-body mt-4 whitespace-pre-wrap text-base leading-[1.7] text-pretty text-zinc-700 sm:mt-5 sm:text-[1.0625rem] sm:leading-[1.75]">
             {biography}
           </p>
         ) : null}

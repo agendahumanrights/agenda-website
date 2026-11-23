@@ -1,9 +1,9 @@
 import type { Metadata, Viewport } from "next";
 import {
+  Cairo,
   Geist,
   Geist_Mono,
   IBM_Plex_Sans_Arabic,
-  Noto_Sans_Arabic,
   Source_Serif_4,
 } from "next/font/google";
 
@@ -37,17 +37,19 @@ const sourceSerif = Source_Serif_4({
   display: "swap",
 });
 
-const notoArabic = Noto_Sans_Arabic({
-  variable: "--font-noto-arabic",
+/** Arabic headings (H1–H3 / `.font-editorial`) — loaded only for `ar`. */
+const cairoArabic = Cairo({
+  variable: "--font-arabic-heading",
   subsets: ["arabic"],
+  weight: ["600", "700"],
   display: "swap",
 });
 
-/** Scoped to Arabic publication/event Markdown bodies via `.article-prose--arabic`. */
+/** Arabic body / UI — loaded only for `ar`. */
 const ibmPlexSansArabic = IBM_Plex_Sans_Arabic({
-  variable: "--font-arabic-article",
+  variable: "--font-arabic-body",
   subsets: ["arabic"],
-  weight: ["400", "600", "700"],
+  weight: ["400", "500", "600"],
   display: "swap",
 });
 
@@ -100,8 +102,8 @@ export default async function RootLayout({
     geistSans.variable,
     geistMono.variable,
     sourceSerif.variable,
-    // Load Arabic faces only when needed (English still falls back via CSS stack).
-    locale === "ar" ? notoArabic.variable : null,
+    // Arabic faces only when needed (English keeps Geist + Source Serif).
+    locale === "ar" ? cairoArabic.variable : null,
     locale === "ar" ? ibmPlexSansArabic.variable : null,
   ]
     .filter(Boolean)

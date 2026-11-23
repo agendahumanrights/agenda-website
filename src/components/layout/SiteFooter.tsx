@@ -97,7 +97,7 @@ export function SiteFooter({ locale, dict }: Props) {
                   {dict.meta.siteName}
                 </span>
               </Link>
-              <p className="max-w-lg whitespace-pre-line text-base leading-relaxed text-white/85 text-pretty sm:text-[1.05rem]">
+              <p className="ar-body max-w-lg whitespace-pre-line text-base leading-relaxed text-white/85 text-pretty sm:text-[1.05rem]">
                 {org.missionSummary}
               </p>
             </div>

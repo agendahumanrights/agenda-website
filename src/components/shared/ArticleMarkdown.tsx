@@ -7,9 +7,8 @@ type Props = {
   locale: Locale;
   className?: string;
   /**
-   * When true and `locale` is `ar`, apply IBM Plex Sans Arabic via
-   * `.article-prose--arabic`. Used for public publication/event bodies only —
-   * not writer bios, admin preview, or other Arabic UI.
+   * When true and `locale` is `ar`, adds `.article-prose--arabic` (IBM Plex body).
+   * Arabic pages also pick up Cairo headings + IBM Plex from `html[lang="ar"]`.
    */
   arabicArticleFont?: boolean;
 };
@@ -17,7 +16,7 @@ type Props = {
 /**
  * Safe Markdown with editorial article typography.
  * Body paragraphs use justified alignment via `.article-prose` (opt out with
- * `.article-prose--align-start`). Callers set the reading measure.
+ * `.article-prose--align-start`). Arabic uses Cairo headings + IBM Plex body.
  */
 export function ArticleMarkdown({
   source,

@@ -133,6 +133,7 @@ export function LatestContentHero({
             </p>
 
             <h2
+              data-typography="compact"
               className={cn(
                 "font-editorial mt-2 text-[clamp(1.5rem,3.2vw,2.75rem)] leading-[1.15] font-semibold text-balance text-white",
                 "sm:mt-2.5",

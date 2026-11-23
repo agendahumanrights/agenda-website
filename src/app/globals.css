@@ -124,10 +124,9 @@
   --color-foreground: var(--foreground);
   --color-brand-blue: var(--brand-blue);
   --color-brand-gray: var(--brand-gray);
-  --font-sans: var(--font-geist-sans), var(--font-noto-arabic), system-ui,
-    sans-serif;
-  --font-serif: var(--font-source-serif), var(--font-noto-arabic), "Times New Roman",
-    serif;
+  /* English defaults; `html[lang="ar"]` remaps stacks to Cairo / IBM Plex. */
+  --font-sans: var(--font-geist-sans), system-ui, sans-serif;
+  --font-serif: var(--font-source-serif), "Times New Roman", serif;
   --font-mono: var(--font-geist-mono);
 }
 
@@ -220,17 +219,6 @@ body {
 }
 
 /**
- * Arabic publication/event description bodies only.
- * Does not change global Arabic UI font (Noto) or English article typography.
- */
-.article-prose--arabic {
-  font-family: var(--font-arabic-article), "IBM Plex Sans Arabic",
-    var(--font-noto-arabic), system-ui, sans-serif;
-  font-size: 1rem;
-  line-height: 1.9;
-}
-
-/**
  * Opt out of justified body text (writer biographies).
  * Publication/event descriptions keep default `.article-prose` justify.
  */
@@ -243,33 +231,13 @@ body {
   hyphens: manual;
 }
 
-@media (min-width: 640px) {
-  .article-prose--arabic {
-    font-size: 1.0625rem;
-    line-height: 1.95;
-  }
-}
-
-@media (min-width: 1024px) {
-  .article-prose--arabic {
-    font-size: 1.125rem;
-    line-height: 2;
-  }
-}
-
-.article-prose--arabic :where(h2, h3, h4, h5, h6, .article-prose-h6) {
-  font-family: var(--font-arabic-article), "IBM Plex Sans Arabic",
-    var(--font-noto-arabic), system-ui, sans-serif;
-  line-height: 1.45;
-}
-
-.article-prose--arabic :where(p) {
-  margin: 1em 0;
-}
-
-.article-prose--arabic :where(figcaption) {
-  font-family: inherit;
-  line-height: 1.65;
+/**
+ * Legacy class kept for callers (`arabicArticleFont`); Arabic Markdown typography
+ * is primarily driven by `html[lang="ar"]` / `[dir="rtl"].article-prose` below.
+ */
+.article-prose--arabic {
+  font-family: var(--font-arabic-body), "IBM Plex Sans Arabic", system-ui,
+    sans-serif;
 }
 
 .article-prose :where(h2, h3, h4, h5, h6, .article-prose-h6) {
@@ -718,4 +686,187 @@ body {
   .about-timeline-node-disc {
     box-shadow: 0 2px 8px rgba(5, 73, 140, 0.08);
   }
+}
+
+/* =============================================================================
+   Arabic typography system (lang="ar" only)
+   Unlayered so these rules can override Tailwind size utilities on public pages.
+   English keeps Geist / Source Serif via default --font-sans / --font-serif.
+   ============================================================================= */
+
+html[lang="ar"] {
+  --font-sans: var(--font-arabic-body), "IBM Plex Sans Arabic", system-ui,
+    sans-serif;
+  --font-serif: var(--font-arabic-heading), Cairo, var(--font-arabic-body),
+    "IBM Plex Sans Arabic", sans-serif;
+  /* Back-compat for any remaining --font-arabic-article references */
+  --font-arabic-article: var(--font-arabic-body);
+  letter-spacing: normal;
+}
+
+html[lang="ar"] body {
+  font-family: var(--font-sans);
+}
+
+/*
+ * Public body measure on the document body (inheritance).
+ * Rem-based Tailwind utilities still use the 16px html root, so spacing/controls
+ * stay stable; unstyled / inheriting prose lands on 17–18px.
+ */
+html[lang="ar"] body:not(:has(.admin-shell)) {
+  font-size: 18px;
+  line-height: 1.7;
+}
+
+@media (max-width: 640px) {
+  html[lang="ar"] body:not(:has(.admin-shell)) {
+    font-size: 17px;
+  }
+}
+
+/* Prefer the Arabic body scale over Tailwind text-base / text-lg on public prose */
+html[lang="ar"] body:not(:has(.admin-shell)) :is(
+  .ar-body,
+  .about-timeline-copy p,
+  .anchor-offset > p,
+  .anchor-offset .space-y-5 > p,
+  .anchor-offset .space-y-6 > p
+) {
+  font-size: 18px;
+  line-height: 1.7;
+}
+
+@media (max-width: 640px) {
+  html[lang="ar"] body:not(:has(.admin-shell)) :is(
+    .ar-body,
+    .about-timeline-copy p,
+    .anchor-offset > p,
+    .anchor-offset .space-y-5 > p,
+    .anchor-offset .space-y-6 > p
+  ) {
+    font-size: 17px;
+  }
+}
+
+html[lang="ar"] .font-editorial {
+  font-family: var(--font-serif);
+  letter-spacing: normal;
+}
+
+html[lang="ar"] :is(h1, h2, h3) {
+  font-family: var(--font-arabic-heading), Cairo, sans-serif;
+  letter-spacing: normal;
+}
+
+html[lang="ar"] h1 {
+  font-weight: 700;
+}
+
+html[lang="ar"] :is(h2, h3) {
+  font-weight: 600;
+}
+
+/*
+ * Public heading scale (exclude admin + compact surfaces that keep their own sizes).
+ * Compact: cards, cinematic heroes/sliders, status display numbers.
+ */
+html[lang="ar"] body:not(:has(.admin-shell)) h1:not([data-typography="compact"]) {
+  font-size: 36px;
+  line-height: 1.3;
+}
+
+html[lang="ar"] body:not(:has(.admin-shell)) h2:not([data-typography="compact"]) {
+  font-size: 26px;
+  line-height: 1.4;
+}
+
+html[lang="ar"] body:not(:has(.admin-shell)) h3:not([data-typography="compact"]) {
+  font-size: 22px;
+  line-height: 1.4;
+}
+
+@media (max-width: 640px) {
+  html[lang="ar"] body:not(:has(.admin-shell)) h1:not([data-typography="compact"]) {
+    font-size: 32px;
+  }
+}
+
+/* Compact titles: Cairo SemiBold, preserve layout-friendly sizes */
+html[lang="ar"] :is(h2, h3)[data-typography="compact"] {
+  font-family: var(--font-arabic-heading), Cairo, sans-serif;
+  font-weight: 600;
+  letter-spacing: normal;
+}
+
+html[lang="ar"] .admin-shell {
+  font-family: var(--font-sans);
+  font-size: 0.9375rem;
+  line-height: 1.5;
+}
+
+html[lang="ar"] .admin-shell :is(h1, h2, h3, .font-editorial) {
+  font-family: var(--font-arabic-heading), Cairo, sans-serif;
+  letter-spacing: normal;
+}
+
+/* —— Arabic Markdown / article prose (public + RTL admin preview) —— */
+
+html[lang="ar"] .article-prose,
+.article-prose[dir="rtl"] {
+  font-family: var(--font-arabic-body), "IBM Plex Sans Arabic", system-ui,
+    sans-serif;
+  font-size: 18px;
+  font-weight: 400;
+  line-height: 1.7;
+}
+
+@media (max-width: 640px) {
+  html[lang="ar"] .article-prose,
+  .article-prose[dir="rtl"] {
+    font-size: 17px;
+  }
+}
+
+html[lang="ar"] .article-prose :where(h2, h3, h4, h5, h6, .article-prose-h6),
+.article-prose[dir="rtl"] :where(h2, h3, h4, h5, h6, .article-prose-h6) {
+  font-family: var(--font-arabic-heading), Cairo, sans-serif;
+  letter-spacing: normal;
+}
+
+html[lang="ar"] .article-prose :where(h2),
+.article-prose[dir="rtl"] :where(h2) {
+  font-weight: 600;
+  font-size: 26px;
+  line-height: 1.4;
+}
+
+html[lang="ar"] .article-prose :where(h3),
+.article-prose[dir="rtl"] :where(h3) {
+  font-weight: 600;
+  font-size: 22px;
+  line-height: 1.4;
+}
+
+html[lang="ar"] .article-prose :where(h4, h5, h6, .article-prose-h6),
+.article-prose[dir="rtl"] :where(h4, h5, h6, .article-prose-h6) {
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+html[lang="ar"] .article-prose :where(p),
+.article-prose[dir="rtl"] :where(p) {
+  font-family: inherit;
+  font-weight: 400;
+  font-size: inherit;
+  line-height: inherit;
+}
+
+html[lang="ar"] .article-prose :where(strong),
+.article-prose[dir="rtl"] :where(strong) {
+  font-weight: 600;
+}
+
+html[lang="ar"] .article-prose :where(code, pre),
+.article-prose[dir="rtl"] :where(code, pre) {
+  font-family: var(--font-mono);
 }

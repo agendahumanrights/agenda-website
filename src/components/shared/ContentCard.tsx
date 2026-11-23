@@ -105,6 +105,7 @@ export function ContentCard({
         )}
       >
         <h3
+          data-typography="compact"
           className={cn(
             "font-editorial text-[1.05rem] leading-[1.28] font-semibold text-balance",
             "sm:text-[1.125rem] sm:leading-[1.26]",
